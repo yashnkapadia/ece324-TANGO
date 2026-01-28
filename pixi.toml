@@ -1,0 +1,28 @@
+[project]
+name = "ece324-TANGO"
+description = "Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal control and cenario planning module that evaluates how nearby projects (construction, lane closures, new public transit lines) alter demand/capacity to recommend signal timing/phasing updates"
+version = "0.1.0"
+channels = ['conda-forge']
+platforms = ['linux-64', 'osx-64', 'osx-arm64', 'win-64']
+
+[dependencies]
+python = "~=3.12.0"
+black = "*"
+flake8 = "*"
+ipython = "*"
+isort = "*"
+jupyterlab = "*"
+loguru = "*"
+matplotlib = "*"
+notebook = "*"
+numpy = "*"
+pandas = "*"
+pytest = "*"
+scikit-learn = "*"
+tqdm = "*"
+typer = "*"
+pip = "*"
+
+[pypi-dependencies]
+python-dotenv = "*"
+ece324_tango = { path = ".", editable = true }
