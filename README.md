@@ -26,6 +26,8 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
 │                         the creator's initials, and a short `-` delimited description, e.g.
 │                         `1.0-jqp-initial-data-exploration`.
 │
+├── pixi.toml          <- Pixi configuration file for environment and dependency management
+│
 ├── pyproject.toml     <- Project configuration file with package metadata for 
 │                         ece324_tango and configuration for tools like black
 │
@@ -34,10 +36,10 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
 ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
 │   └── figures        <- Generated graphics and figures to be used in reporting
 │
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
 ├── setup.cfg          <- Configuration file for flake8
+│
+├── tests              <- Unit tests for the project
+│   └── test_data.py   <- Tests for data processing
 │
 └── ece324_tango-model   <- Source code for use in this project.
     │
