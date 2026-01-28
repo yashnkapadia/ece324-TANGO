@@ -34,7 +34,10 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
 ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
 │
 ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
+│   ├── figures        <- Plots for reports
+│   ├── proposal       <- Project proposal
+│   ├── results        <- Testing/evaluation results
+│   └── final          <- Final project deliverables
 │
 ├── setup.cfg          <- Configuration file for flake8
 │
