@@ -4,7 +4,10 @@
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
 </a>
 
-Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal control and cenario planning module that evaluates how nearby projects (construction, lane closures, new public transit lines) alter demand/capacity to recommend signal timing/phasing updates 🕺 💃
+Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal control and scenario planning module that evaluates how nearby projects (construction, lane closures, new public transit lines) alter demand/capacity to recommend signal timing/phasing updates 🕺 💃
+
+## Corridor for Data Simulation
+This project will focus on signalized intersections along Dundas Street West in Toronto, Ontario, Canada, starting from the intersection at University Avenue. Data will be simulated for around 12 intersections along this corridor. This corridor is chosen because TMC data is available for these intersections, and it runs along a streetcar route which will be useful for transit-focused scenarios for PIRA [see [proposal](reports/proposal/TANGO-proposal.pdf)].
 
 ## Project Organization
 
@@ -12,6 +15,8 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
 ├── LICENSE            <- Open-source license if one is chosen
 ├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
+├── environment.yml    <- Conda environment file for reproducing the environment
+├── requirements.txt   <- Pip requirements file for reproducing the environment
 ├── data
 │   ├── external       <- Data from third party sources.
 │   ├── interim        <- Intermediate data that has been transformed.
@@ -62,5 +67,37 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
     └── plots.py                <- Code to create visualizations
 ```
 
+--------
+
+## Environment Setup
+
+This project environment is reproducible using either Conda (recommended) or pip. 
+
+### Option 1: Conda
+
+Requires [Anaconda](https://www.anaconda.com/download) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
+
+```bash
+conda env create -f environment.yml
+conda activate tango
+```
+
+> **Note:** The environment includes PyTorch with CUDA 12.1 support. If you do not have a compatible GPU, remove the `pytorch-cuda` line from `environment.yml` before creating the environment and install the CPU-only PyTorch build instead.
+
+### Option 2: Pip
+
+Requires Python 3.11+ and a virtual environment.
+
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+> **Note:** `requirements.txt` does not pin a specific PyTorch variant. Visit [pytorch.org](https://pytorch.org/get-started/locally/) to install the correct build for your platform before running the above command.
 --------
 
