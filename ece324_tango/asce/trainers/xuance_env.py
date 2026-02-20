@@ -8,6 +8,11 @@ import numpy as np
 
 from ece324_tango.asce.env import create_parallel_env
 from ece324_tango.asce.runtime import extract_reset_obs
+from ece324_tango.asce.traffic_metrics import (
+    RewardWeights,
+    compute_metrics_for_agents,
+    rewards_from_metrics,
+)
 
 
 @dataclass
@@ -58,6 +63,13 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             self._last_obs = {
                 a: np.zeros(self.observation_space[a].shape, dtype=np.float32) for a in self.agents
             }
+            self._scenario_id = getattr(config, "scenario_id", "baseline")
+            self._reward_mode = str(getattr(config, "reward_mode", "objective")).strip().lower()
+            self._reward_weights = RewardWeights(
+                delay=float(getattr(config, "reward_delay_weight", 1.0)),
+                throughput=float(getattr(config, "reward_throughput_weight", 1.0)),
+                fairness=float(getattr(config, "reward_fairness_weight", 0.25)),
+            )
 
         def get_env_info(self):
             return {
@@ -110,6 +122,19 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             self._last_obs = obs
             truncated = bool(truncated or self._episode_step >= self.max_episode_steps)
             rewards = {a: float(np.asarray(r).reshape(-1)[0]) for a, r in rewards.items()}
+            sim_time = float(self._episode_step) * float(getattr(self._base_env, "delta_time", 1))
+            metrics_by_agent = compute_metrics_for_agents(
+                env=self._base_env,
+                agent_ids=self.agents,
+                time_step=sim_time,
+                actions={a: int(np.asarray(actions[a]).reshape(-1)[0]) for a in self.agents},
+                action_green_dur=float(getattr(self._base_env, "delta_time", 1)),
+                scenario_id=self._scenario_id,
+                observations=obs,
+            )
+            shaped_rewards = rewards_from_metrics(metrics_by_agent, mode=self._reward_mode, weights=self._reward_weights)
+            if shaped_rewards:
+                rewards = shaped_rewards
             info = {
                 "infos": infos,
                 "individual_episode_rewards": rewards,

@@ -11,9 +11,14 @@ import pandas as pd
 from loguru import logger
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
-from ece324_tango.asce.env import create_parallel_env, split_ns_ew_from_obs
+from ece324_tango.asce.env import create_parallel_env
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
+from ece324_tango.asce.traffic_metrics import (
+    RewardWeights,
+    compute_metrics_for_agents,
+    rewards_from_metrics,
+)
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.asce.trainers.noise_control import quiet_output
@@ -78,6 +83,11 @@ class XuanceBackend(AsceTrainerBackend):
         args.sumo_delta_time = int(cfg.delta_time)
         args.use_gui = bool(cfg.use_gui)
         args.sumo_quiet = not cfg.backend_verbose
+        args.scenario_id = getattr(cfg, "scenario_id", "baseline")
+        args.reward_mode = cfg.reward_mode
+        args.reward_delay_weight = float(cfg.reward_delay_weight)
+        args.reward_throughput_weight = float(cfg.reward_throughput_weight)
+        args.reward_fairness_weight = float(cfg.reward_fairness_weight)
 
         # Stable settings for custom SUMO adapter under Xuance MAPPO.
         args.use_value_norm = self._env_bool("TANGO_XUANCE_USE_VALUE_NORM", True)
@@ -124,6 +134,11 @@ class XuanceBackend(AsceTrainerBackend):
         mean_rewards = []
         per_agent_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
         rows: List[dict] = []
+        reward_weights = RewardWeights(
+            delay=cfg.reward_delay_weight,
+            throughput=cfg.reward_throughput_weight,
+            fairness=cfg.reward_fairness_weight,
+        )
 
         try:
             while not done:
@@ -143,37 +158,26 @@ class XuanceBackend(AsceTrainerBackend):
 
                 next_obs, rewards, done, _ = extract_step(env.step(actions))
                 steps += 1
+                sim_time = float(steps * cfg.delta_time)
+                metrics_by_agent = compute_metrics_for_agents(
+                    env=env,
+                    agent_ids=sorted(obs.keys()),
+                    time_step=sim_time,
+                    actions=actions,
+                    action_green_dur=float(cfg.delta_time),
+                    scenario_id=getattr(cfg, "scenario_id", "baseline"),
+                    observations=obs,
+                )
+                shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                if shaped:
+                    rewards = shaped
                 if rewards:
                     mean_rewards.append(float(np.mean(list(rewards.values()))))
                     for a, r in rewards.items():
                         per_agent_totals[a] = per_agent_totals.get(a, 0.0) + float(r)
 
-                sim_time = float(steps * cfg.delta_time)
-                time_of_day = float((8.0 * 3600.0 + sim_time) / 86400.0)
                 for agent_id in sorted(obs.keys()):
-                    a_obs = np.asarray(obs[agent_id], dtype=np.float32).ravel()
-                    q_ns, q_ew, arr_ns, arr_ew = split_ns_ew_from_obs(a_obs)
-                    reward = float(rewards.get(agent_id, 0.0))
-                    rows.append(
-                        {
-                            "intersection_id": agent_id,
-                            "time_step": sim_time,
-                            "queue_ns": int(round(q_ns)),
-                            "queue_ew": int(round(q_ew)),
-                            "arrivals_ns": int(round(arr_ns)),
-                            "arrivals_ew": int(round(arr_ew)),
-                            "avg_speed_ns": -1.0,
-                            "avg_speed_ew": -1.0,
-                            "current_phase": -1,
-                            "time_of_day": time_of_day,
-                            "action_phase": int(actions[agent_id]),
-                            "action_green_dur": float(cfg.delta_time),
-                            "delay": float(max(0.0, -reward)),
-                            "queue_total": int(round(q_ns + q_ew)),
-                            "throughput": int(round(arr_ns + arr_ew)),
-                            "scenario_id": getattr(cfg, "scenario_id", "baseline"),
-                        }
-                    )
+                    rows.append(metrics_by_agent[agent_id].to_row())
                 obs = next_obs
         finally:
             env.close()
@@ -310,6 +314,11 @@ class XuanceBackend(AsceTrainerBackend):
             action_dims = {a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())}
             fixed = FixedTimeController(action_size_by_agent=action_dims, green_duration_s=cfg.delta_time)
             max_pressure = MaxPressureController(action_size_by_agent=action_dims)
+            reward_weights = RewardWeights(
+                delay=cfg.reward_delay_weight,
+                throughput=cfg.reward_throughput_weight,
+                fairness=cfg.reward_fairness_weight,
+            )
 
             for controller_name, controller in [("fixed_time", fixed), ("max_pressure", max_pressure)]:
                 for ep in range(cfg.episodes):
@@ -326,6 +335,19 @@ class XuanceBackend(AsceTrainerBackend):
                             else:
                                 actions = controller.actions(obs, env=baseline_env)
                             obs, rewards, done, _ = extract_step(baseline_env.step(actions))
+                        sim_time = float(steps + 1) * float(cfg.delta_time)
+                        metrics_by_agent = compute_metrics_for_agents(
+                            env=baseline_env,
+                            agent_ids=sorted(obs.keys()),
+                            time_step=sim_time,
+                            actions=actions,
+                            action_green_dur=float(cfg.delta_time),
+                            scenario_id="baseline",
+                            observations=obs,
+                        )
+                        shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                        if shaped:
+                            rewards = shaped
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():

@@ -7,10 +7,15 @@ import pandas as pd
 from loguru import logger
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
-from ece324_tango.asce.env import create_parallel_env, flatten_obs_by_agent, split_ns_ew_from_obs
+from ece324_tango.asce.env import create_parallel_env, flatten_obs_by_agent
 from ece324_tango.asce.mappo import MAPPOTrainer, Transition
-from ece324_tango.asce.runtime import current_phase, extract_reset_obs, extract_step, jain_index
+from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
+from ece324_tango.asce.traffic_metrics import (
+    RewardWeights,
+    compute_metrics_for_agents,
+    rewards_from_metrics,
+)
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 
 
@@ -64,6 +69,11 @@ class LocalMappoBackend(AsceTrainerBackend):
 
         all_rows: List[dict] = []
         ep_metrics: List[dict] = []
+        reward_weights = RewardWeights(
+            delay=cfg.reward_delay_weight,
+            throughput=cfg.reward_throughput_weight,
+            fairness=cfg.reward_fairness_weight,
+        )
 
         for ep in range(cfg.episodes):
             obs = extract_reset_obs(env.reset(seed=cfg.seed + ep))
@@ -87,40 +97,31 @@ class LocalMappoBackend(AsceTrainerBackend):
                     action_meta[agent] = out
 
                 next_obs, rewards, done, infos = extract_step(env.step(actions))
+                sim_time = float(ep_steps + 1) * float(cfg.delta_time)
+                metrics_by_agent = compute_metrics_for_agents(
+                    env=env,
+                    agent_ids=active_agents,
+                    time_step=sim_time,
+                    actions=actions,
+                    action_green_dur=float(cfg.delta_time),
+                    scenario_id=cfg.scenario_id,
+                    observations=obs,
+                )
+                shaped_rewards = rewards_from_metrics(
+                    metrics_by_agent=metrics_by_agent,
+                    mode=cfg.reward_mode,
+                    weights=reward_weights,
+                )
+                if shaped_rewards:
+                    rewards = shaped_rewards
 
                 global_reward = float(np.mean(list(rewards.values()))) if rewards else 0.0
                 ep_reward += global_reward
                 ep_steps += 1
 
-                sim_time = float(ep_steps * cfg.delta_time)
-                time_of_day = float((8.0 * 3600.0 + sim_time) / 86400.0)
-
                 for agent in active_agents:
                     a_obs = np.asarray(obs[agent], dtype=np.float32)
-                    q_ns, q_ew, arr_ns, arr_ew = split_ns_ew_from_obs(a_obs)
-                    queue_total = int(round(q_ns + q_ew))
-                    throughput = int(round(arr_ns + arr_ew))
-                    delay = float(max(0.0, -float(rewards.get(agent, global_reward))))
-
-                    row = {
-                        "intersection_id": agent,
-                        "time_step": sim_time,
-                        "queue_ns": int(round(q_ns)),
-                        "queue_ew": int(round(q_ew)),
-                        "arrivals_ns": int(round(arr_ns)),
-                        "arrivals_ew": int(round(arr_ew)),
-                        "avg_speed_ns": -1.0,
-                        "avg_speed_ew": -1.0,
-                        "current_phase": current_phase(env, agent),
-                        "time_of_day": time_of_day,
-                        "action_phase": int(actions[agent]),
-                        "action_green_dur": float(cfg.delta_time),
-                        "delay": delay,
-                        "queue_total": queue_total,
-                        "throughput": throughput,
-                        "scenario_id": cfg.scenario_id,
-                    }
-                    all_rows.append(row)
+                    all_rows.append(metrics_by_agent[agent].to_row())
 
                     trajectories[agent].append(
                         Transition(
@@ -195,6 +196,11 @@ class LocalMappoBackend(AsceTrainerBackend):
 
             fixed = FixedTimeController(action_size_by_agent=action_dims, green_duration_s=cfg.delta_time)
             max_pressure = MaxPressureController(action_size_by_agent=action_dims)
+            reward_weights = RewardWeights(
+                delay=cfg.reward_delay_weight,
+                throughput=cfg.reward_throughput_weight,
+                fairness=cfg.reward_fairness_weight,
+            )
 
             trainer = None
             if controller_name == "mappo":
@@ -231,6 +237,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                         actions = max_pressure.actions(obs, env=env)
 
                     obs, rewards, done, infos = extract_step(env.step(actions))
+                    sim_time = float(steps + 1) * float(cfg.delta_time)
+                    metrics_by_agent = compute_metrics_for_agents(
+                        env=env,
+                        agent_ids=active_agents,
+                        time_step=sim_time,
+                        actions=actions,
+                        action_green_dur=float(cfg.delta_time),
+                        scenario_id="baseline",
+                        observations=obs,
+                    )
+                    shaped_rewards = rewards_from_metrics(
+                        metrics_by_agent=metrics_by_agent,
+                        mode=cfg.reward_mode,
+                        weights=reward_weights,
+                    )
+                    if shaped_rewards:
+                        rewards = shaped_rewards
                     if rewards:
                         ep_rewards.append(float(np.mean(list(rewards.values()))))
                         for a, r in rewards.items():

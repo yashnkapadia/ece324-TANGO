@@ -30,6 +30,10 @@ def main(
     device: str = "auto",
     trainer_backend: str = "local_mappo",
     backend_verbose: bool = False,
+    reward_mode: str = "objective",
+    reward_delay_weight: float = 1.0,
+    reward_throughput_weight: float = 1.0,
+    reward_fairness_weight: float = 0.25,
 ):
     """Train ASCE controller using selected trainer backend."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -59,6 +63,10 @@ def main(
         use_gui=use_gui,
         device=device,
         backend_verbose=backend_verbose,
+        reward_mode=reward_mode,
+        reward_delay_weight=reward_delay_weight,
+        reward_throughput_weight=reward_throughput_weight,
+        reward_fairness_weight=reward_fairness_weight,
     )
     backend.train(cfg)
 

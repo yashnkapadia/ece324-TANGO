@@ -23,6 +23,8 @@
 - Eval ASCE: `pixi run python -m ece324_tango.modeling.predict --trainer-backend local_mappo --device auto`
 - Validate schema: `pixi run python -m ece324_tango.dataset`
 - Backend verbose logs (optional): add `--backend-verbose`
+- Use objective reward shaping (default): `--reward-mode objective`
+- Optional baseline reward path: `--reward-mode sumo`
 
 ## Backend Selection
 - Supported values: `local_mappo`, `benchmarl`, `xuance`
@@ -46,7 +48,14 @@
 ## Known Risks
 - BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower than local MAPPO on sample network.
 - Xuance value normalization is enabled via local compat patch. If regressions appear, disable with `TANGO_XUANCE_USE_VALUE_NORM=0`.
-- Delay/throughput/fairness are still proxy metrics in sample-network mode.
+- BenchMARL rollout CSV still derives queue/arrival splits from observation vectors in the train artifact path.
+
+## Reward Objective
+- `reward_mode`: `objective` (default) or `sumo`
+- Objective reward:
+  - `- reward_delay_weight * log1p(delay)`
+  - `+ reward_throughput_weight * log1p(throughput)`
+  - `+ reward_fairness_weight * Jain(throughput across intersections)`
 
 ## Handoff Checklist
 1. Confirm latest good commit hash.

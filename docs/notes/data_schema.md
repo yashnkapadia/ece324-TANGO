@@ -23,4 +23,6 @@ Status: adopted as target contract for rollout logging.
 | scenario_id | str | Scenario identifier | CLI argument `--scenario-id` | `baseline`, `construction_01`, `transit_01` |
 
 ## Prototype Note
-Current Phase 1 logger writes this exact column set. Some values are placeholder/proxy on sample SUMO network where direct NS/EW lane mapping is not exposed by the wrapper; Toronto integration should replace these with direct traci aggregations.
+Current Phase 1 logger writes this exact column set.
+- `local_mappo` and `xuance` now use TraCI controlled-link edge aggregations with fallback-safe proxy mode.
+- `benchmarl` training rollout CSV still uses observation-derived proxy splits in current implementation.

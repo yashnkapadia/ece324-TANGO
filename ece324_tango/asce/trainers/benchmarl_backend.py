@@ -12,6 +12,7 @@ from ece324_tango.asce.baselines import FixedTimeController, MaxPressureControll
 from ece324_tango.asce.env import create_parallel_env, split_ns_ew_from_obs
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
+from ece324_tango.asce.traffic_metrics import RewardWeights, compute_metrics_for_agents, rewards_from_metrics
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 from ece324_tango.asce.trainers.benchmarl_task import SumoBenchmarlTask
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
@@ -51,6 +52,11 @@ class BenchmarlBackend(AsceTrainerBackend):
                 "seed": seed,
                 "use_gui": train_cfg.use_gui,
                 "quiet_sumo": quiet_sumo,
+                "scenario_id": getattr(train_cfg, "scenario_id", "baseline"),
+                "reward_mode": train_cfg.reward_mode,
+                "reward_delay_weight": float(train_cfg.reward_delay_weight),
+                "reward_throughput_weight": float(train_cfg.reward_throughput_weight),
+                "reward_fairness_weight": float(train_cfg.reward_fairness_weight),
             },
         )
 
@@ -275,6 +281,11 @@ class BenchmarlBackend(AsceTrainerBackend):
             action_dims = {a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())}
             fixed = FixedTimeController(action_size_by_agent=action_dims, green_duration_s=cfg.delta_time)
             max_pressure = MaxPressureController(action_size_by_agent=action_dims)
+            reward_weights = RewardWeights(
+                delay=cfg.reward_delay_weight,
+                throughput=cfg.reward_throughput_weight,
+                fairness=cfg.reward_fairness_weight,
+            )
 
             for controller_name, controller in [("fixed_time", fixed), ("max_pressure", max_pressure)]:
                 for ep in range(cfg.episodes):
@@ -291,6 +302,19 @@ class BenchmarlBackend(AsceTrainerBackend):
                             else:
                                 actions = controller.actions(obs, env=baseline_env)
                             obs, rewards, done, _ = extract_step(baseline_env.step(actions))
+                        sim_time = float(steps + 1) * float(cfg.delta_time)
+                        metrics_by_agent = compute_metrics_for_agents(
+                            env=baseline_env,
+                            agent_ids=sorted(obs.keys()),
+                            time_step=sim_time,
+                            actions=actions,
+                            action_green_dur=float(cfg.delta_time),
+                            scenario_id="baseline",
+                            observations=obs,
+                        )
+                        shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                        if shaped:
+                            rewards = shaped
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():

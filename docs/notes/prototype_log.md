@@ -107,3 +107,27 @@
 - Revalidated with smoke runs:
   - `train --trainer-backend xuance --episodes 1 --seconds 30 --delta-time 5`
   - `predict --trainer-backend xuance --episodes 1 --seconds 30 --delta-time 5`
+
+## 2026-02-20 (objective reward + TraCI metrics)
+- Added shared traffic metrics/reward module: `ece324_tango/asce/traffic_metrics.py`.
+  - Computes per-intersection metrics from TraCI controlled links and edge-level aggregations.
+  - Falls back to observation-based proxy splitting if TraCI edge mapping fails.
+- Added objective reward mode with config gates:
+  - CLI: `--reward-mode objective|sumo`
+  - Weights: `--reward-delay-weight`, `--reward-throughput-weight`, `--reward-fairness-weight`
+- Wired objective reward into:
+  - local MAPPO train/eval loops,
+  - Xuance custom env wrapper,
+  - BenchMARL SUMO adapter,
+  - baseline comparisons in backend eval paths.
+- Local and Xuance rollout logging now uses TraCI-derived metrics path (with fallback).
+
+## 2026-02-20 (objective-mode backend micro-compare)
+- Objective-mode micro run (1 episode, 30s, delta=5, cpu):
+  - BenchMARL train: 41.86s, eval: 26.13s
+  - Xuance train: 25.98s, eval: 35.17s
+- Eval outputs were numerically aligned between BenchMARL and Xuance in this micro run:
+  - MAPPO mean_reward: `0.116181`
+  - fixed_time mean_reward: `0.116181`
+  - max_pressure mean_reward: `0.132357`
+- Note: in this sandbox, both BenchMARL and Xuance required unsandboxed execution for some runs due `/dev/shm` and network permission constraints.

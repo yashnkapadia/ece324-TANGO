@@ -20,6 +20,8 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] Xuance switched to project-owned custom MAPPO config (no MPE bootstrap defaults).
 - [x] Slow integration tests for BenchMARL/Xuance CLI train+eval paths.
 - [x] Backend noise controls added (`backend_verbose` flag, quiet SUMO defaults).
+- [x] Objective reward mode added (`reward_mode=objective|sumo`) with delay/throughput/fairness weights.
+- [x] TraCI-driven metrics extraction added for rollout logging in local + Xuance paths.
 - [x] Local Xuance value_norm compatibility patch added for fair MAPPO settings.
 - [ ] Phase 2: PIRA scenario dataset generation.
 - [ ] Phase 3: PIRA GNN surrogate.

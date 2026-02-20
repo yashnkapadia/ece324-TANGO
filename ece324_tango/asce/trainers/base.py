@@ -21,6 +21,10 @@ class TrainConfig:
     use_gui: bool
     device: str
     backend_verbose: bool
+    reward_mode: str
+    reward_delay_weight: float
+    reward_throughput_weight: float
+    reward_fairness_weight: float
 
 
 @dataclass
@@ -36,6 +40,10 @@ class EvalConfig:
     use_gui: bool
     device: str
     backend_verbose: bool
+    reward_mode: str
+    reward_delay_weight: float
+    reward_throughput_weight: float
+    reward_fairness_weight: float
 
 
 class AsceTrainerBackend:
