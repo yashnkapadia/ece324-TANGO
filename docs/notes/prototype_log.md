@@ -140,4 +140,12 @@
 - Multi-seed objective-mode compare (backend in {benchmarl, xuance}, seeds {7,17,27}, episodes=1, seconds=30, delta=5, cpu):
   - BenchMARL mean: train 49.377s, eval 27.468s, mean_reward 0.118996, throughput_proxy 11.423643, fairness 0.188181
   - Xuance mean: train 26.083s, eval 39.349s, mean_reward 0.121229, throughput_proxy 11.638025, fairness 0.187422
-  - Raw summary artifact: `/tmp/tango_backend_sweep/summary.csv`
+- Raw summary artifact: `/tmp/tango_backend_sweep/summary.csv`
+
+## 2026-02-20 (benchmark automation)
+- Added reproducible benchmark CLI:
+  - module: `ece324_tango/modeling/benchmark_backends.py`
+  - pixi task: `pixi run benchmark-backends`
+- CLI writes per-seed and aggregate outputs under:
+  - `reports/results/backend_compare/<run_id>/summary.csv`
+  - `reports/results/backend_compare/<run_id>/aggregate.csv`

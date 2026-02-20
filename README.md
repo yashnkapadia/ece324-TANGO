@@ -73,4 +73,5 @@ pixi install
 pixi run train-asce
 pixi run eval-asce
 pixi run validate-asce-schema
+pixi run benchmark-backends
 ```
