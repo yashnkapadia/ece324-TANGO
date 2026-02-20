@@ -16,7 +16,7 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] BenchMARL/Xuance package dependencies tracked in pixi (`pypi-dependencies`).
 - [x] Handoff rigor upgraded with runbook + ADR.
 - [x] Native BenchMARL adapter (custom SUMO PettingZoo adapter + BenchMARL MAPPO path).
-- [ ] Native Xuance adapter (currently spike fallback).
+- [x] Native Xuance adapter (custom SUMO env registration + Xuance MAPPO path).
 - [ ] Phase 2: PIRA scenario dataset generation.
 - [ ] Phase 3: PIRA GNN surrogate.
 

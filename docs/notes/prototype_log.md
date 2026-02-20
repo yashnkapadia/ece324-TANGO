@@ -55,6 +55,17 @@
   - `predict --trainer-backend benchmarl` succeeds and writes metrics CSV.
 
 ## Remaining from plan
-1. Replace Xuance fallback with a native Xuance adapter.
-2. Add backend-marked integration tests (optional/slow marker) for benchmarl and xuance train/eval CLI runs.
-3. Reduce BenchMARL training noise/runtime overhead and tighten env close lifecycle handling.
+1. Add backend-marked integration tests (optional/slow marker) for benchmarl and xuance train/eval CLI runs.
+2. Reduce BenchMARL training noise/runtime overhead and tighten env close lifecycle handling.
+3. Improve Xuance adapter robustness so value normalization/GAE can be safely re-enabled for stronger baseline parity.
+
+## 2026-02-20 (native Xuance adapter)
+- Added OpenMPI to pixi environment to satisfy Xuance runtime dependency (`libmpi.so`).
+- Replaced Xuance fallback with native path:
+  - Added custom SUMO environment registration for Xuance in `ece324_tango/asce/trainers/xuance_env.py`.
+  - Implemented native Xuance MAPPO train/eval backend in `ece324_tango/asce/trainers/xuance_backend.py`.
+  - Training now exports both a direct model artifact (`models/*.pt`) and Xuance-compatible checkpoint folder (`*_xuance/seed_export`).
+  - Evaluation loads the Xuance checkpoint folder and reports MAPPO against fixed-time and max-pressure baselines.
+- Validated via short smoke runs on sample SUMO network for:
+  - `--trainer-backend xuance` training CLI.
+  - `--trainer-backend xuance` evaluation CLI.
