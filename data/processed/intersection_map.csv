@@ -1,0 +1,2 @@
+# Placeholder file to be populated after network inspection
+# Columns: intersection_name, sumo_junction_id, lat, lon, has_tls, tmc_station_id
