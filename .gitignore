@@ -4,6 +4,7 @@
 /mappo_sumo_tls_mlp__*/
 /models/xuance_mappo/
 /reports/results/backend_compare/
+/reports/results/error_events.jsonl
 
 # Mac OS-specific storage files
 .DS_Store

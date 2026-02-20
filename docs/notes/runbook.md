@@ -46,6 +46,7 @@
 - Rollout dataset: `data/processed/asce_rollout_samples.csv`
 - Train metrics: `reports/results/asce_train_episode_metrics.csv`
 - Eval metrics: `reports/results/asce_eval_metrics.csv`
+- Non-fatal exception/fallback log: `reports/results/error_events.jsonl`
 
 ## Known Risks
 - BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower to train than Xuance in current micro setup.

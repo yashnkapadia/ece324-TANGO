@@ -2,6 +2,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
+from ece324_tango.error_reporting import report_exception
 
 load_dotenv()
 
@@ -23,5 +24,9 @@ try:
 
     logger.remove(0)
     logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
-except ModuleNotFoundError:
-    pass
+except ModuleNotFoundError as exc:
+    report_exception(
+        context="config.tqdm_not_available",
+        exc=exc,
+        once_key="config_tqdm_not_available",
+    )

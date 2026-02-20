@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict
 
+from ece324_tango.error_reporting import report_exception
+
 
 def occupancy_for_vehicle_type(type_id: str) -> float:
     tid = str(type_id).lower()
@@ -37,7 +39,13 @@ class KPITracker:
         for vid in active_ids:
             try:
                 current_tl = float(env.sumo.vehicle.getTimeLoss(vid))
-            except Exception:
+            except Exception as exc:
+                report_exception(
+                    context="kpi.time_loss_lookup_failed",
+                    exc=exc,
+                    details={"vehicle_id": vid},
+                    once_key=f"kpi_time_loss:{vid}",
+                )
                 continue
             prev_tl = self._last_time_loss_by_vehicle.get(vid, current_tl)
             delta_tl = max(0.0, current_tl - prev_tl)
@@ -45,7 +53,13 @@ class KPITracker:
 
             try:
                 vtype = env.sumo.vehicle.getTypeID(vid)
-            except Exception:
+            except Exception as exc:
+                report_exception(
+                    context="kpi.vehicle_type_lookup_failed",
+                    exc=exc,
+                    details={"vehicle_id": vid},
+                    once_key=f"kpi_vehicle_type:{vid}",
+                )
                 vtype = ""
             occ = occupancy_for_vehicle_type(vtype)
             self.total_time_loss_s += delta_tl
@@ -54,7 +68,13 @@ class KPITracker:
             if vid not in self._depart_time_by_vehicle:
                 try:
                     self._depart_time_by_vehicle[vid] = float(env.sumo.vehicle.getDeparture(vid))
-                except Exception:
+                except Exception as exc:
+                    report_exception(
+                        context="kpi.departure_lookup_failed",
+                        exc=exc,
+                        details={"vehicle_id": vid},
+                        once_key=f"kpi_departure:{vid}",
+                    )
                     self._depart_time_by_vehicle[vid] = sim_time
 
         for vid in list(env.sumo.simulation.getArrivedIDList()):

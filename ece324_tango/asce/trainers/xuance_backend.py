@@ -25,6 +25,7 @@ from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.asce.trainers.noise_control import quiet_output
 from ece324_tango.asce.trainers.xuance_compat import apply_xuance_value_norm_patch
 from ece324_tango.asce.trainers.xuance_env import register_xuance_sumo_env
+from ece324_tango.error_reporting import report_exception
 
 
 class XuanceBackend(AsceTrainerBackend):
@@ -107,12 +108,12 @@ class XuanceBackend(AsceTrainerBackend):
     def _safe_close_runner(runner):
         try:
             runner.agents.finish()
-        except Exception:
-            pass
+        except Exception as exc:
+            report_exception(context="xuance.safe_close_runner.finish_failed", exc=exc)
         try:
             runner.envs.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            report_exception(context="xuance.safe_close_runner.close_failed", exc=exc)
 
     @staticmethod
     def _run_episode_with_agent(

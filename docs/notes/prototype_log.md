@@ -165,6 +165,13 @@
   - `xuance`,
   - `benchmarl` (including rollout-action replay path).
 
+## 2026-02-20 (exception handling hardening)
+- Added shared error reporting utility: `ece324_tango/error_reporting.py`.
+- Non-fatal exceptions and fallback paths now:
+  - emit warning logs,
+  - persist structured error events to `reports/results/error_events.jsonl`.
+- Removed silent swallow behavior in current broad-exception fallback sites (runtime phase fallback, traffic-metric fallback, KPI lookup fallbacks, Xuance runner close path, optional tqdm setup).
+
 ## 2026-02-20 (LibSignal backend assessment)
 - Reviewed LibSignal codebase (`run.py`, `trainer/tsc_trainer.py`, registry/config pipeline) for backend fit.
 - Added `libsignal` backend name to factory as an explicit placeholder:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 import numpy as np
+from ece324_tango.error_reporting import report_exception
 
 
 def extract_reset_obs(reset_output):
@@ -35,7 +36,13 @@ def current_phase(env, agent_id: str) -> int:
     try:
         ts = env.unwrapped.traffic_signals[agent_id]
         return int(getattr(ts, "green_phase", 0))
-    except Exception:
+    except Exception as exc:
+        report_exception(
+            context="runtime.current_phase_fallback",
+            exc=exc,
+            details={"agent_id": agent_id},
+            once_key=f"current_phase:{agent_id}",
+        )
         return 0
 
 

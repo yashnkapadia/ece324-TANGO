@@ -8,6 +8,7 @@ import numpy as np
 
 from ece324_tango.asce.env import split_ns_ew_from_obs
 from ece324_tango.asce.runtime import jain_index
+from ece324_tango.error_reporting import report_exception
 
 
 @dataclass
@@ -82,7 +83,13 @@ def _incoming_edges_for_ts(env, ts_id: str) -> Dict[str, List[str]]:
     for lane_id in incoming_lanes:
         try:
             edge_ids.add(env.sumo.lane.getEdgeID(lane_id))
-        except Exception:
+        except Exception as exc:
+            report_exception(
+                context="traffic_metrics.incoming_edge_lookup_failed",
+                exc=exc,
+                details={"ts_id": ts_id, "lane_id": lane_id},
+                once_key=f"incoming_edge_lookup:{ts_id}:{lane_id}",
+            )
             continue
 
     ns_edges: List[str] = []
@@ -90,7 +97,13 @@ def _incoming_edges_for_ts(env, ts_id: str) -> Dict[str, List[str]]:
     for edge_id in sorted(edge_ids):
         try:
             axis = _edge_axis(env, edge_id)
-        except Exception:
+        except Exception as exc:
+            report_exception(
+                context="traffic_metrics.edge_axis_failed",
+                exc=exc,
+                details={"ts_id": ts_id, "edge_id": edge_id},
+                once_key=f"edge_axis:{ts_id}:{edge_id}",
+            )
             axis = "ns"
         if axis == "ew":
             ew_edges.append(edge_id)
@@ -142,7 +155,13 @@ def compute_metrics_for_agent(
         queue_total = int(round(_sum_edge_metric(env, all_edges, "getLastStepHaltingNumber")))
         throughput = int(round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber")))
         current_phase = int(env.sumo.trafficlight.getPhase(agent_id))
-    except Exception:
+    except Exception as exc:
+        report_exception(
+            context="traffic_metrics.compute_metrics_fallback",
+            exc=exc,
+            details={"agent_id": agent_id, "time_step": time_step, "scenario_id": scenario_id},
+            once_key=f"metrics_fallback:{scenario_id}:{agent_id}",
+        )
         obs = np.zeros((1,), dtype=np.float32) if obs_fallback is None else np.asarray(obs_fallback)
         q_ns, q_ew, arr_ns, arr_ew = split_ns_ew_from_obs(obs)
         queue_ns = int(round(q_ns))

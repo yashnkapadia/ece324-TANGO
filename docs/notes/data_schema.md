@@ -25,4 +25,4 @@ Status: adopted as target contract for rollout logging.
 ## Prototype Note
 Current Phase 1 logger writes this exact column set.
 - `local_mappo` and `xuance` now use TraCI controlled-link edge aggregations with fallback-safe proxy mode.
-- `benchmarl` training rollout CSV still uses observation-derived proxy splits in current implementation.
+- `benchmarl` training rollout CSV now replays rollout actions in SUMO and logs TraCI-derived metrics (with fallback-safe proxy mode only on TraCI mapping failures).
