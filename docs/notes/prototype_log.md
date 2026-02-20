@@ -41,3 +41,4 @@
   - Use `pixi add --pypi` for PyPI dependencies.
   - Use `pixi install` to sync/update the environment from manifest + lock.
 - Explicitly banned `pixi run pip install ...` for project dependency management in runbook.
+- Added `benchmarl` and `xuance` via `pixi add --pypi ...`, updating both `pixi.toml` and `pixi.lock`.
