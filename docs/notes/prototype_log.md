@@ -69,3 +69,10 @@
 - Validated via short smoke runs on sample SUMO network for:
   - `--trainer-backend xuance` training CLI.
   - `--trainer-backend xuance` evaluation CLI.
+
+## 2026-02-20 (integration tests)
+- Added backend integration test module: `tests/test_backend_integration_slow.py`.
+- Coverage includes both `benchmarl` and `xuance` CLI training/evaluation smoke paths.
+- Tests are marked `slow` + `integration` and gated by env var:
+  - run with `RUN_SLOW_INTEGRATION=1 pixi run pytest tests/test_backend_integration_slow.py`
+  - default `pixi run pytest tests` remains fast (integration tests skip unless enabled).
