@@ -7,6 +7,7 @@ from gymnasium import spaces
 import numpy as np
 
 from ece324_tango.asce.env import create_parallel_env
+from ece324_tango.asce.runtime import extract_reset_obs
 
 
 @dataclass
@@ -35,6 +36,7 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
                 delta_time=int(config.sumo_delta_time),
                 quiet_sumo=bool(getattr(config, "sumo_quiet", False)),
             )
+            self.env = self._base_env
             self.agents: List[str] = list(self._base_env.ts_ids)
             self.num_agents = len(self.agents)
             self.agent_groups = [self.agents]
@@ -57,6 +59,16 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
                 a: np.zeros(self.observation_space[a].shape, dtype=np.float32) for a in self.agents
             }
 
+        def get_env_info(self):
+            return {
+                "state_space": self.state_space,
+                "observation_space": self.observation_space,
+                "action_space": self.action_space,
+                "agents": self.agents,
+                "num_agents": self.num_agents,
+                "max_episode_steps": self.max_episode_steps,
+            }
+
         def state(self):
             return np.concatenate(
                 [np.asarray(self._last_obs[a], dtype=np.float32).ravel() for a in self.agents],
@@ -70,9 +82,10 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             return {a: np.ones(self.action_space[a].n, dtype=np.bool_) for a in self.agents}
 
         def reset(self):
-            obs = self._base_env.reset(seed=self._base_env.sumo_seed)
+            obs = extract_reset_obs(self._base_env.reset(seed=self._base_env.sumo_seed))
             self._episode_step = 0
-            self._last_obs = {a: np.asarray(obs[a], dtype=np.float32) for a in self.agents}
+            obs = {a: np.asarray(obs[a], dtype=np.float32) for a in self.agents}
+            self._last_obs = obs
             info = {
                 "infos": {a: {} for a in self.agents},
                 "individual_episode_rewards": {a: 0.0 for a in self.agents},
@@ -83,11 +96,19 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             return obs, info
 
         def step(self, actions):
-            obs, rewards, dones, infos = self._base_env.step(actions)
+            step_out = self._base_env.step(actions)
             self._episode_step += 1
-            self._last_obs = {a: np.asarray(obs[a], dtype=np.float32) for a in self.agents}
-            terminated = {a: bool(dones.get(a, False)) for a in self.agents}
-            truncated = bool(self._episode_step >= self.max_episode_steps)
+            if len(step_out) == 5:
+                obs, rewards, terminations, truncations, infos = step_out
+                terminated = {a: bool(terminations.get(a, False)) for a in self.agents}
+                truncated = bool(all(bool(truncations.get(a, False)) for a in self.agents))
+            else:
+                obs, rewards, dones, infos = step_out
+                terminated = {a: bool(dones.get(a, False)) for a in self.agents}
+                truncated = False
+            obs = {a: np.asarray(obs[a], dtype=np.float32) for a in self.agents}
+            self._last_obs = obs
+            truncated = bool(truncated or self._episode_step >= self.max_episode_steps)
             rewards = {a: float(np.asarray(r).reshape(-1)[0]) for a, r in rewards.items()}
             info = {
                 "infos": infos,
