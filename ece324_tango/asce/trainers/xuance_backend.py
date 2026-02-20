@@ -12,6 +12,7 @@ from loguru import logger
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
 from ece324_tango.asce.env import create_parallel_env
+from ece324_tango.asce.kpi import KPITracker
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.traffic_metrics import (
@@ -139,6 +140,7 @@ class XuanceBackend(AsceTrainerBackend):
             throughput=cfg.reward_throughput_weight,
             fairness=cfg.reward_fairness_weight,
         )
+        kpi = KPITracker()
 
         try:
             while not done:
@@ -175,6 +177,7 @@ class XuanceBackend(AsceTrainerBackend):
                     mean_rewards.append(float(np.mean(list(rewards.values()))))
                     for a, r in rewards.items():
                         per_agent_totals[a] = per_agent_totals.get(a, 0.0) + float(r)
+                kpi.update(env)
 
                 for agent_id in sorted(obs.keys()):
                     rows.append(metrics_by_agent[agent_id].to_row())
@@ -183,7 +186,7 @@ class XuanceBackend(AsceTrainerBackend):
             env.close()
 
         mean_reward = float(np.mean(mean_rewards)) if mean_rewards else 0.0
-        return rows, mean_reward, per_agent_totals, steps
+        return rows, mean_reward, per_agent_totals, steps, kpi.summary()
 
     def train(self, cfg: TrainConfig) -> None:
         self._ensure_available()
@@ -219,7 +222,7 @@ class XuanceBackend(AsceTrainerBackend):
             logger.success(f"Saved Xuance MAPPO model: {cfg.model_path}")
 
             with quiet_output(enabled=not cfg.backend_verbose):
-                rows, mean_reward, per_agent_totals, steps = self._run_episode_with_agent(
+                rows, mean_reward, per_agent_totals, steps, _ = self._run_episode_with_agent(
                     cfg=cfg,
                     agent=runner.agents,
                     deterministic=False,
@@ -277,7 +280,7 @@ class XuanceBackend(AsceTrainerBackend):
                 )
             for ep in range(cfg.episodes):
                 with quiet_output(enabled=not cfg.backend_verbose):
-                    rows, mean_reward, per_agent_totals, steps = self._run_episode_with_agent(
+                    rows, mean_reward, per_agent_totals, steps, k = self._run_episode_with_agent(
                         cfg=cfg,
                         agent=runner.agents,
                         deterministic=True,
@@ -294,6 +297,10 @@ class XuanceBackend(AsceTrainerBackend):
                             sum(max(0.0, value) for value in per_agent_totals.values())
                         ),
                         "fairness_jain": jain_index(list(per_agent_totals.values())),
+                        "time_loss_s": k.time_loss_s,
+                        "person_time_loss_s": k.person_time_loss_s,
+                        "avg_trip_time_s": k.avg_trip_time_s,
+                        "arrived_vehicles": k.arrived_vehicles,
                     }
                 )
         finally:
@@ -327,6 +334,7 @@ class XuanceBackend(AsceTrainerBackend):
                     ep_rewards = []
                     per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
                     steps = 0
+                    kpi = KPITracker()
 
                     while not done:
                         with quiet_output(enabled=not cfg.backend_verbose):
@@ -353,8 +361,10 @@ class XuanceBackend(AsceTrainerBackend):
                             for a, r in rewards.items():
                                 per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
                         steps += 1
+                        kpi.update(baseline_env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
+                    k = kpi.summary()
                     records.append(
                         {
                             "controller": controller_name,
@@ -367,6 +377,10 @@ class XuanceBackend(AsceTrainerBackend):
                                 sum(max(0.0, value) for value in per_agent_reward_totals.values())
                             ),
                             "fairness_jain": jain_index(list(per_agent_reward_totals.values())),
+                            "time_loss_s": k.time_loss_s,
+                            "person_time_loss_s": k.person_time_loss_s,
+                            "avg_trip_time_s": k.avg_trip_time_s,
+                            "arrived_vehicles": k.arrived_vehicles,
                         }
                     )
         finally:

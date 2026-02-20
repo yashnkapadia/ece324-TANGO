@@ -57,6 +57,16 @@
   - `+ reward_throughput_weight * log1p(throughput)`
   - `+ reward_fairness_weight * Jain(throughput across intersections)`
 
+## Proposal KPI Path
+- Evaluation CSV now includes proposal-aligned fields:
+  - `time_loss_s`
+  - `person_time_loss_s`
+  - `avg_trip_time_s`
+  - `arrived_vehicles`
+- Current occupancy heuristic:
+  - transit-like IDs (`bus|tram|streetcar|ttc`) => 30 persons
+  - otherwise => 1.3 persons
+
 ## Handoff Checklist
 1. Confirm latest good commit hash.
 2. Confirm backend used for latest run.

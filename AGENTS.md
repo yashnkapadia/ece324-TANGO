@@ -25,6 +25,7 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] BenchMARL rollout export switched to TraCI-derived replay logging (no proxy placeholders).
 - [x] Multi-seed backend comparison rerun under objective reward preset.
 - [x] Reproducible backend benchmark CLI/task added (`ece324_tango.modeling.benchmark_backends`, `pixi run benchmark-backends`).
+- [x] Proposal KPI tracking added in eval outputs (`time_loss_s`, `person_time_loss_s`, `avg_trip_time_s`, `arrived_vehicles`).
 - [x] Local Xuance value_norm compatibility patch added for fair MAPPO settings.
 - [ ] Phase 2: PIRA scenario dataset generation.
 - [ ] Phase 3: PIRA GNN surrogate.

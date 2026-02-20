@@ -8,6 +8,7 @@ from loguru import logger
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
 from ece324_tango.asce.env import create_parallel_env, flatten_obs_by_agent
+from ece324_tango.asce.kpi import KPITracker
 from ece324_tango.asce.mappo import MAPPOTrainer, Transition
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
@@ -221,6 +222,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 ep_rewards = []
                 per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
                 steps = 0
+                kpi = KPITracker()
 
                 while not done:
                     active_agents = sorted(obs.keys())
@@ -259,11 +261,13 @@ class LocalMappoBackend(AsceTrainerBackend):
                         for a, r in rewards.items():
                             per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
                     steps += 1
+                    kpi.update(env)
 
                 avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
                 throughput_proxy = float(sum(max(0.0, v) for v in per_agent_reward_totals.values()))
                 delay_proxy = float(-avg_reward)
                 fairness = jain_index(list(per_agent_reward_totals.values()))
+                k = kpi.summary()
 
                 records.append(
                     {
@@ -275,6 +279,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                         "delay_proxy": delay_proxy,
                         "throughput_proxy": throughput_proxy,
                         "fairness_jain": fairness,
+                        "time_loss_s": k.time_loss_s,
+                        "person_time_loss_s": k.person_time_loss_s,
+                        "avg_trip_time_s": k.avg_trip_time_s,
+                        "arrived_vehicles": k.arrived_vehicles,
                     }
                 )
 

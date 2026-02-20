@@ -10,6 +10,7 @@ from loguru import logger
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
 from ece324_tango.asce.env import create_parallel_env
+from ece324_tango.asce.kpi import KPITracker
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.traffic_metrics import RewardWeights, compute_metrics_for_agents, rewards_from_metrics
@@ -159,6 +160,36 @@ class BenchmarlBackend(AsceTrainerBackend):
             env.close()
         return rows
 
+    @staticmethod
+    def _kpi_from_rollout_replay(rollout, cfg: EvalConfig):
+        top_keys = sorted([k for k in rollout.keys() if k not in {"next", "done", "terminated", "truncated"}])
+        n_steps = int(rollout.batch_size[0]) if len(rollout.batch_size) > 0 else 0
+
+        env = create_parallel_env(
+            net_file=cfg.net_file,
+            route_file=cfg.route_file,
+            seed=cfg.seed,
+            use_gui=cfg.use_gui,
+            seconds=cfg.seconds,
+            delta_time=cfg.delta_time,
+            quiet_sumo=not cfg.backend_verbose,
+        )
+        extract_reset_obs(env.reset(seed=cfg.seed))
+        kpi = KPITracker()
+        try:
+            for t in range(n_steps):
+                actions = {}
+                for agent in top_keys:
+                    action_t = rollout.get((agent, "action"))[t].detach().cpu().numpy()
+                    actions[agent] = int(np.asarray(action_t).reshape(-1)[0])
+                _, _, done, _ = extract_step(env.step(actions))
+                kpi.update(env)
+                if done:
+                    break
+        finally:
+            env.close()
+        return kpi.summary()
+
     def train(self, cfg: TrainConfig) -> None:
         self._ensure_available()
         cfg.model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -246,9 +277,10 @@ class BenchmarlBackend(AsceTrainerBackend):
         try:
             for ep in range(cfg.episodes):
                 with quiet_output(enabled=not cfg.backend_verbose):
-                    _, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
+                    rollout, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
                         exp, deterministic=True
                     )
+                k = self._kpi_from_rollout_replay(rollout=rollout, cfg=cfg)
                 records.append(
                     {
                         "controller": "mappo",
@@ -261,6 +293,10 @@ class BenchmarlBackend(AsceTrainerBackend):
                             sum(max(0.0, value) for value in per_agent_totals.values())
                         ),
                         "fairness_jain": jain_index(list(per_agent_totals.values())),
+                        "time_loss_s": k.time_loss_s,
+                        "person_time_loss_s": k.person_time_loss_s,
+                        "avg_trip_time_s": k.avg_trip_time_s,
+                        "arrived_vehicles": k.arrived_vehicles,
                     }
                 )
         finally:
@@ -297,6 +333,7 @@ class BenchmarlBackend(AsceTrainerBackend):
                     ep_rewards = []
                     per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
                     steps = 0
+                    kpi = KPITracker()
 
                     while not done:
                         with quiet_output(enabled=not cfg.backend_verbose):
@@ -323,8 +360,10 @@ class BenchmarlBackend(AsceTrainerBackend):
                             for a, r in rewards.items():
                                 per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
                         steps += 1
+                        kpi.update(baseline_env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
+                    k = kpi.summary()
                     records.append(
                         {
                             "controller": controller_name,
@@ -337,6 +376,10 @@ class BenchmarlBackend(AsceTrainerBackend):
                                 sum(max(0.0, value) for value in per_agent_reward_totals.values())
                             ),
                             "fairness_jain": jain_index(list(per_agent_reward_totals.values())),
+                            "time_loss_s": k.time_loss_s,
+                            "person_time_loss_s": k.person_time_loss_s,
+                            "avg_trip_time_s": k.avg_trip_time_s,
+                            "arrived_vehicles": k.arrived_vehicles,
                         }
                     )
         finally:
