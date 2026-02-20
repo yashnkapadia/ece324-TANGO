@@ -164,3 +164,12 @@
   - `local_mappo`,
   - `xuance`,
   - `benchmarl` (including rollout-action replay path).
+
+## 2026-02-20 (LibSignal backend assessment)
+- Reviewed LibSignal codebase (`run.py`, `trainer/tsc_trainer.py`, registry/config pipeline) for backend fit.
+- Added `libsignal` backend name to factory as an explicit placeholder:
+  - file: `ece324_tango/asce/trainers/libsignal_backend.py`
+  - behavior: fail-fast runtime error with integration blocker context.
+- Added assessment note:
+  - `docs/notes/libsignal_backend_assessment.md`
+  - decision: treat LibSignal as deferred backend until adapter can map our `net_file`/`route_file` and schema/KPI outputs.

@@ -13,6 +13,7 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] GPU support path added (`--device auto|cuda|cpu`) for ASCE train/eval.
 - [x] Baseline upgraded from queue proxy to edge-level max-pressure (TraCI controlled links).
 - [x] Backend abstraction added (`local_mappo`, `benchmarl`, `xuance`) with CLI selection.
+- [x] `libsignal` backend candidate registered as explicit placeholder with assessment notes.
 - [x] BenchMARL/Xuance package dependencies tracked in pixi (`pypi-dependencies`).
 - [x] Handoff rigor upgraded with runbook + ADR.
 - [x] Native BenchMARL adapter (custom SUMO PettingZoo adapter + BenchMARL MAPPO path).
@@ -35,3 +36,4 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - Prototype log: `docs/notes/prototype_log.md`
 - Runbook: `docs/notes/runbook.md`
 - ADRs: `docs/notes/adr/`
+- LibSignal assessment: `docs/notes/libsignal_backend_assessment.md`

@@ -28,10 +28,11 @@
 - Optional baseline reward path: `--reward-mode sumo`
 
 ## Backend Selection
-- Supported values: `local_mappo`, `benchmarl`, `xuance`
+- Supported values: `local_mappo`, `benchmarl`, `xuance`, `libsignal`
 - Current production backend: `local_mappo`
 - BenchMARL backend is native via custom SUMO PettingZoo adapter + BenchMARL MAPPO.
 - Xuance backend is native via custom SUMO env registration + Xuance MAPPO.
+- LibSignal backend is currently a planning placeholder (fails fast by design); see `docs/notes/libsignal_backend_assessment.md`.
 - Xuance now loads a project-owned config file: `ece324_tango/asce/trainers/configs/xuance_mappo_sumo.yaml`.
 
 ## Xuance Stability Toggles

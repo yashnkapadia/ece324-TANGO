@@ -3,6 +3,7 @@ import pytest
 from ece324_tango.asce.trainers.factory import get_backend
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.asce.trainers.benchmarl_backend import BenchmarlBackend
+from ece324_tango.asce.trainers.libsignal_backend import LibsignalBackend
 from ece324_tango.asce.trainers.xuance_backend import XuanceBackend
 
 
@@ -19,6 +20,11 @@ def test_backend_factory_benchmarl():
 def test_backend_factory_xuance():
     backend = get_backend("xuance")
     assert isinstance(backend, XuanceBackend)
+
+
+def test_backend_factory_libsignal():
+    backend = get_backend("libsignal")
+    assert isinstance(backend, LibsignalBackend)
 
 
 def test_backend_factory_invalid():
