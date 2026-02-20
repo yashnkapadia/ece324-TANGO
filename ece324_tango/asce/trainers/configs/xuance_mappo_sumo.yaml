@@ -1,0 +1,64 @@
+agent: "MAPPO"
+env_name: "sumo_custom"
+env_id: "grid4x4"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [64, 64, 64]
+recurrent_hidden_size: 64
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+representation_hidden_size: [64]
+actor_hidden_size: [64]
+critic_hidden_size: [64]
+activation: "relu"
+activation_action: "sigmoid"
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 1
+buffer_size: 16
+n_epochs: 1
+n_minibatch: 1
+learning_rate: 0.0007
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.95
+
+use_linear_lr_decay: False
+end_factor_lr_decay: 0.5
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: False
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 16
+eval_interval: 1000
+test_episode: 1
+
+log_dir: "./logs/xuance_mappo/"
+model_dir: "./models/xuance_mappo/"

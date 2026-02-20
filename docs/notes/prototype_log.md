@@ -98,3 +98,12 @@
 - Fair micro-benchmark (cpu, 1 episode, 30s sim, 1 eval episode):
   - BenchMARL: train 66.267s, eval 37.809s, MAPPO mean_reward -0.000208
   - Xuance (patched): train 41.256s, eval 41.003s, MAPPO mean_reward -0.000208
+
+## 2026-02-20 (Xuance custom-config path, no MPE bootstrap)
+- Switched Xuance backend config load from framework MPE default bootstrap to project-owned config file:
+  - `ece324_tango/asce/trainers/configs/xuance_mappo_sumo.yaml`
+  - backend now calls `get_arguments(..., config_path=<project yaml>)`.
+- Kept runtime overrides for scenario-specific values (seed, device, SUMO files/timing, quiet mode).
+- Revalidated with smoke runs:
+  - `train --trainer-backend xuance --episodes 1 --seconds 30 --delta-time 5`
+  - `predict --trainer-backend xuance --episodes 1 --seconds 30 --delta-time 5`

@@ -17,6 +17,7 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] Handoff rigor upgraded with runbook + ADR.
 - [x] Native BenchMARL adapter (custom SUMO PettingZoo adapter + BenchMARL MAPPO path).
 - [x] Native Xuance adapter (custom SUMO env registration + Xuance MAPPO path).
+- [x] Xuance switched to project-owned custom MAPPO config (no MPE bootstrap defaults).
 - [x] Slow integration tests for BenchMARL/Xuance CLI train+eval paths.
 - [x] Backend noise controls added (`backend_verbose` flag, quiet SUMO defaults).
 - [x] Local Xuance value_norm compatibility patch added for fair MAPPO settings.

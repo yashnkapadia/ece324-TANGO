@@ -29,6 +29,7 @@
 - Current production backend: `local_mappo`
 - BenchMARL backend is native via custom SUMO PettingZoo adapter + BenchMARL MAPPO.
 - Xuance backend is native via custom SUMO env registration + Xuance MAPPO.
+- Xuance now loads a project-owned config file: `ece324_tango/asce/trainers/configs/xuance_mappo_sumo.yaml`.
 
 ## Xuance Stability Toggles
 - `TANGO_XUANCE_USE_GAE` (default `1`)

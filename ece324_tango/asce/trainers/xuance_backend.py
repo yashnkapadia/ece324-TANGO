@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+from pathlib import Path
 import shutil
 from typing import Dict, List
 
@@ -22,6 +23,7 @@ from ece324_tango.asce.trainers.xuance_env import register_xuance_sumo_env
 
 class XuanceBackend(AsceTrainerBackend):
     name = "xuance"
+    _CONFIG_PATH = Path(__file__).with_name("configs") / "xuance_mappo_sumo.yaml"
 
     @staticmethod
     def _ensure_available():
@@ -52,14 +54,17 @@ class XuanceBackend(AsceTrainerBackend):
             if patched:
                 logger.info("Applied local Xuance value_norm compatibility patch.")
 
-        register_xuance_sumo_env(env_name="sumo_custom")
-        args = get_arguments(method="mappo", env="mpe", env_id="simple_spread_v3")
+        if not self._CONFIG_PATH.exists():
+            raise RuntimeError(f"Missing Xuance config file: {self._CONFIG_PATH}")
 
-        args.env_name = "sumo_custom"
-        args.env_id = "grid4x4"
-        args.continuous_action = False
-        args.policy = "Categorical_MAAC_Policy"
-        args.vectorize = "DummyVecMultiAgentEnv"
+        register_xuance_sumo_env(env_name="sumo_custom")
+        args = get_arguments(
+            method="mappo",
+            env="sumo_custom",
+            env_id="grid4x4",
+            config_path=str(self._CONFIG_PATH.resolve()),
+        )
+
         args.parallels = 1
         args.seed = seed
         args.env_seed = seed
