@@ -131,3 +131,13 @@
   - fixed_time mean_reward: `0.116181`
   - max_pressure mean_reward: `0.132357`
 - Note: in this sandbox, both BenchMARL and Xuance required unsandboxed execution for some runs due `/dev/shm` and network permission constraints.
+
+## 2026-02-20 (benchmarl rollout realism + multi-seed compare)
+- BenchMARL rollout export path upgraded:
+  - replaced observation-proxy CSV conversion with action-replay in raw SUMO env + TraCI metric extraction.
+  - file: `ece324_tango/asce/trainers/benchmarl_backend.py` (`_rollout_to_schema_rows_from_replay`).
+- Verified BenchMARL rollout CSV now reports non-placeholder fields (`avg_speed_*`, `current_phase`) consistent with TraCI path.
+- Multi-seed objective-mode compare (backend in {benchmarl, xuance}, seeds {7,17,27}, episodes=1, seconds=30, delta=5, cpu):
+  - BenchMARL mean: train 49.377s, eval 27.468s, mean_reward 0.118996, throughput_proxy 11.423643, fairness 0.188181
+  - Xuance mean: train 26.083s, eval 39.349s, mean_reward 0.121229, throughput_proxy 11.638025, fairness 0.187422
+  - Raw summary artifact: `/tmp/tango_backend_sweep/summary.csv`

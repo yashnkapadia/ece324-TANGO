@@ -22,6 +22,8 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] Backend noise controls added (`backend_verbose` flag, quiet SUMO defaults).
 - [x] Objective reward mode added (`reward_mode=objective|sumo`) with delay/throughput/fairness weights.
 - [x] TraCI-driven metrics extraction added for rollout logging in local + Xuance paths.
+- [x] BenchMARL rollout export switched to TraCI-derived replay logging (no proxy placeholders).
+- [x] Multi-seed backend comparison rerun under objective reward preset.
 - [x] Local Xuance value_norm compatibility patch added for fair MAPPO settings.
 - [ ] Phase 2: PIRA scenario dataset generation.
 - [ ] Phase 3: PIRA GNN surrogate.

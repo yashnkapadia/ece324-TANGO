@@ -9,7 +9,7 @@ import torch
 from loguru import logger
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
-from ece324_tango.asce.env import create_parallel_env, split_ns_ew_from_obs
+from ece324_tango.asce.env import create_parallel_env
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.traffic_metrics import RewardWeights, compute_metrics_for_agents, rewards_from_metrics
@@ -118,38 +118,45 @@ class BenchmarlBackend(AsceTrainerBackend):
         return rollout, mean_reward, per_agent_totals, steps
 
     @staticmethod
-    def _rollout_to_schema_rows(rollout, delta_time: int, scenario_id: str) -> List[dict]:
+    def _rollout_to_schema_rows_from_replay(rollout, cfg: TrainConfig) -> List[dict]:
         rows: List[dict] = []
-        top_keys = [k for k in rollout.keys() if k not in {"next", "done", "terminated", "truncated"}]
+        top_keys = sorted([k for k in rollout.keys() if k not in {"next", "done", "terminated", "truncated"}])
         n_steps = int(rollout.batch_size[0]) if len(rollout.batch_size) > 0 else 0
-        for t in range(n_steps):
-            sim_time = float((t + 1) * delta_time)
-            time_of_day = float((8.0 * 3600.0 + sim_time) / 86400.0)
-            for agent in top_keys:
-                obs_t = rollout.get((agent, "observation"))[t].detach().cpu().numpy().ravel()
-                q_ns, q_ew, arr_ns, arr_ew = split_ns_ew_from_obs(obs_t)
-                reward_t = float(rollout.get(("next", agent, "reward"))[t].mean().item())
-                action_t = int(rollout.get((agent, "action"))[t].reshape(-1)[0].item())
-                rows.append(
-                    {
-                        "intersection_id": str(agent),
-                        "time_step": sim_time,
-                        "queue_ns": int(round(q_ns)),
-                        "queue_ew": int(round(q_ew)),
-                        "arrivals_ns": int(round(arr_ns)),
-                        "arrivals_ew": int(round(arr_ew)),
-                        "avg_speed_ns": -1.0,
-                        "avg_speed_ew": -1.0,
-                        "current_phase": -1,
-                        "time_of_day": time_of_day,
-                        "action_phase": action_t,
-                        "action_green_dur": float(delta_time),
-                        "delay": float(max(0.0, -reward_t)),
-                        "queue_total": int(round(q_ns + q_ew)),
-                        "throughput": int(round(arr_ns + arr_ew)),
-                        "scenario_id": scenario_id,
-                    }
+
+        env = create_parallel_env(
+            net_file=cfg.net_file,
+            route_file=cfg.route_file,
+            seed=cfg.seed,
+            use_gui=cfg.use_gui,
+            seconds=cfg.seconds,
+            delta_time=cfg.delta_time,
+            quiet_sumo=not cfg.backend_verbose,
+        )
+        obs = extract_reset_obs(env.reset(seed=cfg.seed))
+        try:
+            for t in range(n_steps):
+                actions = {}
+                for agent in top_keys:
+                    action_t = rollout.get((agent, "action"))[t].detach().cpu().numpy()
+                    actions[agent] = int(np.asarray(action_t).reshape(-1)[0])
+                next_obs, _, done, _ = extract_step(env.step(actions))
+                sim_time = float((t + 1) * cfg.delta_time)
+                metrics_by_agent = compute_metrics_for_agents(
+                    env=env,
+                    agent_ids=top_keys,
+                    time_step=sim_time,
+                    actions=actions,
+                    action_green_dur=float(cfg.delta_time),
+                    scenario_id=cfg.scenario_id,
+                    observations=obs,
                 )
+                for agent in top_keys:
+                    rows.append(metrics_by_agent[agent].to_row())
+                obs = next_obs
+                if done:
+                    break
+        finally:
+            env.close()
         return rows
 
     def train(self, cfg: TrainConfig) -> None:
@@ -187,11 +194,7 @@ class BenchmarlBackend(AsceTrainerBackend):
             )
             logger.success(f"Saved BenchMARL model checkpoint: {cfg.model_path}")
 
-            rollout_rows = self._rollout_to_schema_rows(
-                rollout=rollout,
-                delta_time=cfg.delta_time,
-                scenario_id=cfg.scenario_id,
-            )
+            rollout_rows = self._rollout_to_schema_rows_from_replay(rollout=rollout, cfg=cfg)
             rollout_df = pd.DataFrame(rollout_rows)
             if rollout_df.empty:
                 rollout_df = pd.DataFrame(columns=ASCE_DATASET_COLUMNS)
