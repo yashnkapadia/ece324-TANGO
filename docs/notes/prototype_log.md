@@ -149,3 +149,8 @@
 - CLI writes per-seed and aggregate outputs under:
   - `reports/results/backend_compare/<run_id>/summary.csv`
   - `reports/results/backend_compare/<run_id>/aggregate.csv`
+
+## Next 3 tasks (proposal-aligned)
+1. Replace reward/eval proxies with proposal KPI primitives (`timeLoss`, occupancy-weighted person delay, per-trip travel time) and run 10-seed ASCE significance evaluation against max-pressure/fixed-time.
+2. Integrate Toronto corridor SUMO assets + TMC calibration into canonical dataset generation command (scenario IDs: baseline/construction/transit) with schema-complete exports.
+3. Start PIRA data pipeline: generate scenario-level labels from trained ASCE rollouts and implement first GNN surrogate baseline with MAPE/R2/inference tracking.
