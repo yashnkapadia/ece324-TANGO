@@ -26,7 +26,8 @@
 ## Backend Selection
 - Supported values: `local_mappo`, `benchmarl`, `xuance`
 - Current production backend: `local_mappo`
-- Spike backends (`benchmarl`, `xuance`) currently enforce package presence and reuse local pipeline for parity.
+- BenchMARL backend is native via custom SUMO PettingZoo adapter + BenchMARL MAPPO.
+- Xuance backend is still spike/fallback-gated.
 
 ## Artifact Paths
 - Model checkpoint: `models/asce_mappo.pt`
@@ -35,7 +36,8 @@
 - Eval metrics: `reports/results/asce_eval_metrics.csv`
 
 ## Known Risks
-- BenchMARL/Xuance native adapters are not fully implemented yet; only backend wiring + package gating is complete.
+- Xuance native adapter is not implemented yet; backend remains a gated fallback.
+- BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower than local MAPPO on sample network.
 - Delay/throughput/fairness are still proxy metrics in sample-network mode.
 
 ## Handoff Checklist

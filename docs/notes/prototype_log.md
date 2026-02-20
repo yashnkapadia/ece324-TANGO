@@ -31,9 +31,9 @@
   - `docs/notes/adr/ADR-0001-backend-strategy.md`
 
 ## Next 3 tasks
-1. Implement native BenchMARL task adapter (replace fallback).
-2. Implement native Xuance custom MARL env adapter (replace fallback).
-3. Add integration smoke tests for backend-specific runs under optional test marks.
+1. Implement native Xuance custom MARL env adapter (replace fallback).
+2. Add integration smoke tests for backend-specific runs under optional test marks.
+3. Reduce BenchMARL runtime overhead and noisy logging in sample-network mode.
 
 ## 2026-02-20 (pixi workflow correction)
 - Corrected dependency-management policy:
@@ -42,3 +42,19 @@
   - Use `pixi install` to sync/update the environment from manifest + lock.
 - Explicitly banned `pixi run pip install ...` for project dependency management in runbook.
 - Added `benchmarl` and `xuance` via `pixi add --pypi ...`, updating both `pixi.toml` and `pixi.lock`.
+
+## 2026-02-20 (native BenchMARL adapter)
+- Replaced BenchMARL fallback with a native path:
+  - Added `SumoParallelAdapter` + `SumoBenchmarlTask` under `ece324_tango/asce/trainers/benchmarl_task.py`.
+  - BenchMARL backend now runs `benchmarl` MAPPO on SUMO through TorchRL PettingZoo wrapper.
+  - BenchMARL train now saves a backend-tagged checkpoint payload and writes rollout/schema CSV + episode metrics CSV.
+  - BenchMARL eval now loads checkpoint payload, evaluates MAPPO policy, and reports alongside fixed-time and max-pressure baselines.
+- Added adapter unit tests in `tests/test_benchmarl_adapter.py`.
+- Smoke validated:
+  - `train --trainer-backend benchmarl` succeeds on sample network.
+  - `predict --trainer-backend benchmarl` succeeds and writes metrics CSV.
+
+## Remaining from plan
+1. Replace Xuance fallback with a native Xuance adapter.
+2. Add backend-marked integration tests (optional/slow marker) for benchmarl and xuance train/eval CLI runs.
+3. Reduce BenchMARL training noise/runtime overhead and tighten env close lifecycle handling.
