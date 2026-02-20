@@ -12,9 +12,15 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] Phase 1: minimal ASCE MAPPO training/evaluation on sample SUMO network.
 - [x] GPU support path added (`--device auto|cuda|cpu`) for ASCE train/eval.
 - [x] Baseline upgraded from queue proxy to edge-level max-pressure (TraCI controlled links).
+- [x] Backend abstraction added (`local_mappo`, `benchmarl`, `xuance`) with CLI selection.
+- [x] Handoff rigor upgraded with runbook + ADR.
+- [ ] Native BenchMARL adapter (currently spike fallback).
+- [ ] Native Xuance adapter (currently spike fallback).
 - [ ] Phase 2: PIRA scenario dataset generation.
 - [ ] Phase 3: PIRA GNN surrogate.
 
 ## Canonical Notes
 - Dataset schema: `docs/notes/data_schema.md`
 - Prototype log: `docs/notes/prototype_log.md`
+- Runbook: `docs/notes/runbook.md`
+- ADRs: `docs/notes/adr/`
