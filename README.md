@@ -44,15 +44,17 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
 ├── tests              <- Unit tests for the project
 │   └── test_data.py   <- Tests for data processing
 │
-└── ece324_tango-model   <- Source code for use in this project.
+└── ece324_tango         <- Source code for use in this project.
     │
     ├── __init__.py             <- Makes ece324_tango a Python module
     │
     ├── config.py               <- Store useful variables and configuration
     │
-    ├── dataset.py              <- Scripts to download or generate data
+    ├── dataset.py              <- Dataset schema validation tooling
     │
     ├── features.py             <- Code to create features for modeling
+    │
+    ├── asce                    <- ASCE env adapters, baselines, MAPPO, schema
     │
     ├── modeling                
     │   ├── __init__.py 
@@ -64,3 +66,11 @@ Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal con
 
 --------
 
+## Quickstart (Pixi)
+
+```bash
+pixi install
+pixi run train-asce
+pixi run eval-asce
+pixi run validate-asce-schema
+```

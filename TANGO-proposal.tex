@@ -1,0 +1,273 @@
+\documentclass[10pt,twocolumn]{article}
+
+% Page Geometry - Tightly fitted for 2-page constraint
+\usepackage[left=0.5in, right=0.5in, top=0.75in, bottom=0.75in, columnsep=0.25in]{geometry}
+
+% Packages
+\usepackage{times} % Standard academic font
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xurl} % Better URL line breaking
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{cite} % IEEE-style numeric, sorted+compressed citations
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{caption}
+
+\def\UrlBreaks{\do\/\do-\do\_\do\.\do\?\do\=\do\&}
+
+% Compact spacing adjustments
+% Make headings smaller and tighten spacing
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{6pt plus 1pt minus 1pt}{2pt}
+\titlespacing*{\subsection}{0pt}{4pt plus 1pt minus 1pt}{1.5pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt} % Slight separation between paragraphs
+\setlist{nosep} % Removes space between list items globally
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue
+}
+
+% Code listing style for JSON
+\lstset{
+    basicstyle=\scriptsize\ttfamily,
+    breaklines=true,
+    frame=single,
+    columns=fullflexible,
+    backgroundcolor=\color{gray!5},
+    aboveskip=3pt,
+    belowskip=3pt,
+    showstringspaces=false
+}
+
+\begin{document}
+
+% Title and Authors
+\title{\vspace{-2.5em}\Large \textbf{Traffic Adaptive Network Guidance \& Optimization (TANGO)}\\
+\vspace{0.3em}
+\small \textnormal{Team: Get Set TanGO ; Workshop: \href{https://ieee-itsc.org/2026/}{IEEE ITSC 2026}}}
+
+\author{
+    \small Aryan Shrivastava \quad Kotaro Murakami \quad Yash Nishit Kapadia
+}
+\date{\vspace{-2em}} % Remove date space
+
+\maketitle
+
+\section{Context (Problem)}
+Urban traffic congestion costs Toronto an estimated \$6 billion annually in lost productivity \cite{cbc_gridlock}. We propose a two-model traffic optimization system for a corridor of \textbf{12 to 15 intersections} in Toronto:
+
+\textbf{ASCE (Adaptive Signal Control Engine):} It takes the current state at each signal intersection, including queue lengths, incoming arrivals, approach speeds, and time of day. It then chooses a safe next signal decision stating the next phase to be served and duration of the green signal. The model's aim here is to reduce delay and prevent queues from backing into other streets.
+
+\textbf{PIRA (Planning Infrastructure Response Analyzer):} This includes construction, lane closures, and new public transit lines. For each scenario, the model would estimate how demand and road capacity will change and then recommend practical updates to signal timing and phasing. The model's aim here is to solve the problem of turning proposed projects into data-driven signal changes that keep traffic moving smoothly during and after the disruption.
+
+\section{Conditions of Success (ML task)}
+\textbf{ASCE (Real-Time Control):}\\
+Traffic engineering considers $\geq$10\% delay reduction statistically significant. Our target is:
+\begin{equation*}
+    Delay_{MAPPO} \leq 0.90 \times Delay_{Baseline}
+\end{equation*}
+where the baseline is the better of Fixed-Time or Max-Pressure control, evaluated across 10 random seeds.
+Delay corresponds to SUMO's \texttt{timeLoss}, computed as the aggregated excess travel time over free-flow conditions (at allowed speed limits), weighted by estimated person occupancy for vehicles and TTC.
+
+\textbf{PIRA (Scenario Surrogate):}\\
+SUMO simulations vary 5 to 10\% between random seeds. PIRA succeeds if its mean average prediction error over 10 seeds falls within this noise floor:
+\begin{equation*}
+    MAPE_{PIRA} \leq 10\%
+\end{equation*}
+with inference time $<5$ seconds per scenario (enabling interactive planning workflows).
+
+\section{Data}
+For TANGO, we plan to implement two layers of data. The first layer is the City of Toronto Traffic Volumes Multimodal Intersection Turning Movement Counts (TMC) dataset \cite{udc_tmc}. This dataset includes motor vehicle, bicycle, and pedestrian volumes through intersections as raw data recorded in 15-minute intervals.
+
+The second layer is a large simulated training dataset generated on an OpenStreetMap (OSM) road network via the SUMO OSM Web Wizard \cite{sumo_osm_wizard}, calibrated to match TMC volumes to yield millions of reinforcement learning training samples potentially. We will create the simulated dataset using the open source SUMO traffic simulator \cite{sumo_home}. SUMO can import real road networks from OSM, simulate vehicle interactions at the lane level, enable traffic light controls, and export evaluation metrics. SUMO is available under the Eclipse Public License v2.0 \cite{epl2}. During each SUMO run, every $t$ seconds, for every signal, the state (lane halting counts, lane vehicle counts, mean speeds, time features, current phase) is logged and an action is applied (next phase and green split). Then, the SUMO output is logged and we form an ML sample of the form:
+
+\noindent\hspace*{3em}$\mathtt{(state_t,\ action_t,\ state_{t+1},\ metrics_{t \to t+1})}$
+
+
+\subsection{Inputs}
+The inputs are chosen so that they are measurable in SUMO and correspond to real intersection sensing concepts that can exist in a real deployment. The inputs to the model for Real Time Adaptive Signal control are halting\_vehicle\_count (per lane), vehicle\_count (per lane), mean\_speed (per lane), current\_phase, and time\_of\_day. The inputs to the model for Scenario Planning are demand\_changes following road closures or TTC maintenance.
+
+\subsection{Outputs}
+The outputs of the model are as follows:
+\begin{enumerate}
+    \item Next phase selection (\textbf{ASCE}) - This is the phase index to be served next
+    \item Green split (\textbf{ASCE}) - This is the amount of time to hold the green signal (within appropriate constraints).
+    \item Updated time-of-day timing plan (\textbf{PIRA})
+    \item Scenario impact summary over delay, throughput, and queues from SUMO evaluation outputs (\textbf{PIRA})
+\end{enumerate}
+
+\subsection{Example}
+An example string of data (converted to JSON) from
+\href{https://data.urbandatacentre.ca/catalogue/city-toronto-traffic-volumes-at-intersections-for-all-modes/resource/42a2a3b1-c8d5-4611-8e32-ba99314d5fbb}{tmc\_most\_recent\_summary\_data}
+\cite{udc_tmc_resource}
+is:
+
+\begin{lstlisting}
+{"_id": 31, "latest_count_id": 114551, "latest_count_date": "29-11-2025", "location_name": "Victoria Park Ave / McNicoll Ave", "longitude": -79.33631681, "latitude": 43.80408565, "centreline_type": 2, "centreline_id": 13443090, "px": 569, "count_duration": 14, "total_vehicle": 23000, "total_bike": 43, "total_heavy_pct": 0.024, "total_pedestrian": 774, "am_peak_start": "2025-11-29T09:15:00", "am_peak_vehicle": 1557, "am_peak_bike": 2, "am_peak_heavy_pct": 0.022, "pm_peak_start": "2025-11-29T14:15:00", "pm_peak_vehicle": 2247, "pm_peak_bike": 3, "pm_peak_heavy_pct": 0.02, "n_appr_vehicle": 7637, "n_appr_bike": 18, "n_appr_heavy_pct": 0.026, "e_appr_vehicle": 5916, "e_appr_bike": 6, "e_appr_heavy_pct": 0.015, "s_appr_vehicle": 4773, "s_appr_bike": 8, "s_appr_heavy_pct": 0.039, "w_appr_vehicle": 4674, "w_appr_bike": 11, "w_appr_heavy_pct": 0.016}
+\end{lstlisting}
+
+The TMC raw dataset consists of approximately 800{,}000 samples, counting from the year 2000. An example intersection row, to map TMC to a SUMO junction is given below: \\\\\\
+\begin{lstlisting}
+{"INTERSECTION_ID": 13470264, "INTERSECTION_DESC": "Robindale Ave / Rimilton Ave", "CLASSIFICATION_DESC": "Minor-Single Level", "geometry": {"type":"MultiPoint","coordinates":[[-79.5310702158097, 43.6072425849711]]}}
+\end{lstlisting}
+
+
+
+\section{Modeling}
+\subsection{Proposal(s)}
+\textbf{ASCE: Multi-Agent PPO with Parameter Sharing}\\
+We plan to use \textbf{MAPPO} (Multi-Agent Proximal Policy Optimization) using the SUMO-RL framework with multi-agent interfacing via LibSignal or PyTSC \cite{libsignal,pytSC}. This architecture is validated \cite{citylight}. Each intersection agent shares a common policy network (a 2-layer ReLU MLP with 128 units) mapping local observations to a softmax distribution over legal phases. A centralized critic (used only during training) receives concatenated observations from all agents to estimate state value.
+
+\textbf{PIRA (Message Passing Neural Network)}\\
+We plan to use a graph neural network surrogate that predicts SUMO-level performance metrics directly from scenario descriptors. A message-passing GNN is used in place of an MLP to ensure robustness to infrastructure changes, as graph architectures generalize better to modified network topologies and capacities \cite{lassen_gnn}. Training follows a curriculum approach: a trained ASCE controller is evaluated across progressively more complex demand and infrastructure perturbations, and PIRA is trained on the resulting scenario-outcome pairs using supervised regression.
+
+\subsection{Baseline Model}
+\begin{tabularx}{\columnwidth}{@{}l X@{}}
+\toprule
+\textbf{Model} & \textbf{Description} \\
+\midrule
+Fixed-Time & Pre-timed signal plan from Toronto signal timing sheets. Static, cannot adapt. \\
+Max-Pressure & Decentralized heuristic granting green to the phase with highest queue differential. Provably throughput-optimal; strong baseline. \\
+IPPO & Independent PPO (no centralized critic). Ablates the coordination benefit of MAPPO. \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.5em}
+Two of the most common signal timing practices are Fixed Time Control (FT) and Max-Pressure Control (MP). FT simply follows a hard-coded timer, which would be the “dumbest” model. It cannot adjust dynamically to reduce delay. MP addresses this weakness. MP is a decentralized agent based system, where each intersection monitors the number of cars at itself and the adjacent intersections. In general, the path with the highest number of cars waiting, given that the road downstream is vacant, gets the right of way. Theoretically, MP is provably throughput-optimal, guaranteeing that the queue will always be bounded if possible. This is commonly implemented due to its adaptive but independent nature. It prioritizes benefiting more people, and there is no need to set up a city-wide network - each intersection works as a standalone agent, which makes it scalable.
+
+\subsection{State of the Art (SOTA)}
+Analysis of the SOTA in this field is challenging due to lack of standardization; hence, evaluation metrics like travel-time reduction are not comparable. We aim to provide a brief list of notable projects over the past few years. For a comprehensive literature review, refer to \cite{michailidis_review}.
+
+\begin{tabularx}{\columnwidth}{@{}p{0.28\columnwidth} c X@{}}
+\toprule
+\textbf{Method} & \textbf{Year} & \textbf{Key Contribution} \\
+\midrule
+CityLight \cite{citylight} & 2024 & MAPPO universal representation; scales to 13,952 intersections \\
+IG-RL \cite{igrl} & 2021 & Inductive GCN enabling zero-shot transfer across networks \\
+CoLight \cite{colight} & 2019 & Graph attention for inter-agent coordination \\
+PressLight \cite{presslight} & 2019 & Pressure-based reward design with theoretical grounding \\
+MARLIN-ATSC \cite{marlin_atsc} & 2013 & First large-scale Toronto deployment (59 intersections, 32--63\% delay reduction) \\
+\bottomrule
+\end{tabularx}
+
+\section{Evaluation}
+For ASCE: By “replaying” the TMC data on SUMO and letting ASCE learn, optimized parameters can be obtained. After setting the obtained parameters to each intersection agent, we use a random traffic state generated by SUMO itself to test how much delay it causes, compared to the baseline.
+
+\begin{center}
+\small
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{Metric} & \textbf{Definition} & \textbf{Target} \\
+\midrule
+Delay reduction & MAPPO (Baseline) / Baseline & $\geq$10\% \\
+Avg travel time & Mean vehicle trip duration & Lower is better \\
+Throughput & Vehicles exiting net/hour & Higher is better \\
+Fairness & Jain's Index & $>0.8$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For PIRA, we use MAPE ($\leq 10\%$), $R^2$ ($\geq 0.85$), and inference time.
+
+\textbf{Robustness Tests:}
+\begin{itemize}
+    \item \textbf{Distribution shift:} Train on AM peak and test on PM peak
+    \item \textbf{Sensor dropout:} 20\% missing detector data
+    \item \textbf{Unseen scenarios:} Infrastructure changes not in training set
+\end{itemize}
+
+\section{Runtime Estimates}
+Estimated runtimes on an RTX 4070 Laptop GPU for a 12 to 15 intersection corridor.
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\columnwidth}{@{}l X X@{}}
+\toprule
+\textbf{Component} & \textbf{Training time} & \textbf{Prediction time} \\
+\midrule
+ASCE MAPPO controller & 1 to 2 days & $<0.1$ s per control step \\
+PIRA GNN planner & 7 days for labels, 2 hours to train & $<0.2$ s per scenario \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Additional Experiments / Stretch goals}
+\textbf{Alternative RL architectures:}
+\begin{itemize}
+    \item \textbf{CityLight-style} \cite{citylight}: neighborhood-inclusive rewards 
+    \item \textbf{IG-RL} \cite{igrl}: Test zero-shot transfer to a second Toronto corridor
+    \item \textbf{CoLight} \cite{colight}: Graph attention-based coordination comparison
+    \item \textbf{DSA-QMIX} \cite{dsa_qmix}: Self-attention QMIX on a 4-intersection subnet
+\end{itemize}
+
+\newpage
+\small
+\begin{thebibliography}{99}
+
+\bibitem{cbc_gridlock}
+CBC News, ``Toronto gridlock may cost economy up to \$11B, C.D. Howe says,'' Jul. 10, 2013. [Online]. Available: \url{https://www.cbc.ca/news/business/toronto-gridlock-may-cost-economy-up-to-11b-c-d-howe-says-1.1394574}. [Accessed: Jan. 28, 2026].
+
+\bibitem{udc_tmc}
+Urban Data Centre, ``City of Toronto Traffic Volumes at Intersections for All Modes.'' [Online]. Available: \url{https://data.urbandatacentre.ca/catalogue/city-toronto-traffic-volumes-at-intersections-for-all-modes}. [Accessed: Jan. 28, 2026].
+
+\bibitem{udc_tmc_resource}
+Urban Data Centre, ``City of Toronto Traffic Volumes at Intersections for All Modes (resource).'' [Online]. Available: \url{https://data.urbandatacentre.ca/catalogue/city-toronto-traffic-volumes-at-intersections-for-all-modes/resource/42a2a3b1-c8d5-4611-8e32-ba99314d5fbb}. [Accessed: Jan. 28, 2026].
+
+\bibitem{sumo_osm_wizard}
+Eclipse SUMO Documentation, ``OSMWebWizard.'' [Online]. Available: \url{https://sumo.dlr.de/docs/Tutorials/OSMWebWizard.html}. [Accessed: Jan. 28, 2026].
+
+\bibitem{sumo_home}
+Eclipse SUMO, ``Eclipse SUMO - Simulation of Urban MObility.'' [Online]. Available: \url{https://eclipse.dev/sumo/}. [Accessed: Jan. 28, 2026].
+
+\bibitem{epl2}
+Eclipse Foundation, ``Eclipse Public License, Version 2.0.'' [Online]. Available: \url{https://www.eclipse.org/legal/epl-2.0/}. [Accessed: Jan. 28, 2026].
+
+\bibitem{libsignal}
+H. Mei, X. Lei, L. Da, B. Shi, and H. Wei, ``LibSignal: An open library for traffic signal control,'' arXiv preprint arXiv:2211.10649, 2023.
+
+\bibitem{pytSC}
+R. Bokade and X. Jin, ``PyTSC: A unified platform for multi-agent reinforcement learning in traffic signal control,'' arXiv preprint arXiv:2410.18202, 2024.
+
+\bibitem{citylight}
+Z. Zeng \textit{et al.}, ``CityLight: A Neighborhood-inclusive Universal Model for Coordinated City-scale Traffic Signal Control,'' arXiv preprint arXiv:2406.02126, 2024.
+
+\bibitem{lassen_gnn}
+O. B. Lassen \textit{et al.}, ``Learning Traffic Flows: Graph Neural Networks for Metamodelling Traffic Assignment,'' arXiv preprint arXiv:2505.11230, 2025.
+
+\bibitem{michailidis_review}
+P. Michailidis, C. Lazaridis, and E. Kosmatopoulos, ``Traffic Signal Control via Reinforcement Learning: A Review on Applications and Innovations,'' \textit{Infrastructures}, vol. 10, no. 5, Art. no. 114, May 2025, doi: 10.3390/infrastructures10050114.
+
+\bibitem{igrl}
+B. Devailly \textit{et al.}, ``IG-RL: Inductive Graph Reinforcement Learning for Massive-Scale Traffic Signal Control,'' \textit{IEEE Transactions on Intelligent Transportation Systems}, 2021.
+
+\bibitem{colight}
+H. Wei \textit{et al.}, ``CoLight: Learning Network-Level Cooperation for Traffic Signal Control,'' in \textit{Proc. CIKM}, 2019.
+
+\bibitem{presslight}
+H. Wei \textit{et al.}, ``PressLight: Learning Max Pressure Control to Coordinate Traffic Signals in Arterial Network,'' in \textit{Proc. KDD}, 2019.
+
+\bibitem{marlin_atsc}
+S. El-Tantawy \textit{et al.}, ``MARLIN-ATSC,'' \textit{IEEE Transactions on Intelligent Transportation Systems}, 2013.
+
+\bibitem{dsa_qmix}
+Y. Li \textit{et al.}, ``DSA-QMIX,'' 2024.
+
+\end{thebibliography}
+
+\vspace{0.5em}
+\noindent\textit{Note: Perplexity AI was used as a discovery tool to help identify relevant research papers related to this subject matter.}
+
+\end{document}

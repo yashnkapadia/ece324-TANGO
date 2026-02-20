@@ -1,0 +1,2 @@
+episode,seed,scenario_id,mean_global_reward,steps,actor_loss,critic_loss,entropy
+0,7,baseline,-0.005416666666666664,60,-0.06323714554309845,0.0017602290026843548,2.078925609588623

@@ -1,9 +1,9 @@
-[project]
+[workspace]
 name = "ece324-TANGO"
 description = "Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal control and cenario planning module that evaluates how nearby projects (construction, lane closures, new public transit lines) alter demand/capacity to recommend signal timing/phasing updates"
 version = "0.1.0"
-channels = ['conda-forge']
-platforms = ['linux-64', 'osx-64', 'osx-arm64', 'win-64']
+channels = ["conda-forge"]
+platforms = ["linux-64"]
 
 [dependencies]
 python = "~=3.12.0"
@@ -22,7 +22,17 @@ scikit-learn = "*"
 tqdm = "*"
 typer = "*"
 pip = "*"
+pytorch-gpu = "*"
+cuda-version = "12.8.*"
 
 [pypi-dependencies]
 python-dotenv = "*"
-ece324_tango = { path = ".", editable = true }
+sumo-rl = ">=1.4.5, <2"
+
+[system-requirements]
+cuda = "12"
+
+[tasks]
+train-asce = "python -m ece324_tango.modeling.train --episodes 2 --seconds 1200 --delta-time 5"
+eval-asce = "python -m ece324_tango.modeling.predict --episodes 2 --seconds 1200 --delta-time 5"
+validate-asce-schema = "python -m ece324_tango.dataset"
