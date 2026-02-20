@@ -32,8 +32,9 @@
 
 ## Xuance Stability Toggles
 - `TANGO_XUANCE_USE_GAE` (default `1`)
-- `TANGO_XUANCE_USE_VALUE_NORM` (default `0`)
+- `TANGO_XUANCE_USE_VALUE_NORM` (default `1`, via local compat patch)
 - `TANGO_XUANCE_USE_ADVNORM` (default `0`)
+- `TANGO_XUANCE_PATCH_VALUE_NORM` (default `1`)
 
 ## Artifact Paths
 - Model checkpoint: `models/asce_mappo.pt`
@@ -43,8 +44,7 @@
 
 ## Known Risks
 - BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower than local MAPPO on sample network.
-- Xuance custom adapter currently uses stable settings (`use_gae=True`, `use_value_norm=False`) by default.
-- Xuance value normalization remains unstable for this SUMO adapter; keep `TANGO_XUANCE_USE_VALUE_NORM=0` unless debugging.
+- Xuance value normalization is enabled via local compat patch. If regressions appear, disable with `TANGO_XUANCE_USE_VALUE_NORM=0`.
 - Delay/throughput/fairness are still proxy metrics in sample-network mode.
 
 ## Handoff Checklist

@@ -87,5 +87,14 @@
   - `use_value_norm=True` (with or without GAE): unstable shape/type failures in Xuance on-policy buffer path.
 - Updated Xuance backend defaults accordingly and exposed env-var gates:
   - `TANGO_XUANCE_USE_GAE` (default `1`)
-  - `TANGO_XUANCE_USE_VALUE_NORM` (default `0`)
+  - `TANGO_XUANCE_USE_VALUE_NORM` (now default `1` with local compat patch)
   - `TANGO_XUANCE_USE_ADVNORM` (default `0`)
+
+## 2026-02-20 (local Xuance compat patch + fair compare)
+- Added local runtime patch for Xuance on-policy buffer value normalization shape handling:
+  - `ece324_tango/asce/trainers/xuance_compat.py`
+  - toggle: `TANGO_XUANCE_PATCH_VALUE_NORM` (default `1`)
+- Verified Xuance train works with `TANGO_XUANCE_USE_VALUE_NORM=1` and `TANGO_XUANCE_USE_GAE=1`.
+- Fair micro-benchmark (cpu, 1 episode, 30s sim, 1 eval episode):
+  - BenchMARL: train 66.267s, eval 37.809s, MAPPO mean_reward -0.000208
+  - Xuance (patched): train 41.256s, eval 41.003s, MAPPO mean_reward -0.000208

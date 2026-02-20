@@ -19,6 +19,7 @@ This file tracks implementation decisions and data contracts for the TANGO ML pr
 - [x] Native Xuance adapter (custom SUMO env registration + Xuance MAPPO path).
 - [x] Slow integration tests for BenchMARL/Xuance CLI train+eval paths.
 - [x] Backend noise controls added (`backend_verbose` flag, quiet SUMO defaults).
+- [x] Local Xuance value_norm compatibility patch added for fair MAPPO settings.
 - [ ] Phase 2: PIRA scenario dataset generation.
 - [ ] Phase 3: PIRA GNN surrogate.
 

@@ -16,6 +16,7 @@ from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.asce.trainers.noise_control import quiet_output
+from ece324_tango.asce.trainers.xuance_compat import apply_xuance_value_norm_patch
 from ece324_tango.asce.trainers.xuance_env import register_xuance_sumo_env
 
 
@@ -46,6 +47,11 @@ class XuanceBackend(AsceTrainerBackend):
         from xuance.common import get_arguments
         from xuance.torch.runners.runner_marl import RunnerMARL
 
+        if self._env_bool("TANGO_XUANCE_PATCH_VALUE_NORM", True):
+            patched = apply_xuance_value_norm_patch()
+            if patched:
+                logger.info("Applied local Xuance value_norm compatibility patch.")
+
         register_xuance_sumo_env(env_name="sumo_custom")
         args = get_arguments(method="mappo", env="mpe", env_id="simple_spread_v3")
 
@@ -69,7 +75,7 @@ class XuanceBackend(AsceTrainerBackend):
         args.sumo_quiet = not cfg.backend_verbose
 
         # Stable settings for custom SUMO adapter under Xuance MAPPO.
-        args.use_value_norm = self._env_bool("TANGO_XUANCE_USE_VALUE_NORM", False)
+        args.use_value_norm = self._env_bool("TANGO_XUANCE_USE_VALUE_NORM", True)
         args.use_gae = self._env_bool("TANGO_XUANCE_USE_GAE", True)
         args.use_advnorm = self._env_bool("TANGO_XUANCE_USE_ADVNORM", False)
         args.n_epochs = 1
@@ -235,8 +241,8 @@ class XuanceBackend(AsceTrainerBackend):
             if "setting an array element with a sequence" in str(exc):
                 raise RuntimeError(
                     "Xuance MAPPO failed with current normalization settings. "
-                    "Try disabling value normalization: set TANGO_XUANCE_USE_VALUE_NORM=0. "
-                    "Current default already uses VALUE_NORM=0 and GAE=1."
+                    "If needed, disable value normalization with TANGO_XUANCE_USE_VALUE_NORM=0. "
+                    "Compatibility patch toggle: TANGO_XUANCE_PATCH_VALUE_NORM."
                 ) from exc
             raise
         finally:
