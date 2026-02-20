@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 from typing import Dict, List
 
@@ -14,6 +15,7 @@ from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_inde
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
+from ece324_tango.asce.trainers.noise_control import quiet_output
 from ece324_tango.asce.trainers.xuance_env import register_xuance_sumo_env
 
 
@@ -32,6 +34,13 @@ class XuanceBackend(AsceTrainerBackend):
     def _resolve_device(device: str) -> str:
         resolved = LocalMappoBackend._resolve_device(device)
         return "cuda:0" if resolved == "cuda" else resolved
+
+    @staticmethod
+    def _env_bool(name: str, default: bool) -> bool:
+        raw = os.getenv(name)
+        if raw is None:
+            return default
+        return raw.strip().lower() in {"1", "true", "yes", "on"}
 
     def _build_runner(self, cfg: TrainConfig | EvalConfig, seed: int):
         from xuance.common import get_arguments
@@ -57,11 +66,12 @@ class XuanceBackend(AsceTrainerBackend):
         args.sumo_seconds = int(cfg.seconds)
         args.sumo_delta_time = int(cfg.delta_time)
         args.use_gui = bool(cfg.use_gui)
+        args.sumo_quiet = not cfg.backend_verbose
 
         # Stable settings for custom SUMO adapter under Xuance MAPPO.
-        args.use_value_norm = False
-        args.use_gae = False
-        args.use_advnorm = False
+        args.use_value_norm = self._env_bool("TANGO_XUANCE_USE_VALUE_NORM", False)
+        args.use_gae = self._env_bool("TANGO_XUANCE_USE_GAE", True)
+        args.use_advnorm = self._env_bool("TANGO_XUANCE_USE_ADVNORM", False)
         args.n_epochs = 1
         args.n_minibatch = 1
         args.buffer_size = 16
@@ -95,6 +105,7 @@ class XuanceBackend(AsceTrainerBackend):
             use_gui=cfg.use_gui,
             seconds=cfg.seconds,
             delta_time=cfg.delta_time,
+            quiet_sumo=not cfg.backend_verbose,
         )
         obs = extract_reset_obs(env.reset(seed=cfg.seed))
         done = False
@@ -166,14 +177,23 @@ class XuanceBackend(AsceTrainerBackend):
         cfg.episode_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Xuance training device: {self._resolve_device(cfg.device)}")
-        runner = self._build_runner(cfg, seed=cfg.seed)
+        with quiet_output(enabled=not cfg.backend_verbose):
+            runner = self._build_runner(cfg, seed=cfg.seed)
         runner.config.running_steps = max(16, int(cfg.episodes * max(1, cfg.seconds // cfg.delta_time)))
         runner.config.buffer_size = max(16, int(cfg.minibatch_size))
         runner.config.n_epochs = max(1, int(cfg.ppo_epochs))
         runner.config.n_minibatch = 1
 
+        logger.info(
+            "Xuance stability flags: "
+            f"use_gae={runner.config.use_gae}, "
+            f"use_value_norm={runner.config.use_value_norm}, "
+            f"use_advnorm={runner.config.use_advnorm}"
+        )
+
         try:
-            runner.run()
+            with quiet_output(enabled=not cfg.backend_verbose):
+                runner.run()
             saved_path = f"{runner.agents.model_dir_save}/final_train_model.pth"
             shutil.copyfile(saved_path, cfg.model_path)
             xuance_ckpt_dir = cfg.model_path.parent / f"{cfg.model_path.stem}_xuance"
@@ -183,11 +203,12 @@ class XuanceBackend(AsceTrainerBackend):
             shutil.copyfile(saved_path, seed_export_dir / "final_train_model.pth")
             logger.success(f"Saved Xuance MAPPO model: {cfg.model_path}")
 
-            rows, mean_reward, per_agent_totals, steps = self._run_episode_with_agent(
-                cfg=cfg,
-                agent=runner.agents,
-                deterministic=False,
-            )
+            with quiet_output(enabled=not cfg.backend_verbose):
+                rows, mean_reward, per_agent_totals, steps = self._run_episode_with_agent(
+                    cfg=cfg,
+                    agent=runner.agents,
+                    deterministic=False,
+                )
             rollout_df = pd.DataFrame(rows)
             if rollout_df.empty:
                 rollout_df = pd.DataFrame(columns=ASCE_DATASET_COLUMNS)
@@ -210,6 +231,14 @@ class XuanceBackend(AsceTrainerBackend):
                     }
                 ]
             ).to_csv(cfg.episode_metrics_csv, index=False)
+        except ValueError as exc:
+            if "setting an array element with a sequence" in str(exc):
+                raise RuntimeError(
+                    "Xuance MAPPO failed with current normalization settings. "
+                    "Try disabling value normalization: set TANGO_XUANCE_USE_VALUE_NORM=0. "
+                    "Current default already uses VALUE_NORM=0 and GAE=1."
+                ) from exc
+            raise
         finally:
             self._safe_close_runner(runner)
 
@@ -218,23 +247,26 @@ class XuanceBackend(AsceTrainerBackend):
         cfg.out_csv.parent.mkdir(parents=True, exist_ok=True)
         logger.info(f"Xuance inference device: {self._resolve_device(cfg.device)}")
 
-        runner = self._build_runner(cfg, seed=cfg.seed)
+        with quiet_output(enabled=not cfg.backend_verbose):
+            runner = self._build_runner(cfg, seed=cfg.seed)
         records: List[dict] = []
         try:
             xuance_ckpt_dir = cfg.model_path.parent / f"{cfg.model_path.stem}_xuance"
             if xuance_ckpt_dir.exists():
-                runner.agents.load_model(str(xuance_ckpt_dir))
+                with quiet_output(enabled=not cfg.backend_verbose):
+                    runner.agents.load_model(str(xuance_ckpt_dir))
             else:
                 raise RuntimeError(
                     f"Missing Xuance checkpoint directory: {xuance_ckpt_dir}. "
                     "Re-run training with --trainer-backend xuance first."
                 )
             for ep in range(cfg.episodes):
-                rows, mean_reward, per_agent_totals, steps = self._run_episode_with_agent(
-                    cfg=cfg,
-                    agent=runner.agents,
-                    deterministic=True,
-                )
+                with quiet_output(enabled=not cfg.backend_verbose):
+                    rows, mean_reward, per_agent_totals, steps = self._run_episode_with_agent(
+                        cfg=cfg,
+                        agent=runner.agents,
+                        deterministic=True,
+                    )
                 records.append(
                     {
                         "controller": "mappo",
@@ -252,14 +284,16 @@ class XuanceBackend(AsceTrainerBackend):
         finally:
             self._safe_close_runner(runner)
 
-        baseline_env = create_parallel_env(
-            net_file=cfg.net_file,
-            route_file=cfg.route_file,
-            seed=cfg.seed,
-            use_gui=cfg.use_gui,
-            seconds=cfg.seconds,
-            delta_time=cfg.delta_time,
-        )
+        with quiet_output(enabled=not cfg.backend_verbose):
+            baseline_env = create_parallel_env(
+                net_file=cfg.net_file,
+                route_file=cfg.route_file,
+                seed=cfg.seed,
+                use_gui=cfg.use_gui,
+                seconds=cfg.seconds,
+                delta_time=cfg.delta_time,
+                quiet_sumo=not cfg.backend_verbose,
+            )
         try:
             obs = extract_reset_obs(baseline_env.reset(seed=cfg.seed))
             action_dims = {a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())}
@@ -275,11 +309,12 @@ class XuanceBackend(AsceTrainerBackend):
                     steps = 0
 
                     while not done:
-                        if controller_name == "fixed_time":
-                            actions = controller.actions(obs)
-                        else:
-                            actions = controller.actions(obs, env=baseline_env)
-                        obs, rewards, done, _ = extract_step(baseline_env.step(actions))
+                        with quiet_output(enabled=not cfg.backend_verbose):
+                            if controller_name == "fixed_time":
+                                actions = controller.actions(obs)
+                            else:
+                                actions = controller.actions(obs, env=baseline_env)
+                            obs, rewards, done, _ = extract_step(baseline_env.step(actions))
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():

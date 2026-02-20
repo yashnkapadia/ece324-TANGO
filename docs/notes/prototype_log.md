@@ -76,3 +76,16 @@
 - Tests are marked `slow` + `integration` and gated by env var:
   - run with `RUN_SLOW_INTEGRATION=1 pixi run pytest tests/test_backend_integration_slow.py`
   - default `pixi run pytest tests` remains fast (integration tests skip unless enabled).
+
+## 2026-02-20 (noise controls + Xuance re-check)
+- Added config-gated backend noise control:
+  - CLI flag: `--backend-verbose` (default quiet mode).
+  - Backends now pass quiet SUMO settings by default (`sumo_warnings=False`, `--no-step-log true`).
+  - Added helper: `ece324_tango/asce/trainers/noise_control.py`.
+- Re-checked Xuance settings matrix on SUMO adapter:
+  - `use_gae=True, use_value_norm=False`: stable.
+  - `use_value_norm=True` (with or without GAE): unstable shape/type failures in Xuance on-policy buffer path.
+- Updated Xuance backend defaults accordingly and exposed env-var gates:
+  - `TANGO_XUANCE_USE_GAE` (default `1`)
+  - `TANGO_XUANCE_USE_VALUE_NORM` (default `0`)
+  - `TANGO_XUANCE_USE_ADVNORM` (default `0`)

@@ -30,6 +30,7 @@ def create_parallel_env(
     use_gui: bool,
     seconds: int,
     delta_time: int,
+    quiet_sumo: bool = False,
 ):
     """Create a sumo-rl multi-agent environment."""
     from sumo_rl.environment.env import SumoEnvironment
@@ -42,6 +43,8 @@ def create_parallel_env(
         delta_time=delta_time,
         sumo_seed=seed,
         single_agent=False,
+        sumo_warnings=not quiet_sumo,
+        additional_sumo_cmd="--no-step-log true" if quiet_sumo else None,
     )
     return env
 

@@ -59,6 +59,7 @@ class SumoBenchmarlTask(TaskClass):
                 use_gui=self.config.get("use_gui", False),
                 seconds=self.config["seconds"],
                 delta_time=self.config["delta_time"],
+                quiet_sumo=self.config.get("quiet_sumo", False),
             )
             pz_env = SumoParallelAdapter(base_env)
             return PettingZooWrapper(

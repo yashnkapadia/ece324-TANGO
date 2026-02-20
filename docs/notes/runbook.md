@@ -22,12 +22,18 @@
 - Train ASCE: `pixi run python -m ece324_tango.modeling.train --trainer-backend local_mappo --device auto`
 - Eval ASCE: `pixi run python -m ece324_tango.modeling.predict --trainer-backend local_mappo --device auto`
 - Validate schema: `pixi run python -m ece324_tango.dataset`
+- Backend verbose logs (optional): add `--backend-verbose`
 
 ## Backend Selection
 - Supported values: `local_mappo`, `benchmarl`, `xuance`
 - Current production backend: `local_mappo`
 - BenchMARL backend is native via custom SUMO PettingZoo adapter + BenchMARL MAPPO.
 - Xuance backend is native via custom SUMO env registration + Xuance MAPPO.
+
+## Xuance Stability Toggles
+- `TANGO_XUANCE_USE_GAE` (default `1`)
+- `TANGO_XUANCE_USE_VALUE_NORM` (default `0`)
+- `TANGO_XUANCE_USE_ADVNORM` (default `0`)
 
 ## Artifact Paths
 - Model checkpoint: `models/asce_mappo.pt`
@@ -37,7 +43,8 @@
 
 ## Known Risks
 - BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower than local MAPPO on sample network.
-- Xuance custom adapter currently uses stable settings (`use_value_norm=False`, `use_gae=False`) to avoid replay/value-shape issues with this SUMO integration.
+- Xuance custom adapter currently uses stable settings (`use_gae=True`, `use_value_norm=False`) by default.
+- Xuance value normalization remains unstable for this SUMO adapter; keep `TANGO_XUANCE_USE_VALUE_NORM=0` unless debugging.
 - Delay/throughput/fairness are still proxy metrics in sample-network mode.
 
 ## Handoff Checklist

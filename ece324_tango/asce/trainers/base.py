@@ -20,6 +20,7 @@ class TrainConfig:
     seed: int
     use_gui: bool
     device: str
+    backend_verbose: bool
 
 
 @dataclass
@@ -34,6 +35,7 @@ class EvalConfig:
     seed: int
     use_gui: bool
     device: str
+    backend_verbose: bool
 
 
 class AsceTrainerBackend:

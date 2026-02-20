@@ -15,6 +15,7 @@ from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 from ece324_tango.asce.trainers.benchmarl_task import SumoBenchmarlTask
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
+from ece324_tango.asce.trainers.noise_control import quiet_output
 
 
 class BenchmarlBackend(AsceTrainerBackend):
@@ -33,7 +34,9 @@ class BenchmarlBackend(AsceTrainerBackend):
         return LocalMappoBackend._resolve_device(device)
 
     @staticmethod
-    def _build_experiment(train_cfg: TrainConfig | EvalConfig, seed: int, device: str):
+    def _build_experiment(
+        train_cfg: TrainConfig | EvalConfig, seed: int, device: str, quiet_sumo: bool
+    ):
         from benchmarl.algorithms import MappoConfig
         from benchmarl.experiment import Experiment, ExperimentConfig
         from benchmarl.models import MlpConfig
@@ -47,6 +50,7 @@ class BenchmarlBackend(AsceTrainerBackend):
                 "delta_time": train_cfg.delta_time,
                 "seed": seed,
                 "use_gui": train_cfg.use_gui,
+                "quiet_sumo": quiet_sumo,
             },
         )
 
@@ -151,14 +155,20 @@ class BenchmarlBackend(AsceTrainerBackend):
         resolved_device = self._resolve_device(cfg.device)
         logger.info(f"BenchMARL training device: {resolved_device}")
 
-        exp = self._build_experiment(cfg, seed=cfg.seed, device=resolved_device)
+        with quiet_output(enabled=not cfg.backend_verbose):
+            exp = self._build_experiment(
+                cfg, seed=cfg.seed, device=resolved_device, quiet_sumo=not cfg.backend_verbose
+            )
         exp.config.max_n_iters = max(1, int(cfg.episodes))
         exp.config.on_policy_n_minibatch_iters = max(1, int(cfg.ppo_epochs))
         exp.config.on_policy_minibatch_size = max(32, int(cfg.minibatch_size))
 
         try:
-            exp.run()
-            rollout, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(exp, deterministic=True)
+            with quiet_output(enabled=not cfg.backend_verbose):
+                exp.run()
+                rollout, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
+                    exp, deterministic=True
+                )
             torch.save(
                 {
                     "backend": self.name,
@@ -217,13 +227,19 @@ class BenchmarlBackend(AsceTrainerBackend):
                 "Train with --trainer-backend benchmarl first."
             )
 
-        exp = self._build_experiment(cfg, seed=cfg.seed, device=resolved_device)
+        with quiet_output(enabled=not cfg.backend_verbose):
+            exp = self._build_experiment(
+                cfg, seed=cfg.seed, device=resolved_device, quiet_sumo=not cfg.backend_verbose
+            )
         exp.load_state_dict(payload["state_dict"])
 
         records: List[dict] = []
         try:
             for ep in range(cfg.episodes):
-                _, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(exp, deterministic=True)
+                with quiet_output(enabled=not cfg.backend_verbose):
+                    _, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
+                        exp, deterministic=True
+                    )
                 records.append(
                     {
                         "controller": "mappo",
@@ -244,14 +260,16 @@ class BenchmarlBackend(AsceTrainerBackend):
             except RuntimeError:
                 logger.warning("BenchMARL experiment env already closed; skipping duplicate close.")
 
-        baseline_env = create_parallel_env(
-            net_file=cfg.net_file,
-            route_file=cfg.route_file,
-            seed=cfg.seed,
-            use_gui=cfg.use_gui,
-            seconds=cfg.seconds,
-            delta_time=cfg.delta_time,
-        )
+        with quiet_output(enabled=not cfg.backend_verbose):
+            baseline_env = create_parallel_env(
+                net_file=cfg.net_file,
+                route_file=cfg.route_file,
+                seed=cfg.seed,
+                use_gui=cfg.use_gui,
+                seconds=cfg.seconds,
+                delta_time=cfg.delta_time,
+                quiet_sumo=not cfg.backend_verbose,
+            )
         try:
             obs = extract_reset_obs(baseline_env.reset(seed=cfg.seed))
             action_dims = {a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())}
@@ -267,11 +285,12 @@ class BenchmarlBackend(AsceTrainerBackend):
                     steps = 0
 
                     while not done:
-                        if controller_name == "fixed_time":
-                            actions = controller.actions(obs)
-                        else:
-                            actions = controller.actions(obs, env=baseline_env)
-                        obs, rewards, done, _ = extract_step(baseline_env.step(actions))
+                        with quiet_output(enabled=not cfg.backend_verbose):
+                            if controller_name == "fixed_time":
+                                actions = controller.actions(obs)
+                            else:
+                                actions = controller.actions(obs, env=baseline_env)
+                            obs, rewards, done, _ = extract_step(baseline_env.step(actions))
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():

@@ -33,6 +33,7 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
                 use_gui=getattr(config, "use_gui", False),
                 seconds=int(config.sumo_seconds),
                 delta_time=int(config.sumo_delta_time),
+                quiet_sumo=bool(getattr(config, "sumo_quiet", False)),
             )
             self.agents: List[str] = list(self._base_env.ts_ids)
             self.num_agents = len(self.agents)

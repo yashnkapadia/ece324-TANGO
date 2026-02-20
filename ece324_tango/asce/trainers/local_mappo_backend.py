@@ -37,6 +37,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             use_gui=cfg.use_gui,
             seconds=cfg.seconds,
             delta_time=cfg.delta_time,
+            quiet_sumo=not cfg.backend_verbose,
         )
 
         obs = extract_reset_obs(env.reset(seed=cfg.seed))
@@ -183,6 +184,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 use_gui=cfg.use_gui,
                 seconds=cfg.seconds,
                 delta_time=cfg.delta_time,
+                quiet_sumo=not cfg.backend_verbose,
             )
             obs = extract_reset_obs(env.reset(seed=cfg.seed))
             if not obs:

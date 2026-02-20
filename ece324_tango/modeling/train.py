@@ -29,6 +29,7 @@ def main(
     use_gui: bool = False,
     device: str = "auto",
     trainer_backend: str = "local_mappo",
+    backend_verbose: bool = False,
 ):
     """Train ASCE controller using selected trainer backend."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,6 +58,7 @@ def main(
         seed=seed,
         use_gui=use_gui,
         device=device,
+        backend_verbose=backend_verbose,
     )
     backend.train(cfg)
 

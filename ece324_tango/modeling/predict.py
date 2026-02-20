@@ -25,6 +25,7 @@ def main(
     use_gui: bool = False,
     device: str = "auto",
     trainer_backend: str = "local_mappo",
+    backend_verbose: bool = False,
 ):
     """Evaluate ASCE controller vs baselines using selected backend."""
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -45,6 +46,7 @@ def main(
         seed=seed,
         use_gui=use_gui,
         device=device,
+        backend_verbose=backend_verbose,
     )
     backend.evaluate(cfg)
 
