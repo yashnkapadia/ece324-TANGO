@@ -7,66 +7,87 @@
 Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal control and scenario planning module that evaluates how nearby projects (construction, lane closures, new public transit lines) alter demand/capacity to recommend signal timing/phasing updates 🕺 💃
 
 ## Corridor for Data Simulation
-This project will focus on signalized intersections along Dundas Street West in Toronto, Ontario, Canada, starting from the intersection at University Avenue to the intersection at Bathurst St (see picture below). Data will be simulated for around 12 intersections along this corridor. This corridor is chosen because TMC data is available for these intersections, and it runs along a streetcar route which will be useful for transit-focused scenarios for PIRA [see [proposal](reports/proposal/TANGO-proposal.pdf)].
+This project will focus on signalized intersections along Dundas Street West in Toronto, Ontario, Canada, starting from the intersection at University Avenue to the intersection at Bathurst St (see picture below). Data will be simulated for 12 intersections along this corridor. This corridor is chosen because TMC data is available for these intersections, and it runs along a streetcar route which will be useful for transit-focused scenarios for PIRA [see [proposal](reports/proposal/TANGO-proposal.pdf)].
 
-![alt text](image.png)
-This figure shows the initial chosen area on SUMO web wizard. The initial scenario generation, for this selected area, is done only for cars and pedestrians. 
+![alt text](docs/assets/images/sumo_web_wizard.png)
+The figure above shows the initial chosen area on SUMO web wizard. The initial scenario generation, for this selected area, is done only for cars and pedestrians. The figure below shows the generated scenario for the selected area (the selected area is inspected using ```sumolib``` and annotated using ```matplotlib``` to highlight signalized intersections, in ```notebooks\01_inspect_network.ipynb```). The red markers indicate the locations of signalized intersections along the corridor. 
+![alt text](docs/network_map.png)
+
+
 ## Project Organization
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── environment.yml    <- Conda environment file for reproducing the environment
-├── requirements.txt   <- Pip requirements file for reproducing the environment
+├── LICENSE                <- Open-source license if one is chosen
+├── Makefile               <- Makefile with convenience commands like `make data` or `make train`
+├── README.md              <- The top-level README for developers using this project
+├── environment.yml        <- Conda environment file for reproducing the environment
+├── requirements.txt       <- Pip requirements file for reproducing the environment
+├── pixi.toml              <- Pixi configuration file for environment and dependency management
+├── pyproject.toml         <- Project configuration file with package metadata for
+│                             ece324_tango and configuration for tools like black
+├── setup.cfg              <- Configuration file for flake8
+│
 ├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
+│   ├── final              <- Final outputs for delivery or publication
+│   ├── processed          <- The final, canonical data sets for modeling
+│   │   └── intersection_map.csv   <- Mapping of intersection names to SUMO junction IDs
+│   └── raw
+│       └── tmc            <- Raw TMC (Traffic Monitoring Count) data
 │
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
+├── docs
+│   ├── network_map.png            <- Annotated SUMO network map with signalized intersections
+│   └── assets
+│       └── images
+│           └── sumo_web_wizard.png <- Screenshot of the SUMO web wizard area selection
 │
-├── models             <- Trained and serialized models, model predictions, or model summaries
+├── models                 <- Trained and serialized models, model predictions, or model summaries
 │
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
+├── notebooks              <- Jupyter notebooks for exploration and visualization
+│   └── 01_inspect_network.ipynb   <- Loads the SUMO network, lists traffic-light junctions
+│                                     and edges, and visualizes the network with signalized
+│                                     intersections annotated on a matplotlib plot
 │
-├── pixi.toml          <- Pixi configuration file for environment and dependency management
+├── references             <- Data dictionaries, manuals, and all other explanatory materials
 │
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         ece324_tango and configuration for tools like black
+├── reports                <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   ├── figures            <- Plots for reports
+│   ├── proposal
+│   │   └── TANGO-proposal.pdf    <- Project proposal document
+│   ├── results            <- Testing/evaluation results
+│   └── final              <- Final project deliverables
 │
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+├── scripts                <- Standalone data-processing and utility scripts
+│   ├── 03_map_intersections.py   <- Maps Toronto intersection names to SUMO junction IDs
+│   │                                by matching WGS84 coordinates to the nearest junctions
+│   │                                in the SUMO network; outputs intersection_map.csv
+│   └── utils              <- Shared helper utilities for scripts
 │
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   ├── figures        <- Plots for reports
-│   ├── proposal       <- Project proposal
-│   ├── results        <- Testing/evaluation results
-│   └── final          <- Final project deliverables
+├── sumo                   <- SUMO simulation files
+│   ├── config             <- SUMO configuration files
+│   ├── demand             <- Traffic demand / route files
+│   ├── network
+│   │   ├── build.bat              <- Batch script to build/rebuild the SUMO network
+│   │   ├── osm.net.xml.gz         <- Compressed SUMO network generated from OSM
+│   │   ├── osm.poly.xml.gz        <- Compressed polygon (building/land-use) data
+│   │   └── osm_bbox.osm.xml.gz    <- Raw OSM extract for the bounding box
+│   ├── output
+│   │   ├── baseline       <- Simulation output for the baseline scenario
+│   │   └── scenarios      <- Simulation output for alternative scenarios
+│   └── scenarios          <- Scenario definition files
 │
-├── setup.cfg          <- Configuration file for flake8
+├── tests                  <- Unit tests for the project
+│   └── test_data.py       <- Tests for data processing
 │
-├── tests              <- Unit tests for the project
-│   └── test_data.py   <- Tests for data processing
-│
-└── ece324_tango-model   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes ece324_tango a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+└── ece324_tango-model     <- Source code for use in this project
+    ├── __init__.py                <- Makes ece324_tango a Python module
+    ├── config.py                  <- Store useful variables and configuration
+    ├── dataset.py                 <- Scripts to download or generate data
+    ├── features.py                <- Code to create features for modeling
+    ├── plots.py                   <- Code to create visualizations
+    └── modeling
+        ├── __init__.py
+        ├── predict.py             <- Code to run model inference with trained models
+        └── train.py               <- Code to train models
 ```
 
 --------
