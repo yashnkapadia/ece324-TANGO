@@ -1,27 +1,24 @@
 """
-Purpose: Converts TMC turning volumes into SUMO flow definitions.
-         Produces demand.rou.xml with vehicle flows by time period.
+Purpose: Generates sample demand (demand.rou.xml) using heuristic flow rates.
 
-Logic:
-    - For each entry edge compute total entry volume from TMC
-    - For each TMC intersection, compute turning ratios per approach
-    - Convert entry volumes to SUMO flow elements
-    - Turning ratios are applied using <vType> route distributions or via explicit routes to specific exit edges 
+Logic: Identifies boundary entry and exit edges in the network, filters to edges
+that allow passenger vehicles and have valid outgoing connections, verifies
+route reachability, and writes one flow per entry-exit pair. Flow rates are
+estimated from lane count and speed limit — this is NOT calibrated to TMC
+data.  Use 05_calibrate.py to produce TMC-based demand instead.
 
 Inputs:
-  - data/processed/tmc_parsed.csv (parsed TMC volumes)
-  - data/processed/intersection_map.csv (SUMO junction-to-TMC mapping)
-  - sumo/network/osm.net.xml.gz (to resolve edge IDs)
+  - sumo/network/osm.net.xml.gz
 
 Outputs:
-  - sumo/demand/demand.rou.xml (SUMO flow definitions)
+  - sumo/demand/demand.rou.xml (heuristic flows, overwritten by 05_calibrate.py)
 
 Running:
     python scripts\04_generate_demand.py
 """
 
-# USES HEURISTICS FOR INITIAL DEMAND - CALIBRATION IN 05_calibrate.py WILL SCALE TO MATCH TMC APPROACH TOTALS
-# STARTING POINT FOR CALIBRATION
+# HEURISTIC DEMAND FOR SMOKE-TESTING THE NETWORK BEFORE TMC CALIBRATION.
+# RUN 05_CALIBRATE.PY TO REPLACE THIS WITH REAL TMC-BASED DEMAND.
 
 # Interim phase of the project only focuses on demand flows of passenger vehicles.
 
@@ -29,6 +26,7 @@ import sumolib
 import pandas as pd
 import os
 from lxml import etree
+
 
 def get_entry_edges(net):
     """Find all edges that enter the network from the boundary (dead-end sources).
@@ -55,6 +53,7 @@ def get_entry_edges(net):
                 entry_edges.append(edge)
     return entry_edges
 
+
 def get_exit_edges(net):
     """Find all edges that exit the network at the boundary.
     Only returns edges that allow passenger vehicles."""
@@ -70,6 +69,7 @@ def get_exit_edges(net):
             exit_edges.append(edge)
     return exit_edges
 
+
 def main():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     net_file = os.path.join(base_dir, "sumo", "network", "osm.net.xml.gz")
@@ -84,17 +84,25 @@ def main():
     print(f"Entry edges: {len(entry_edges)}")
     print(f"Exit edges: {len(exit_edges)}")
 
-    # For the initial demand, we assign flows between entry-exit edge pairs.
-    # The volume is derived from TMC approach totals.
-    
-    # Approach: For each entry edge, find the nearest study intersection,
-    # look up the TMC approach volume, and create a flow to plausible exit edges.
+    # Assign heuristic flows between entry-exit edge pairs.
+    # For TMC-calibrated demand, run 05_calibrate.py instead.
+
+    # For each entry edge, create flows to a few exit edges
+    # with volume estimated from lane count and speed.
 
     root = etree.Element("routes")
 
     # Add default vehicle type
-    etree.SubElement(root, "vType", id="car", accel="2.6", decel="4.5",
-                      sigma="0.5", length="5.0", maxSpeed="13.89")
+    etree.SubElement(
+        root,
+        "vType",
+        id="car",
+        accel="2.6",
+        decel="4.5",
+        sigma="0.5",
+        length="5.0",
+        maxSpeed="13.89",
+    )
 
     # AM peak hour (8:00-9:00) as default period
     # Simulation runs 0-3600s
@@ -108,7 +116,7 @@ def main():
         # Default flow rate: 200 veh/hr for major roads, 50 for minor
         n_lanes = entry_edge.getLaneNumber()
         speed = entry_edge.getSpeed()  # m/s
-        
+
         # Heuristic: more lanes and higher speed = more volume
         if n_lanes >= 2 and speed > 11:  # > ~40 km/h
             vph = 300  # vehicles per hour (initial estimate, calibrated later)
@@ -128,16 +136,19 @@ def main():
                 skipped += 1
                 continue
             partial_vph = max(1, vph // 3)
-            etree.SubElement(root, "flow",
-                              id=f"flow_{flow_id}",
-                              type="car",
-                              begin=str(SIM_START),
-                              end=str(SIM_END),
-                              vehsPerHour=str(partial_vph),
-                              **{"from": entry_edge.getID()},
-                              to=exit_edge.getID(),
-                              departLane="best",
-                              departSpeed="max")
+            etree.SubElement(
+                root,
+                "flow",
+                id=f"flow_{flow_id}",
+                type="car",
+                begin=str(SIM_START),
+                end=str(SIM_END),
+                vehsPerHour=str(partial_vph),
+                **{"from": entry_edge.getID()},
+                to=exit_edge.getID(),
+                departLane="best",
+                departSpeed="max",
+            )
             flow_id += 1
     print(f"Skipped {skipped} unreachable entry-exit pairs")
 
@@ -147,8 +158,6 @@ def main():
     tree.write(out_path, pretty_print=True, xml_declaration=True, encoding="UTF-8")
     print(f"\nWrote {flow_id} flows to {out_path}")
 
-    # TODO: After calibration, replace the heuristic volumes with TMC-derived values.
-    # The calibration loop (05_calibrate.py) will scale these flows.
 
 if __name__ == "__main__":
     main()
