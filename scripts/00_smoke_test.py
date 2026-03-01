@@ -17,6 +17,7 @@ import os
 import sys
 import subprocess
 
+
 def main():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     net_file = os.path.join(base_dir, "sumo", "network", "osm.net.xml.gz")
@@ -31,29 +32,45 @@ def main():
 
     trip_file = os.path.join(base_dir, "sumo", "demand", "random_trips.rou.xml")
     print("Generating random trips for smoke test...")
-    subprocess.run([
-        sys.executable, random_trips_py,
-        "-n", net_file,
-        "-o", trip_file,
-        "-e", "60",        # 60 seconds
-        "-p", "2.0",       # one vehicle every 2 seconds
-        "--route-file", trip_file,
-        "--validate",
-    ], check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            random_trips_py,
+            "-n",
+            net_file,
+            "-o",
+            trip_file,
+            "-e",
+            "60",  # 60 seconds
+            "-p",
+            "2.0",  # one vehicle every 2 seconds
+            "--route-file",
+            trip_file,
+            "--validate",
+        ],
+        check=True,
+    )
 
     # Run SUMO headless for 60 seconds
     print("\nRunning SUMO headless for 60 seconds...")
     import traci
-    
+
     sumo_cmd = [
         "sumo",  # headless (no GUI)
-        "-n", net_file,
-        "-r", trip_file,
-        "--additional-files", os.path.join(base_dir, "sumo", "network", "tls_overrides.add.xml.gz"),
-        "--begin", "0",
-        "--end", "60",
-        "--step-length", "1.0",
-        "--no-step-log", "true",
+        "-n",
+        net_file,
+        "-r",
+        trip_file,
+        "--additional-files",
+        os.path.join(base_dir, "sumo", "network", "tls_overrides.add.xml.gz"),
+        "--begin",
+        "0",
+        "--end",
+        "60",
+        "--step-length",
+        "1.0",
+        "--no-step-log",
+        "true",
     ]
 
     traci.start(sumo_cmd)
@@ -65,9 +82,10 @@ def main():
             n_tls = len(traci.trafficlight.getIDList())
             print(f"  Step {step:4d}: {n_vehicles:3d} vehicles, {n_tls} traffic lights")
         step += 1
-    
+
     traci.close()
     print("\nSmoke test PASSED. SUMO and TraCI working correctly.")
+
 
 if __name__ == "__main__":
     main()

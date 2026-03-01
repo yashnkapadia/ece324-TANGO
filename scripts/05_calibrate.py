@@ -91,7 +91,8 @@ def get_outgoing_edges_by_turn(net, node, incoming_edge):
         return {}
 
     outgoing = [
-        e for e in node.getOutgoing()
+        e
+        for e in node.getOutgoing()
         if not e.isSpecial()
         and e.allows("passenger")
         and e.getID() != incoming_edge.getID()
@@ -140,7 +141,9 @@ def get_outgoing_edges_by_turn(net, node, incoming_edge):
                 best, best_diff = out_edge, abs(diff - 90)
             elif movement == "r" and 210 <= diff <= 330 and abs(diff - 270) < best_diff:
                 best, best_diff = out_edge, abs(diff - 270)
-            elif movement == "t" and (diff < 30 or diff > 330) and min(diff, 360 - diff) < best_diff:
+            elif (
+                movement == "t" and (diff < 30 or diff > 330) and min(diff, 360 - diff) < best_diff
+            ):
                 best, best_diff = out_edge, min(diff, 360 - diff)
         if best is not None:
             final[movement] = best
@@ -155,8 +158,7 @@ def get_am_peak_volumes(tmc_df, tmc_location_name):
     Returns dict: {("n","r"): volume, ("n","t"): volume, ...} for all 12 combos.
     """
     sub = tmc_df[
-        (tmc_df["location_name"] == tmc_location_name)
-        & (tmc_df["n_appr_cars_t"].notna())
+        (tmc_df["location_name"] == tmc_location_name) & (tmc_df["n_appr_cars_t"].notna())
     ]
 
     if len(sub) == 0:
@@ -204,15 +206,18 @@ def main():
         os.path.join(base_dir, "data", "processed", "tmc_parsed.csv"),
         low_memory=False,
     )
-    int_map = pd.read_csv(
-        os.path.join(base_dir, "data", "processed", "intersection_map.csv")
-    )
+    int_map = pd.read_csv(os.path.join(base_dir, "data", "processed", "intersection_map.csv"))
 
     root = etree.Element("routes")
     etree.SubElement(
-        root, "vType",
-        id="car", accel="2.6", decel="4.5",
-        sigma="0.5", length="5.0", maxSpeed="13.89",
+        root,
+        "vType",
+        id="car",
+        accel="2.6",
+        decel="4.5",
+        sigma="0.5",
+        length="5.0",
+        maxSpeed="13.89",
     )
 
     flow_id = 0
@@ -240,8 +245,7 @@ def main():
             continue
 
         incoming_passenger = [
-            e for e in node.getIncoming()
-            if not e.isSpecial() and e.allows("passenger")
+            e for e in node.getIncoming() if not e.isSpecial() and e.allows("passenger")
         ]
 
         approach_to_edge = {}
@@ -283,12 +287,15 @@ def main():
             out_edge = turn_edges[movement]
 
             if not verify_route(net, in_edge, out_edge):
-                print(f"    SKIP {direction.upper()}-{movement}: no route {in_edge.getID()} -> {out_edge.getID()}")
+                print(
+                    f"    SKIP {direction.upper()}-{movement}: no route {in_edge.getID()} -> {out_edge.getID()}"
+                )
                 total_skipped += 1
                 continue
 
             etree.SubElement(
-                root, "flow",
+                root,
+                "flow",
                 id=f"flow_{flow_id}",
                 type="car",
                 begin=str(SIM_START),
@@ -299,7 +306,9 @@ def main():
                 departLane="best",
                 departSpeed="max",
             )
-            print(f"    flow_{flow_id}: {direction.upper()}-{movement} = {vph} veh/hr ({in_edge.getID()} -> {out_edge.getID()})")
+            print(
+                f"    flow_{flow_id}: {direction.upper()}-{movement} = {vph} veh/hr ({in_edge.getID()} -> {out_edge.getID()})"
+            )
             assigned_by_approach[direction] += vph
             flow_id += 1
             total_created += 1
@@ -310,14 +319,16 @@ def main():
             if tmc_vol == 0 and asgn_vol == 0:
                 continue
             geh = compute_geh(asgn_vol, tmc_vol)
-            geh_records.append({
-                "intersection": int_name,
-                "approach": d.upper(),
-                "tmc_vph": tmc_vol,
-                "assigned_vph": asgn_vol,
-                "geh": round(geh, 2),
-                "pass": geh < 5.0,
-            })
+            geh_records.append(
+                {
+                    "intersection": int_name,
+                    "approach": d.upper(),
+                    "tmc_vph": tmc_vol,
+                    "assigned_vph": asgn_vol,
+                    "geh": round(geh, 2),
+                    "pass": geh < 5.0,
+                }
+            )
 
     out_path = os.path.join(base_dir, "sumo", "demand", "demand.rou.xml")
     tree = etree.ElementTree(root)
@@ -342,7 +353,9 @@ def main():
     print("-" * 60)
     for _, r in geh_df.iterrows():
         mark = "OK" if r["pass"] else "FAIL"
-        print(f"{r['intersection']:<22} {r['approach']:>3} {r['tmc_vph']:>6} {r['assigned_vph']:>6} {r['geh']:>6.2f} {mark:>5}")
+        print(
+            f"{r['intersection']:<22} {r['approach']:>3} {r['tmc_vph']:>6} {r['assigned_vph']:>6} {r['geh']:>6.2f} {mark:>5}"
+        )
     print("-" * 60)
     print(f"{n_pass}/{n_total} approaches pass GEH < 5  ({pct:.0f}%)")
     print(f"Calibration report saved to {report_path}")

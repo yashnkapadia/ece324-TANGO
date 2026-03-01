@@ -19,10 +19,11 @@ import pandas as pd
 import os
 import glob
 
+
 def main():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     raw_dir = os.path.join(base_dir, "data", "raw", "tmc")
-    
+
     # Load all CSVs
     csv_files = glob.glob(os.path.join(raw_dir, "*.csv"))
     if not csv_files:
@@ -34,12 +35,12 @@ def main():
     for f in csv_files:
         print(f"Reading {os.path.basename(f)}...")
         try:
-            df = pd.read_csv(f, encoding='utf-8')
+            df = pd.read_csv(f, encoding="utf-8")
             dfs.append(df)
             print(f"  {len(df)} rows, columns: {list(df.columns)}")
         except Exception as e:
             print(f"  Error reading {f}: {e}")
-    
+
     if not dfs:
         print("No data loaded.")
         return
@@ -62,33 +63,33 @@ def main():
     # Standardize column names (adjust based on actual downloaded data)
     # Print unique columns to understand structure
     print(f"\nUnique columns: {list(raw.columns)}")
-    
+
     # Auto-detect key columns
     col_map = {}
     for col in raw.columns:
         cl = col.lower().strip()
-        if 'location' in cl and 'id' in cl:
-            col_map['location_id'] = col
-        elif 'location' in cl or 'intersection' in cl:
-            col_map['location_name'] = col
-        elif 'datetime' in cl or 'date' in cl:
-            col_map['datetime'] = col
-        elif cl in ('dir', 'direction', 'approach'):
-            col_map['direction'] = col
-        elif 'movement' in cl or 'turn' in cl:
-            col_map['movement'] = col
-        elif cl in ('volume', 'count', 'veh_volume', 'vehicle_count'):
-            col_map['volume'] = col
-        elif 'classification' in cl or 'class' in cl:
-            col_map['classification'] = col
+        if "location" in cl and "id" in cl:
+            col_map["location_id"] = col
+        elif "location" in cl or "intersection" in cl:
+            col_map["location_name"] = col
+        elif "datetime" in cl or "date" in cl:
+            col_map["datetime"] = col
+        elif cl in ("dir", "direction", "approach"):
+            col_map["direction"] = col
+        elif "movement" in cl or "turn" in cl:
+            col_map["movement"] = col
+        elif cl in ("volume", "count", "veh_volume", "vehicle_count"):
+            col_map["volume"] = col
+        elif "classification" in cl or "class" in cl:
+            col_map["classification"] = col
 
     print(f"\nDetected column mapping: {col_map}")
 
     # Filter to study area
-    # Our study area intersection names contain "Dundas" 
+    # Our study area intersection names contain "Dundas"
     # Filter by name if available
-    if 'location_name' in col_map:
-        name_col = col_map['location_name']
+    if "location_name" in col_map:
+        name_col = col_map["location_name"]
         dundas_mask = raw[name_col].str.contains("DUNDAS", case=False, na=False)
         filtered = raw[dundas_mask].copy()
         print(f"\nFiltered to Dundas intersections: {len(filtered)} rows")
@@ -101,6 +102,7 @@ def main():
     out_path = os.path.join(base_dir, "data", "processed", "tmc_parsed.csv")
     filtered.to_csv(out_path, index=False)
     print(f"\nSaved {len(filtered)} rows to {out_path}")
+
 
 if __name__ == "__main__":
     main()
