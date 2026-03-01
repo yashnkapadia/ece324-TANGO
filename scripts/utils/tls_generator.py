@@ -28,6 +28,7 @@ Running:
     python scripts\utils\tls_generator.py
     sumo-gui -n "sumo/network/osm.net.xml.gz" --additional-files "sumo/network/tls_overrides.add.xml.gz"
 """
+# Interim phase of the project only focuses on demand flows of passenger vehicles.
 
 import os
 import math
@@ -127,6 +128,10 @@ def main() -> None:
 
     for tls_obj in net.getTrafficLights():
         tls_id = tls_obj.getID()
+
+        if tls_id.startswith("cluster_"):
+            continue
+
         n_links = _expected_state_size(tls_obj)
         if not n_links or n_links <= 0:
             continue
@@ -145,13 +150,20 @@ def main() -> None:
                 continue
 
         all_red = "r" * n_links
+
+        ped_green = list(all_red)
+        for i in excluded:
+            if 0 <= i < n_links:
+                ped_green[i] = "G"
+        ped_green_str = "".join(ped_green)
+
         phases = [
-            (EW_GREEN, _state_string(n_links, ew, "G")),
+            (EW_GREEN, _state_string(n_links, ew, "g")),
             (YELLOW,   _state_string(n_links, ew, "y")),
-            (ALL_RED,  all_red),
-            (NS_GREEN, _state_string(n_links, ns, "G")),
+            (ALL_RED,  ped_green_str),
+            (NS_GREEN, _state_string(n_links, ns, "g")),
             (YELLOW,   _state_string(n_links, ns, "y")),
-            (ALL_RED,  all_red),
+            (ALL_RED,  ped_green_str),
         ]
 
         tl_elem = etree.SubElement(
