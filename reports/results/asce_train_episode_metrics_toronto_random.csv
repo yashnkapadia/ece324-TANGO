@@ -1,0 +1,2 @@
+episode,seed,scenario_id,mean_global_reward,steps,actor_loss,critic_loss,entropy
+0,7,toronto_random,-0.0645796494173156,12,-0.010605412535369396,0.23610305786132812,0.6886395812034607

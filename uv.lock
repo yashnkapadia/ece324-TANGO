@@ -1,0 +1,8 @@
+version = 1
+revision = 3
+requires-python = "==3.12.*"
+
+[[package]]
+name = "ece324-tango"
+version = "0.0.1"
+source = { editable = "." }

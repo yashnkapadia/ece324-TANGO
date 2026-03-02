@@ -7,11 +7,11 @@
 /reports/results/error_events.jsonl
 
 # Generated model checkpoints (reproduced via pixi tasks)
-/models/*.pt
+#/models/*.pt
 
 # Per-run result CSVs and sweeps
-/reports/results/*.csv
-/reports/results/toronto_sweep/
+#/reports/results/*.csv
+#/reports/results/toronto_sweep/
 
 # Unzipped SUMO network (regenerated from .gz)
 /sumo/network/osm.net.xml
@@ -154,6 +154,9 @@ ipython_config.py
 #   pixi.lock should be committed to version control for reproducibility
 #   .pixi/ contains the environments and should not be committed
 .pixi/
+
+# Other
+.serena/
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/

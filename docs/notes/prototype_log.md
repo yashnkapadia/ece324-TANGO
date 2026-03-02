@@ -327,3 +327,40 @@
     - MAPPO `objective_mean_reward=0.0748`
     - max-pressure `objective_mean_reward=0.4077` (higher)
   - conclusion: max-pressure still leads MAPPO on both `time_loss_s` and objective-shaped reward for this corridor setup.
+
+## 2026-03-02 (backend quick-check + strategic framing update)
+- User request:
+  - run a small local-vs-other-backends comparison and reassess expectations around MAPPO vs max-pressure.
+- Quick benchmark attempt:
+  - target config: Toronto demand, objective reward, short horizon, tiny episode budget.
+  - first attempt (`episodes=3`, `seconds=120`) encountered runtime failures in non-local backends.
+  - second attempt (`episodes=2`, `seconds=60`) completed only for local backend.
+- Observed backend status in this quick-check:
+  - `local_mappo`: train + eval completed.
+    - eval output: `reports/results/quick_backend_compare_s60e2/eval_local_mappo.csv`
+    - aggregate means (2 eval episodes):
+      - MAPPO `time_loss_s=1490.59`
+      - fixed-time `time_loss_s=1139.82`
+      - max-pressure `time_loss_s=984.42`
+      - ratio `MAPPO / max-pressure = 1.514`
+  - `benchmarl`: train failed with `FatalTraCIError: Connection closed by SUMO` in TorchRL/PettingZoo step path on Toronto demand even at `seconds=60`.
+  - `xuance`: train failed with heterogeneous observation packing error
+    (`ValueError: setting an array element with a sequence`), including retry with `TANGO_XUANCE_USE_VALUE_NORM=0`.
+- Interpretation recorded from session discussion:
+  - demand exhaustion is a known limitation for long-horizon runs with current route file (`end=300`), but the non-local failures above occurred in short-horizon runs (`seconds=60` and `120`) and therefore are unlikely to be explained by simple demand exhaustion timing.
+  - we should assume local backend is currently the only production-stable MAPPO path on this corridor until non-local backend bugs are fixed.
+- Strategic recommendation (from user + assistant alignment):
+  - for nominal traffic, expecting plain MAPPO to consistently beat max-pressure is not a defensible default assumption.
+  - keep max-pressure as a strong baseline (and fallback policy).
+  - pursue MAPPO improvements with max-pressure inductive bias:
+    - imitation/warm-start from max-pressure behavior,
+    - residual policy over max-pressure action proposals,
+    - max-pressure-derived features in policy input.
+  - shift primary differentiation experiments to scenarios where max-pressure assumptions are stressed:
+    - incidents/lane blockages,
+    - spillback and network-level backlogs,
+    - non-stationary surges and unusual event patterns,
+    - priority-routing disruptions (e.g., transit/emergency constraints).
+  - evaluation framing target:
+    - match near max-pressure on nominal regimes,
+    - outperform on rare/high-impact regimes that better reflect real incident traffic.
