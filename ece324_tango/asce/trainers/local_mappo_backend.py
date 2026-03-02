@@ -298,6 +298,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         prev_obs = {
                             a: np.asarray(obs[a], dtype=np.float32) for a in active_agents
                         }
+                        skip_kpi_update = False
 
                         if controller_name == "mappo":
                             gobs = flatten_obs_by_agent(obs, active_agents)
@@ -321,6 +322,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 "(demand exhausted). Treating as episode end."
                             )
                             done = True
+                            skip_kpi_update = True
                             obs = {}
                             rewards = {a: 0.0 for a in active_agents}
                             infos = {}
@@ -347,7 +349,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                             for a, r in rewards.items():
                                 per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
                         steps += 1
-                        kpi.update(env)
+                        if not skip_kpi_update:
+                            kpi.update(env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
                     throughput_proxy = float(sum(max(0.0, v) for v in per_agent_reward_totals.values()))
