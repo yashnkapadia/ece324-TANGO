@@ -121,22 +121,25 @@ class LocalMappoBackend(AsceTrainerBackend):
                         rewards = {a: 0.0 for a in active_agents}
                         infos = {}
                     sim_time = float(ep_steps + 1) * float(cfg.delta_time)
-                    metrics_by_agent = compute_metrics_for_agents(
-                        env=env,
-                        agent_ids=active_agents,
-                        time_step=sim_time,
-                        actions=actions,
-                        action_green_dur=float(cfg.delta_time),
-                        scenario_id=cfg.scenario_id,
-                        observations=obs,
-                    )
-                    shaped_rewards = rewards_from_metrics(
-                        metrics_by_agent=metrics_by_agent,
-                        mode=cfg.reward_mode,
-                        weights=reward_weights,
-                    )
-                    if shaped_rewards:
-                        rewards = shaped_rewards
+                    if not done:
+                        metrics_by_agent = compute_metrics_for_agents(
+                            env=env,
+                            agent_ids=active_agents,
+                            time_step=sim_time,
+                            actions=actions,
+                            action_green_dur=float(cfg.delta_time),
+                            scenario_id=cfg.scenario_id,
+                            observations=obs,
+                        )
+                        shaped_rewards = rewards_from_metrics(
+                            metrics_by_agent=metrics_by_agent,
+                            mode=cfg.reward_mode,
+                            weights=reward_weights,
+                        )
+                        if shaped_rewards:
+                            rewards = shaped_rewards
+                    else:
+                        metrics_by_agent = {}
 
                     global_reward = float(np.mean(list(rewards.values()))) if rewards else 0.0
                     ep_reward += global_reward
@@ -144,7 +147,8 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                     for i, agent in enumerate(active_agents):
                         a_obs = padded_obs_list[i]
-                        all_rows.append(metrics_by_agent[agent].to_row())
+                        if metrics_by_agent:
+                            all_rows.append(metrics_by_agent[agent].to_row())
                         agent_reward = float(rewards.get(agent, global_reward))
                         trajectories[agent].append(
                             Transition(
@@ -293,22 +297,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                             rewards = {a: 0.0 for a in active_agents}
                             infos = {}
                         sim_time = float(steps + 1) * float(cfg.delta_time)
-                        metrics_by_agent = compute_metrics_for_agents(
-                            env=env,
-                            agent_ids=active_agents,
-                            time_step=sim_time,
-                            actions=actions,
-                            action_green_dur=float(cfg.delta_time),
-                            scenario_id="baseline",
-                            observations=obs,
-                        )
-                        shaped_rewards = rewards_from_metrics(
-                            metrics_by_agent=metrics_by_agent,
-                            mode=cfg.reward_mode,
-                            weights=reward_weights,
-                        )
-                        if shaped_rewards:
-                            rewards = shaped_rewards
+                        if not done:
+                            metrics_by_agent = compute_metrics_for_agents(
+                                env=env,
+                                agent_ids=active_agents,
+                                time_step=sim_time,
+                                actions=actions,
+                                action_green_dur=float(cfg.delta_time),
+                                scenario_id="baseline",
+                                observations=obs,
+                            )
+                            shaped_rewards = rewards_from_metrics(
+                                metrics_by_agent=metrics_by_agent,
+                                mode=cfg.reward_mode,
+                                weights=reward_weights,
+                            )
+                            if shaped_rewards:
+                                rewards = shaped_rewards
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():

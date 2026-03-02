@@ -278,6 +278,9 @@ class MAPPOTrainer:
         torch.save(payload, out_path)
 
     def load(self, in_path: str):
+        # weights_only=False is required because the payload includes numpy/list arrays
+        # from ObsRunningNorm.state_dict(). These are written by our own save() method
+        # and loaded from the local models/ directory only — not from untrusted sources.
         payload = torch.load(in_path, map_location=self.device, weights_only=False)
         self.actor.load_state_dict(payload["actor"])
         self.critic.load_state_dict(payload["critic"])

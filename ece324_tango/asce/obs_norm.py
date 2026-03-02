@@ -49,8 +49,8 @@ class ObsRunningNorm:
             "dim": self.dim,
             "eps": self.eps,
             "count": self._count,
-            "mean": self._mean.copy(),
-            "M2": self._M2.copy(),
+            "mean": self._mean.tolist(),
+            "M2": self._M2.tolist(),
         }
 
     def load_state_dict(self, state: dict) -> None:
