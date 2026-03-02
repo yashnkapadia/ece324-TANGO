@@ -290,6 +290,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                     done = False
                     ep_rewards = []
                     per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
+                    objective_ep_rewards = []
+                    objective_per_agent_reward_totals: Dict[str, float] = {
+                        a: 0.0 for a in sorted(obs.keys())
+                    }
                     steps = 0
                     kpi = KPITracker()
 
@@ -327,6 +331,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             rewards = {a: 0.0 for a in active_agents}
                             infos = {}
                         sim_time = float(steps + 1) * float(cfg.delta_time)
+                        objective_shaped_rewards: Dict[str, float] = {}
                         if not done:
                             metrics_by_agent = compute_metrics_for_agents(
                                 env=env,
@@ -342,12 +347,27 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 mode=cfg.reward_mode,
                                 weights=reward_weights,
                             )
+                            objective_shaped_rewards = (
+                                shaped_rewards
+                                if cfg.reward_mode == "objective"
+                                else rewards_from_metrics(
+                                    metrics_by_agent=metrics_by_agent,
+                                    mode="objective",
+                                    weights=reward_weights,
+                                )
+                            )
                             if shaped_rewards:
                                 rewards = shaped_rewards
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():
                                 per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
+                        if objective_shaped_rewards:
+                            objective_ep_rewards.append(float(np.mean(list(objective_shaped_rewards.values()))))
+                            for a, r in objective_shaped_rewards.items():
+                                objective_per_agent_reward_totals[a] = objective_per_agent_reward_totals.get(
+                                    a, 0.0
+                                ) + float(r)
                         steps += 1
                         if not skip_kpi_update:
                             kpi.update(env)
@@ -356,6 +376,12 @@ class LocalMappoBackend(AsceTrainerBackend):
                     throughput_proxy = float(sum(max(0.0, v) for v in per_agent_reward_totals.values()))
                     delay_proxy = float(-avg_reward)
                     fairness = jain_index(list(per_agent_reward_totals.values()))
+                    objective_avg_reward = float(np.mean(objective_ep_rewards)) if objective_ep_rewards else 0.0
+                    objective_throughput_proxy = float(
+                        sum(max(0.0, v) for v in objective_per_agent_reward_totals.values())
+                    )
+                    objective_delay_proxy = float(-objective_avg_reward)
+                    objective_fairness = jain_index(list(objective_per_agent_reward_totals.values()))
                     k = kpi.summary()
 
                     records.append(
@@ -368,6 +394,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "delay_proxy": delay_proxy,
                             "throughput_proxy": throughput_proxy,
                             "fairness_jain": fairness,
+                            "objective_mean_reward": objective_avg_reward,
+                            "objective_delay_proxy": objective_delay_proxy,
+                            "objective_throughput_proxy": objective_throughput_proxy,
+                            "objective_fairness_jain": objective_fairness,
                             "time_loss_s": k.time_loss_s,
                             "person_time_loss_s": k.person_time_loss_s,
                             "avg_trip_time_s": k.avg_trip_time_s,

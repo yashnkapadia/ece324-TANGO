@@ -28,7 +28,8 @@
 - Benchmark backends: `pixi run benchmark-backends`
 - Backend verbose logs (optional): add `--backend-verbose`
 - Use objective reward shaping (default): `--reward-mode objective`
-- Optional baseline reward path: `--reward-mode sumo`
+- Use SUMO-native rewards: `--reward-mode sumo`
+- Use delay-only surrogate for proposal KPI alignment: `--reward-mode time_loss`
 
 ## Backend Selection
 - Supported values: `local_mappo`, `benchmarl`, `xuance`, `libsignal`
@@ -72,24 +73,27 @@
 - Third-party deprecation warnings from `torchrl` appear during pytest collection. They do not currently affect run correctness but should be tracked for dependency updates.
 
 ## Reward Objective
-- `reward_mode`: `objective` (default) or `sumo`
+- `reward_mode`: `objective` (default), `sumo`, or `time_loss`
 - Objective reward:
   - `- reward_delay_weight * log1p(delay)`
   - `+ reward_throughput_weight * log1p(throughput)`
   - `+ reward_fairness_weight * Jain(throughput across intersections)`
+- Time-loss mode reward:
+  - `- reward_delay_weight * log1p(delay)` (normalized for stability)
 
 ## Observation Normalization
-- Enabled with `--use-obs-norm` flag (default: off).
+- Enabled by default (`--use-obs-norm`).
+- Disable explicitly with `--no-use-obs-norm`.
 - `ObsRunningNorm` (Welford online, per-feature) is applied to padded local obs and global obs.
 - Stats are saved under keys `"obs_norm"` / `"gobs_norm"` in the model checkpoint.
-- Eval path loads and applies the same stats without updating them.
+- Eval path validates `use_obs_norm` parity with checkpoint metadata and fails fast on mismatch.
 
 ## GPU Notes
 - RTX 4070 Laptop, CUDA 12.6. Use `--device auto` (default) to pick GPU automatically.
 - All N-agent observations are batched into a single GPU forward pass per step (`act_batch()`).
 - Training throughput is SUMO-limited (CPU), not GPU-limited. Longer episodes give more data.
 - To maximize data per wall-clock minute: increase `--episodes` rather than `--seconds`
-  if the long-horizon SUMO crash recurs.
+  until the demand exhaustion issue is resolved (see Known Issue below).
 
 ## Known Bugs Fixed (2026-03-01)
 - **Action space crippled**: `n_actions` was `min(action_dims)` = 2; 10/12 agents could
@@ -97,12 +101,27 @@
 - **GAE bias on truncation**: `last_value` was hardcoded 0.0; now bootstrapped from critic.
 - **Credit assignment lost**: all agents received global mean reward; now each gets own reward.
 
+## Known Issue: SUMO Demand Exhaustion (FatalTraCIError)
+- **Symptom**: `traci.exceptions.FatalTraCIError: Connection closed by SUMO` at ~step 57
+  (~285 s into a 300 s episode).
+- **Root cause**: `demand.rou.xml` defines finite vehicle flows that all complete their trips
+  before the simulation clock reaches `--seconds`. SUMO has nothing left to simulate and
+  exits, closing the TraCI TCP socket. The next `env.step()` call hits the closed socket.
+- **Current mitigation**: `env.step()` is wrapped in `try/except FatalTraCIError`; the
+  episode is treated as done and training continues normally. A warning is logged.
+- **To fix properly** (needed for `--seconds 600` runs):
+  - Extend flow departure window in the route file: change `end="300"` → `end="600"` (or
+    match `--seconds`).
+  - Or keep SUMO alive with `--until <seconds>` in `sumo/config/baseline.sumocfg`.
+  - `random_trips.rou.xml` may or may not have the same issue — verify before long runs.
+
 ## Proposal KPI Path
 - Evaluation CSV now includes proposal-aligned fields:
   - `time_loss_s`
   - `person_time_loss_s`
   - `avg_trip_time_s`
   - `arrived_vehicles`
+  - `objective_mean_reward` / `objective_delay_proxy` / `objective_throughput_proxy` / `objective_fairness_jain`
 - Current occupancy heuristic:
   - transit-like IDs (`bus|tram|streetcar|ttc`) => 30 persons
   - otherwise => 1.3 persons

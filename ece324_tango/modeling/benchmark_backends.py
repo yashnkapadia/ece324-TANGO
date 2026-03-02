@@ -14,6 +14,7 @@ from ece324_tango.asce.trainers import EvalConfig, TrainConfig, get_backend
 from ece324_tango.config import RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
+_VALID_REWARD_MODES = {"objective", "sumo", "time_loss"}
 
 
 def _parse_csv_list(raw: str) -> List[str]:
@@ -30,7 +31,10 @@ def main(
     ppo_epochs: int = 1,
     minibatch_size: int = 64,
     device: str = "cpu",
-    reward_mode: str = "objective",
+    reward_mode: str = typer.Option(
+        "objective",
+        help="Reward mode: objective | sumo | time_loss",
+    ),
     reward_delay_weight: float = 1.0,
     reward_throughput_weight: float = 1.0,
     reward_fairness_weight: float = 0.25,
@@ -49,6 +53,12 @@ def main(
         raise typer.BadParameter("No backends provided.")
     if not selected_seeds:
         raise typer.BadParameter("No seeds provided.")
+    reward_mode = str(reward_mode).strip().lower()
+    if reward_mode not in _VALID_REWARD_MODES:
+        raise typer.BadParameter(
+            f"Unsupported reward mode: {reward_mode!r}. "
+            f"Expected one of: {', '.join(sorted(_VALID_REWARD_MODES))}."
+        )
 
     if not net_file or not route_file:
         net_file, route_file = get_default_sumo_files()

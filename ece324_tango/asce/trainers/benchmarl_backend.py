@@ -281,6 +281,16 @@ class BenchmarlBackend(AsceTrainerBackend):
                         exp, deterministic=True
                     )
                 k = self._kpi_from_rollout_replay(rollout=rollout, cfg=cfg)
+                objective_mean_reward = mean_reward if cfg.reward_mode == "objective" else float("nan")
+                objective_delay_proxy = float(-mean_reward) if cfg.reward_mode == "objective" else float("nan")
+                objective_throughput_proxy = (
+                    float(sum(max(0.0, value) for value in per_agent_totals.values()))
+                    if cfg.reward_mode == "objective"
+                    else float("nan")
+                )
+                objective_fairness = (
+                    jain_index(list(per_agent_totals.values())) if cfg.reward_mode == "objective" else float("nan")
+                )
                 records.append(
                     {
                         "controller": "mappo",
@@ -293,6 +303,10 @@ class BenchmarlBackend(AsceTrainerBackend):
                             sum(max(0.0, value) for value in per_agent_totals.values())
                         ),
                         "fairness_jain": jain_index(list(per_agent_totals.values())),
+                        "objective_mean_reward": objective_mean_reward,
+                        "objective_delay_proxy": objective_delay_proxy,
+                        "objective_throughput_proxy": objective_throughput_proxy,
+                        "objective_fairness_jain": objective_fairness,
                         "time_loss_s": k.time_loss_s,
                         "person_time_loss_s": k.person_time_loss_s,
                         "avg_trip_time_s": k.avg_trip_time_s,
@@ -332,6 +346,10 @@ class BenchmarlBackend(AsceTrainerBackend):
                     done = False
                     ep_rewards = []
                     per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
+                    objective_ep_rewards = []
+                    objective_per_agent_reward_totals: Dict[str, float] = {
+                        a: 0.0 for a in sorted(obs.keys())
+                    }
                     steps = 0
                     kpi = KPITracker()
 
@@ -353,16 +371,30 @@ class BenchmarlBackend(AsceTrainerBackend):
                             observations=obs,
                         )
                         shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                        objective_shaped = (
+                            shaped
+                            if cfg.reward_mode == "objective"
+                            else rewards_from_metrics(
+                                metrics_by_agent, mode="objective", weights=reward_weights
+                            )
+                        )
                         if shaped:
                             rewards = shaped
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():
                                 per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
+                        if objective_shaped:
+                            objective_ep_rewards.append(float(np.mean(list(objective_shaped.values()))))
+                            for a, r in objective_shaped.items():
+                                objective_per_agent_reward_totals[a] = objective_per_agent_reward_totals.get(
+                                    a, 0.0
+                                ) + float(r)
                         steps += 1
                         kpi.update(baseline_env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
+                    objective_avg_reward = float(np.mean(objective_ep_rewards)) if objective_ep_rewards else 0.0
                     k = kpi.summary()
                     records.append(
                         {
@@ -376,6 +408,14 @@ class BenchmarlBackend(AsceTrainerBackend):
                                 sum(max(0.0, value) for value in per_agent_reward_totals.values())
                             ),
                             "fairness_jain": jain_index(list(per_agent_reward_totals.values())),
+                            "objective_mean_reward": objective_avg_reward,
+                            "objective_delay_proxy": float(-objective_avg_reward),
+                            "objective_throughput_proxy": float(
+                                sum(max(0.0, value) for value in objective_per_agent_reward_totals.values())
+                            ),
+                            "objective_fairness_jain": jain_index(
+                                list(objective_per_agent_reward_totals.values())
+                            ),
                             "time_loss_s": k.time_loss_s,
                             "person_time_loss_s": k.person_time_loss_s,
                             "avg_trip_time_s": k.avg_trip_time_s,

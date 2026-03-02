@@ -10,6 +10,7 @@ from ece324_tango.asce.trainers import EvalConfig, get_backend
 from ece324_tango.config import MODELS_DIR, RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
+_VALID_REWARD_MODES = {"objective", "sumo", "time_loss"}
 
 
 @app.command()
@@ -26,7 +27,10 @@ def main(
     device: str = "auto",
     trainer_backend: str = "local_mappo",
     backend_verbose: bool = False,
-    reward_mode: str = "objective",
+    reward_mode: str = typer.Option(
+        "objective",
+        help="Reward mode: objective | sumo | time_loss",
+    ),
     reward_delay_weight: float = 1.0,
     reward_throughput_weight: float = 1.0,
     reward_fairness_weight: float = 0.25,
@@ -41,6 +45,12 @@ def main(
 
     if not net_file or not route_file:
         net_file, route_file = get_default_sumo_files()
+    reward_mode = str(reward_mode).strip().lower()
+    if reward_mode not in _VALID_REWARD_MODES:
+        raise typer.BadParameter(
+            f"Unsupported reward mode: {reward_mode!r}. "
+            f"Expected one of: {', '.join(sorted(_VALID_REWARD_MODES))}."
+        )
 
     logger.info(f"Trainer backend: {trainer_backend}")
     backend = get_backend(trainer_backend)

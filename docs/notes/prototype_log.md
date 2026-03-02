@@ -251,3 +251,78 @@
   - `tests/test_obs_norm_parity.py`
   - `tests/test_cli_obs_norm_defaults.py`
   - `tests/test_local_eval_fallback_observation_alignment.py`
+
+## 2026-03-02 (time-loss reward mode + objective-scored baseline eval)
+- Added new reward mode:
+  - `reward_mode=time_loss` in `rewards_from_metrics()`
+  - semantics: per-agent reward `= -reward_delay_weight * delay` (delay-only surrogate to align with proposal `time_loss_s`)
+  - unsupported reward-mode strings now fail fast with a clear `ValueError`.
+- Added cross-controller objective-scored eval outputs:
+  - local/benchmarl/xuance eval CSV rows now include:
+    - `objective_mean_reward`
+    - `objective_delay_proxy`
+    - `objective_throughput_proxy`
+    - `objective_fairness_jain`
+  - this allows direct inspection of baseline (`max_pressure`) performance on MAPPO-style objective shaping, independent of active reward mode.
+- CLI updates:
+  - `train.py`, `predict.py`, and `benchmark_backends.py` now expose and validate `objective|sumo|time_loss` reward modes.
+- New tests:
+  - `tests/test_local_eval_objective_scoring.py`
+  - extended `tests/test_traffic_metrics.py` for `time_loss` semantics + invalid-mode guard
+  - extended `tests/test_cli_obs_norm_defaults.py` to lock reward-mode availability.
+- Validation:
+  - `pixi run pytest tests -q` => `50 passed, 2 skipped`.
+- Toronto demand experiment (local backend):
+  - Train: 30 episodes, 300s, `--reward-mode time_loss`, checkpoint:
+    - `models/asce_mappo_toronto_demand_time_loss.pt`
+  - Eval: 10 episodes, 300s, CSV:
+    - `reports/results/asce_eval_metrics_toronto_demand_time_loss_e10.csv`
+  - Aggregate means:
+    - `time_loss_s`:
+      - MAPPO: `6013.92`
+      - Fixed-time: `6184.94`
+      - Max-pressure: `4353.33` (best baseline)
+      - ratio `MAPPO / best_baseline = 1.3815` (target `<= 0.90` not met)
+    - `objective_mean_reward`:
+      - MAPPO: `-0.0094`
+      - Fixed-time: `0.1804`
+      - Max-pressure: `0.4077`
+      - max-pressure leads on objective shaping as well.
+- Warnings observed:
+  - repeated per-episode `FatalTraCIError` closure at step ~57 due demand exhaustion; handled as episode end (non-fatal, expected in this demand file).
+
+## 2026-03-02 (time-loss normalization rerun)
+- Updated `reward_mode=time_loss` to use normalized delay:
+  - `-reward_delay_weight * log1p(delay)` (instead of raw `-delay`) for PPO stability.
+- Validation:
+  - `pixi run pytest tests -q` => `50 passed, 2 skipped`.
+- Reran Toronto demand training/eval:
+  - Train: 30 episodes, 300s, local backend, obs-norm on
+  - Eval: 10 episodes, 300s
+- Stability improvement:
+  - `critic_loss` mean dropped from ~205k (raw-delay run) to ~425 (normalized run).
+- KPI outcome:
+  - `time_loss_s` means:
+    - MAPPO: `6487.80`
+    - Fixed-time: `6184.94`
+    - Max-pressure: `4353.33`
+  - ratio `MAPPO / best_baseline = 1.4903` (worse than previous normalized-objective and raw-delay runs; still above target `<=0.90`).
+
+## 2026-03-02 (objective-mode retest after regression concern)
+- Trigger:
+  - user concern that recent behavior changes may have broken objective-mode correctness.
+- Check performed:
+  - reran 10-episode objective eval with existing objective-trained checkpoint:
+    - `models/asce_mappo_toronto_demand.pt`
+    - output: `reports/results/asce_eval_metrics_toronto_demand_objective_retest_e10.csv`
+- Result:
+  - objective-mode behavior is consistent with prior baseline run:
+    - old objective run: MAPPO `time_loss_s=5463.34`, ratio vs best baseline `1.255`
+    - retest objective run: MAPPO `time_loss_s=5405.39`, ratio vs best baseline `1.2417`
+  - fixed-time and max-pressure metrics matched prior values in this setting.
+- Explicit max-pressure-on-objective comparison:
+  - now available directly in eval CSV via `objective_mean_reward`.
+  - retest mean values:
+    - MAPPO `objective_mean_reward=0.0748`
+    - max-pressure `objective_mean_reward=0.4077` (higher)
+  - conclusion: max-pressure still leads MAPPO on both `time_loss_s` and objective-shaped reward for this corridor setup.

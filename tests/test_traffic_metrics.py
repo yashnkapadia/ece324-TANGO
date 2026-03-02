@@ -53,6 +53,31 @@ def test_rewards_from_metrics_sumo_mode_returns_empty():
     assert rewards == {}
 
 
+def test_rewards_from_metrics_time_loss_mode_tracks_delay_only():
+    metrics = {
+        "a": _metric("a", delay=1.0, throughput=1),
+        "b": _metric("b", delay=10.0, throughput=100),
+    }
+    rewards = rewards_from_metrics(
+        metrics_by_agent=metrics,
+        mode="time_loss",
+        weights=RewardWeights(delay=1.0, throughput=999.0, fairness=999.0),
+    )
+    assert rewards["a"] == pytest.approx(-0.69314718056)
+    assert rewards["b"] == pytest.approx(-2.39789527280)
+    assert rewards["a"] > rewards["b"]
+
+
+def test_rewards_from_metrics_unknown_mode_raises():
+    metrics = {"a": _metric("a", delay=1.0, throughput=8)}
+    with pytest.raises(ValueError, match="Unsupported reward mode"):
+        rewards_from_metrics(
+            metrics_by_agent=metrics,
+            mode="not_a_mode",
+            weights=RewardWeights(delay=1.0, throughput=1.0, fairness=0.25),
+        )
+
+
 class _DummyLaneDomain:
     def __init__(self):
         self.edge_by_lane = {

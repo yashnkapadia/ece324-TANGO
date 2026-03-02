@@ -246,19 +246,26 @@ def rewards_from_metrics(
     mode: str,
     weights: RewardWeights,
 ) -> Dict[str, float]:
-    if mode == "sumo":
+    reward_mode = str(mode).strip().lower()
+    if reward_mode == "sumo":
         return {}
+    if reward_mode not in {"objective", "time_loss"}:
+        raise ValueError(
+            f"Unsupported reward mode: {mode!r}. Expected one of: objective, sumo, time_loss."
+        )
 
     throughputs = [float(m.throughput) for m in metrics_by_agent.values()]
     fairness = jain_index(throughputs)
     rewards: Dict[str, float] = {}
     for agent_id, m in metrics_by_agent.items():
-        delay_term = math.log1p(max(0.0, float(m.delay)))
+        delay = max(0.0, float(m.delay))
+        if reward_mode == "time_loss":
+            # Normalize delay scale for PPO stability while keeping monotonicity with time loss.
+            rewards[agent_id] = float(-weights.delay * math.log1p(delay))
+            continue
+
+        delay_term = math.log1p(delay)
         throughput_term = math.log1p(max(0.0, float(m.throughput)))
-        reward = (
-            -weights.delay * delay_term
-            + weights.throughput * throughput_term
-            + weights.fairness * float(fairness)
-        )
+        reward = -weights.delay * delay_term + weights.throughput * throughput_term + weights.fairness * float(fairness)
         rewards[agent_id] = float(reward)
     return rewards
