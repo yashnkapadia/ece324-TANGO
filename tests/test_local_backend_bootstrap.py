@@ -118,7 +118,9 @@ def test_local_backend_bootstraps_last_value_on_truncation(monkeypatch, tmp_path
     assert trainer.act_calls == 1
 
 
-def test_local_backend_does_not_bootstrap_on_true_termination(monkeypatch, tmp_path: Path):
+def test_local_backend_does_not_bootstrap_on_true_termination(
+    monkeypatch, tmp_path: Path
+):
     term_step = (
         {"a0": np.asarray([0.2], dtype=np.float32)},
         {"a0": 0.0},

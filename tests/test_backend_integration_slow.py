@@ -86,4 +86,6 @@ def test_backend_cli_train_and_eval_smoke(tmp_path: Path, backend: str):
 
     assert eval_csv.exists()
     df = pd.read_csv(eval_csv)
-    assert {"mappo", "fixed_time", "max_pressure"}.issubset(set(df["controller"].astype(str).tolist()))
+    assert {"mappo", "fixed_time", "max_pressure"}.issubset(
+        set(df["controller"].astype(str).tolist())
+    )

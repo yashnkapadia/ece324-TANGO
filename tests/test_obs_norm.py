@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ece324_tango.asce.obs_norm import ObsRunningNorm
 
 

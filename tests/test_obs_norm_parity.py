@@ -17,7 +17,9 @@ def test_checkpoint_persists_use_obs_norm_flag(tmp_path: Path):
     assert payload.get("use_obs_norm") is True
 
 
-def test_local_eval_rejects_obs_norm_mismatch_before_env_creation(monkeypatch, tmp_path: Path):
+def test_local_eval_rejects_obs_norm_mismatch_before_env_creation(
+    monkeypatch, tmp_path: Path
+):
     ckpt = tmp_path / "model.pt"
     trainer = MAPPOTrainer(obs_dim=1, global_obs_dim=1, n_actions=2, use_obs_norm=False)
     trainer.save(str(ckpt))

@@ -16,7 +16,9 @@ def safe_done(terminations: Dict[str, bool], truncations: Dict[str, bool]) -> bo
     keys = set(terminations.keys()) | set(truncations.keys())
     if not keys:
         return False
-    return all(bool(terminations.get(k, False) or truncations.get(k, False)) for k in keys)
+    return all(
+        bool(terminations.get(k, False) or truncations.get(k, False)) for k in keys
+    )
 
 
 def extract_step_details(step_output):

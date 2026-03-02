@@ -90,7 +90,9 @@ def test_benchmarl_eval_uses_seed_plus_episode(monkeypatch, tmp_path: Path):
         used_seeds.append(seed)
         return _FakeExp(seed)
 
-    monkeypatch.setattr(BenchmarlBackend, "_ensure_available", staticmethod(lambda: None))
+    monkeypatch.setattr(
+        BenchmarlBackend, "_ensure_available", staticmethod(lambda: None)
+    )
     monkeypatch.setattr(BenchmarlBackend, "_build_experiment", _fake_build)
     monkeypatch.setattr(
         BenchmarlBackend,
@@ -113,9 +115,17 @@ def test_benchmarl_eval_uses_seed_plus_episode(monkeypatch, tmp_path: Path):
         "ece324_tango.asce.trainers.benchmarl_backend.create_parallel_env",
         lambda **kwargs: _FakeBaselineEnv(),
     )
-    monkeypatch.setattr("ece324_tango.asce.trainers.benchmarl_backend.FixedTimeController", _FakeBaselineController)
-    monkeypatch.setattr("ece324_tango.asce.trainers.benchmarl_backend.MaxPressureController", _FakeBaselineController)
-    monkeypatch.setattr("ece324_tango.asce.trainers.benchmarl_backend.KPITracker", _FakeKPITracker)
+    monkeypatch.setattr(
+        "ece324_tango.asce.trainers.benchmarl_backend.FixedTimeController",
+        _FakeBaselineController,
+    )
+    monkeypatch.setattr(
+        "ece324_tango.asce.trainers.benchmarl_backend.MaxPressureController",
+        _FakeBaselineController,
+    )
+    monkeypatch.setattr(
+        "ece324_tango.asce.trainers.benchmarl_backend.KPITracker", _FakeKPITracker
+    )
     monkeypatch.setattr(
         "ece324_tango.asce.trainers.benchmarl_backend.compute_metrics_for_agents",
         lambda **kwargs: {},
@@ -151,15 +161,23 @@ def test_xuance_eval_uses_seed_plus_episode(monkeypatch, tmp_path: Path):
 
     def _fake_run_episode(cfg, agent, deterministic=False, episode_seed=None):
         used_episode_seeds.append(episode_seed)
-        return [], 0.0, {"a0": 0.0}, 1, SimpleNamespace(
-            time_loss_s=0.0,
-            person_time_loss_s=0.0,
-            avg_trip_time_s=0.0,
-            arrived_vehicles=0,
+        return (
+            [],
+            0.0,
+            {"a0": 0.0},
+            1,
+            SimpleNamespace(
+                time_loss_s=0.0,
+                person_time_loss_s=0.0,
+                avg_trip_time_s=0.0,
+                arrived_vehicles=0,
+            ),
         )
 
     monkeypatch.setattr(XuanceBackend, "_ensure_available", staticmethod(lambda: None))
-    monkeypatch.setattr(XuanceBackend, "_build_runner", lambda self, cfg, seed: _FakeRunner())
+    monkeypatch.setattr(
+        XuanceBackend, "_build_runner", lambda self, cfg, seed: _FakeRunner()
+    )
     monkeypatch.setattr(
         "ece324_tango.asce.trainers.xuance_backend.XuanceBackend._run_episode_with_agent",
         staticmethod(_fake_run_episode),
@@ -168,9 +186,17 @@ def test_xuance_eval_uses_seed_plus_episode(monkeypatch, tmp_path: Path):
         "ece324_tango.asce.trainers.xuance_backend.create_parallel_env",
         lambda **kwargs: _FakeBaselineEnv(),
     )
-    monkeypatch.setattr("ece324_tango.asce.trainers.xuance_backend.FixedTimeController", _FakeBaselineController)
-    monkeypatch.setattr("ece324_tango.asce.trainers.xuance_backend.MaxPressureController", _FakeBaselineController)
-    monkeypatch.setattr("ece324_tango.asce.trainers.xuance_backend.KPITracker", _FakeKPITracker)
+    monkeypatch.setattr(
+        "ece324_tango.asce.trainers.xuance_backend.FixedTimeController",
+        _FakeBaselineController,
+    )
+    monkeypatch.setattr(
+        "ece324_tango.asce.trainers.xuance_backend.MaxPressureController",
+        _FakeBaselineController,
+    )
+    monkeypatch.setattr(
+        "ece324_tango.asce.trainers.xuance_backend.KPITracker", _FakeKPITracker
+    )
     monkeypatch.setattr(
         "ece324_tango.asce.trainers.xuance_backend.compute_metrics_for_agents",
         lambda **kwargs: {},

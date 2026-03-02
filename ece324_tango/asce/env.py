@@ -49,7 +49,9 @@ def create_parallel_env(
     return env
 
 
-def flatten_obs_by_agent(obs: Dict[str, np.ndarray], ordered_agents: Iterable[str]) -> np.ndarray:
+def flatten_obs_by_agent(
+    obs: Dict[str, np.ndarray], ordered_agents: Iterable[str]
+) -> np.ndarray:
     parts = [np.asarray(obs[a], dtype=np.float32).ravel() for a in ordered_agents]
     return np.concatenate(parts, axis=0)
 

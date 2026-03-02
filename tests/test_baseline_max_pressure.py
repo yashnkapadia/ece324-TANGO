@@ -28,7 +28,9 @@ def test_max_pressure_returns_valid_action_index():
     }
     halting = {"in0": 10, "out0": 2, "in1": 1, "out1": 7}
 
-    ts = SimpleNamespace(green_phases=[SimpleNamespace(state="Gr"), SimpleNamespace(state="rG")])
+    ts = SimpleNamespace(
+        green_phases=[SimpleNamespace(state="Gr"), SimpleNamespace(state="rG")]
+    )
     env = SimpleNamespace(
         traffic_signals={"A0": ts},
         sumo=SimpleNamespace(

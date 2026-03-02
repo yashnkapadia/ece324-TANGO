@@ -25,6 +25,7 @@ pip = "*"
 pytorch-gpu = "*"
 cuda-version = "12.8.*"
 openmpi = ">=5.0.8,<6"
+ruff = ">=0.15.4,<0.16"
 
 [pypi-dependencies]
 python-dotenv = "*"

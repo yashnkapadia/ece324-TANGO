@@ -162,15 +162,27 @@ def compute_metrics_for_agent(
         if not all_edges:
             raise RuntimeError("No approach edges found")
 
-        queue_ns = int(round(_sum_edge_metric(env, ns_edges, "getLastStepHaltingNumber")))
-        queue_ew = int(round(_sum_edge_metric(env, ew_edges, "getLastStepHaltingNumber")))
-        arrivals_ns = int(round(_sum_edge_metric(env, ns_edges, "getLastStepVehicleNumber")))
-        arrivals_ew = int(round(_sum_edge_metric(env, ew_edges, "getLastStepVehicleNumber")))
+        queue_ns = int(
+            round(_sum_edge_metric(env, ns_edges, "getLastStepHaltingNumber"))
+        )
+        queue_ew = int(
+            round(_sum_edge_metric(env, ew_edges, "getLastStepHaltingNumber"))
+        )
+        arrivals_ns = int(
+            round(_sum_edge_metric(env, ns_edges, "getLastStepVehicleNumber"))
+        )
+        arrivals_ew = int(
+            round(_sum_edge_metric(env, ew_edges, "getLastStepVehicleNumber"))
+        )
         avg_speed_ns = _mean_edge_speed(env, ns_edges)
         avg_speed_ew = _mean_edge_speed(env, ew_edges)
         delay = float(_sum_edge_metric(env, all_edges, "getWaitingTime"))
-        queue_total = int(round(_sum_edge_metric(env, all_edges, "getLastStepHaltingNumber")))
-        throughput = int(round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber")))
+        queue_total = int(
+            round(_sum_edge_metric(env, all_edges, "getLastStepHaltingNumber"))
+        )
+        throughput = int(
+            round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber"))
+        )
         current_phase = int(env.sumo.trafficlight.getPhase(agent_id))
     except Exception as exc:
         if not _is_expected_metric_fallback_error(exc):
@@ -178,10 +190,18 @@ def compute_metrics_for_agent(
         report_exception(
             context="traffic_metrics.compute_metrics_fallback",
             exc=exc,
-            details={"agent_id": agent_id, "time_step": time_step, "scenario_id": scenario_id},
+            details={
+                "agent_id": agent_id,
+                "time_step": time_step,
+                "scenario_id": scenario_id,
+            },
             once_key=f"metrics_fallback:{scenario_id}:{agent_id}",
         )
-        obs = np.zeros((1,), dtype=np.float32) if obs_fallback is None else np.asarray(obs_fallback)
+        obs = (
+            np.zeros((1,), dtype=np.float32)
+            if obs_fallback is None
+            else np.asarray(obs_fallback)
+        )
         q_ns, q_ew, arr_ns, arr_ew = split_ns_ew_from_obs(obs)
         queue_ns = int(round(q_ns))
         queue_ew = int(round(q_ew))
@@ -266,6 +286,10 @@ def rewards_from_metrics(
 
         delay_term = math.log1p(delay)
         throughput_term = math.log1p(max(0.0, float(m.throughput)))
-        reward = -weights.delay * delay_term + weights.throughput * throughput_term + weights.fairness * float(fairness)
+        reward = (
+            -weights.delay * delay_term
+            + weights.throughput * throughput_term
+            + weights.fairness * float(fairness)
+        )
         rewards[agent_id] = float(reward)
     return rewards

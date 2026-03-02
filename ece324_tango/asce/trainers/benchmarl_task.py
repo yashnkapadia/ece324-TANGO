@@ -11,7 +11,11 @@ from benchmarl.environments.common import TaskClass
 
 from ece324_tango.asce.env import create_parallel_env
 from ece324_tango.asce.runtime import extract_reset_obs
-from ece324_tango.asce.traffic_metrics import RewardWeights, compute_metrics_for_agents, rewards_from_metrics
+from ece324_tango.asce.traffic_metrics import (
+    RewardWeights,
+    compute_metrics_for_agents,
+    rewards_from_metrics,
+)
 
 
 class SumoParallelAdapter(ParallelEnv):
@@ -44,11 +48,16 @@ class SumoParallelAdapter(ParallelEnv):
         step_out = self.base_env.step(actions)
         if len(step_out) == 5:
             obs, rewards, terminations, truncations, infos = step_out
-            dones = {a: bool(terminations.get(a, False) or truncations.get(a, False)) for a in self.possible_agents}
+            dones = {
+                a: bool(terminations.get(a, False) or truncations.get(a, False))
+                for a in self.possible_agents
+            }
         else:
             obs, rewards, dones, infos = step_out
         self._step_idx += 1
-        sim_time = float(self._step_idx) * float(getattr(self.base_env, "delta_time", 1))
+        sim_time = float(self._step_idx) * float(
+            getattr(self.base_env, "delta_time", 1)
+        )
         metrics_by_agent = compute_metrics_for_agents(
             env=self.base_env,
             agent_ids=self.possible_agents,
@@ -58,12 +67,16 @@ class SumoParallelAdapter(ParallelEnv):
             scenario_id=self.scenario_id,
             observations=obs,
         )
-        shaped = rewards_from_metrics(metrics_by_agent, mode=self.reward_mode, weights=self.reward_weights)
+        shaped = rewards_from_metrics(
+            metrics_by_agent, mode=self.reward_mode, weights=self.reward_weights
+        )
         if shaped:
             rewards = shaped
         terminations = {a: bool(dones.get(a, False)) for a in self.possible_agents}
         truncations = {a: False for a in self.possible_agents}
-        self.agents = [a for a in self.possible_agents if not (terminations[a] or truncations[a])]
+        self.agents = [
+            a for a in self.possible_agents if not (terminations[a] or truncations[a])
+        ]
         return obs, rewards, terminations, truncations, infos
 
     def observation_space(self, agent):
@@ -81,7 +94,9 @@ class SumoBenchmarlTask(TaskClass):
     def env_name() -> str:
         return "sumo_custom"
 
-    def get_env_fun(self, num_envs: int, continuous_actions: bool, seed: Optional[int], device):
+    def get_env_fun(
+        self, num_envs: int, continuous_actions: bool, seed: Optional[int], device
+    ):
         def make_env():
             base_env = create_parallel_env(
                 net_file=self.config["net_file"],

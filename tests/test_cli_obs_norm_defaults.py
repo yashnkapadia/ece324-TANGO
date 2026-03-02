@@ -20,7 +20,9 @@ def test_predict_cli_defaults_obs_norm_enabled():
 def test_cli_reward_modes_include_time_loss():
     train_default = inspect.signature(train.main).parameters["reward_mode"].default
     predict_default = inspect.signature(predict.main).parameters["reward_mode"].default
-    bench_default = inspect.signature(benchmark_backends.main).parameters["reward_mode"].default
+    bench_default = (
+        inspect.signature(benchmark_backends.main).parameters["reward_mode"].default
+    )
     assert isinstance(train_default, typer.models.OptionInfo)
     assert isinstance(predict_default, typer.models.OptionInfo)
     assert isinstance(bench_default, typer.models.OptionInfo)

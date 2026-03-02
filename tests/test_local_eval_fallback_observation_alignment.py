@@ -36,7 +36,8 @@ class _DummyEvalEnv:
             {"a0": np.asarray([8.0], dtype=np.float32)},
             {"a0": 0.0},
             {"a0": True},
-            {"a0": {},
+            {
+                "a0": {},
             },
         )
 

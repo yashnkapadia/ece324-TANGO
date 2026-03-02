@@ -37,7 +37,9 @@ def apply_xuance_value_norm_patch() -> bool:
 
         for key in self.agent_keys:
             rewards = self.data["rewards"][key][i_env, path_slice]
-            vs = np.append(self.data["values"][key][i_env, path_slice], [value_next[key]], axis=0)
+            vs = np.append(
+                self.data["values"][key][i_env, path_slice], [value_next[key]], axis=0
+            )
             dones = self.data["terminals"][key][i_env, path_slice]
             returns = np.zeros_like(rewards)
             last_gae_lam = 0.0
@@ -46,7 +48,9 @@ def apply_xuance_value_norm_patch() -> bool:
 
             if use_value_norm:
                 # Xuance may return shape (1, T); flatten to shape (T,) before scalar indexing.
-                vs_denorm = np.asarray(value_normalizer[key_vn].denormalize(vs), dtype=np.float32).reshape(-1)
+                vs_denorm = np.asarray(
+                    value_normalizer[key_vn].denormalize(vs), dtype=np.float32
+                ).reshape(-1)
                 if vs_denorm.size != vs.size:
                     # conservative guard: align by truncation if backend returns unexpected shape.
                     vs_denorm = vs_denorm[: vs.size]
@@ -61,16 +65,27 @@ def apply_xuance_value_norm_patch() -> bool:
                     else:
                         vs_t = float(vs[t])
                         vs_next = float(vs[t + 1])
-                    delta = float(rewards[t]) + (1.0 - float(dones[t])) * self.gamma * vs_next - vs_t
+                    delta = (
+                        float(rewards[t])
+                        + (1.0 - float(dones[t])) * self.gamma * vs_next
+                        - vs_t
+                    )
                     last_gae_lam = (
-                        delta + (1.0 - float(dones[t])) * self.gamma * self.gae_lambda * last_gae_lam
+                        delta
+                        + (1.0 - float(dones[t]))
+                        * self.gamma
+                        * self.gae_lambda
+                        * last_gae_lam
                     )
                     returns[t] = last_gae_lam + vs_t
                 advantages = returns - (vs_denorm[:-1] if use_value_norm else vs[:-1])
             else:
                 returns_ = np.append(returns, [value_next[key]], axis=0)
                 for t in reversed(range(step_nums)):
-                    returns_[t] = float(rewards[t]) + (1.0 - float(dones[t])) * self.gamma * returns_[t + 1]
+                    returns_[t] = (
+                        float(rewards[t])
+                        + (1.0 - float(dones[t])) * self.gamma * returns_[t + 1]
+                    )
                 advantages = returns_ - (vs_denorm if use_value_norm else vs)
                 advantages = advantages[:-1]
                 returns = returns_[:-1]

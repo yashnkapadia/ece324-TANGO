@@ -8,10 +8,19 @@ from loguru import logger
 from traci.exceptions import FatalTraCIError
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
-from ece324_tango.asce.env import create_parallel_env, flatten_obs_by_agent, pad_observation
+from ece324_tango.asce.env import (
+    create_parallel_env,
+    flatten_obs_by_agent,
+    pad_observation,
+)
 from ece324_tango.asce.kpi import KPITracker
 from ece324_tango.asce.mappo import MAPPOTrainer, Transition
-from ece324_tango.asce.runtime import extract_reset_obs, extract_step, extract_step_details, jain_index
+from ece324_tango.asce.runtime import (
+    extract_reset_obs,
+    extract_step,
+    extract_step_details,
+    jain_index,
+)
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.traffic_metrics import (
     RewardWeights,
@@ -52,7 +61,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                 raise RuntimeError("No observations received from SUMO environment.")
 
             ordered_agents = sorted(obs.keys())
-            obs_dim = max(int(np.asarray(obs[a], dtype=np.float32).size) for a in ordered_agents)
+            obs_dim = max(
+                int(np.asarray(obs[a], dtype=np.float32).size) for a in ordered_agents
+            )
             global_obs_dim = int(flatten_obs_by_agent(obs, ordered_agents).size)
 
             action_dims = {a: int(env.action_spaces(a).n) for a in ordered_agents}
@@ -82,7 +93,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                 if not obs:
                     continue
 
-                trajectories: Dict[str, List[Transition]] = {a: [] for a in sorted(obs.keys())}
+                trajectories: Dict[str, List[Transition]] = {
+                    a: [] for a in sorted(obs.keys())
+                }
                 done = False
                 max_steps = max(1, int(cfg.seconds // cfg.delta_time))
                 episode_terminated = False
@@ -96,7 +109,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     gobs = flatten_obs_by_agent(obs, active_agents)
 
                     padded_obs_list = [
-                        pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
+                        pad_observation(
+                            np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim
+                        )
                         for a in active_agents
                     ]
                     n_valid_list = [action_dims[a] for a in active_agents]
@@ -108,14 +123,24 @@ class LocalMappoBackend(AsceTrainerBackend):
                     if trainer.gobs_norm is not None:
                         trainer.gobs_norm.update(gobs)
                     batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
-                    actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
+                    actions = {
+                        a: int(batch_out[i]["action"])
+                        for i, a in enumerate(active_agents)
+                    }
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
                     terminated = False
                     truncated = False
                     try:
-                        next_obs, rewards, done, infos, terminated, truncated = extract_step_details(env.step(actions))
-                        if done and not terminated and not truncated and (ep_steps + 1) >= max_steps:
+                        next_obs, rewards, done, _infos, terminated, truncated = (
+                            extract_step_details(env.step(actions))
+                        )
+                        if (
+                            done
+                            and not terminated
+                            and not truncated
+                            and (ep_steps + 1) >= max_steps
+                        ):
                             # Legacy dones-only API: infer timeout from configured horizon.
                             truncated = True
                     except FatalTraCIError:
@@ -130,7 +155,6 @@ class LocalMappoBackend(AsceTrainerBackend):
                         truncated = False
                         next_obs = {}
                         rewards = {a: 0.0 for a in active_agents}
-                        infos = {}
                     if done and truncated and next_obs:
                         bootstrap_obs = {
                             a: np.asarray(next_obs[a], dtype=np.float32)
@@ -159,7 +183,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     else:
                         metrics_by_agent = {}
 
-                    global_reward = float(np.mean(list(rewards.values()))) if rewards else 0.0
+                    global_reward = (
+                        float(np.mean(list(rewards.values()))) if rewards else 0.0
+                    )
                     ep_reward += global_reward
                     ep_steps += 1
 
@@ -190,13 +216,20 @@ class LocalMappoBackend(AsceTrainerBackend):
                     final_gobs = flatten_obs_by_agent(bootstrap_obs, final_agents)
                     for agent in final_agents:
                         padded = pad_observation(
-                            np.asarray(bootstrap_obs[agent], dtype=np.float32), target_dim=obs_dim
+                            np.asarray(bootstrap_obs[agent], dtype=np.float32),
+                            target_dim=obs_dim,
                         )
-                        v = trainer.act(padded, final_gobs, n_valid_actions=action_dims[agent])
+                        v = trainer.act(
+                            padded, final_gobs, n_valid_actions=action_dims[agent]
+                        )
                         last_values[agent] = v["value"]
 
                 batch = trainer.build_batch(trajectories, last_values=last_values)
-                losses = trainer.update(batch=batch, ppo_epochs=cfg.ppo_epochs, minibatch_size=cfg.minibatch_size)
+                losses = trainer.update(
+                    batch=batch,
+                    ppo_epochs=cfg.ppo_epochs,
+                    minibatch_size=cfg.minibatch_size,
+                )
 
                 ep_metrics.append(
                     {
@@ -258,12 +291,16 @@ class LocalMappoBackend(AsceTrainerBackend):
             try:
                 obs = extract_reset_obs(env.reset(seed=cfg.seed))
                 if not obs:
-                    raise RuntimeError("No observations received from SUMO environment.")
+                    raise RuntimeError(
+                        "No observations received from SUMO environment."
+                    )
 
                 ordered_agents = sorted(obs.keys())
                 action_dims = {a: int(env.action_spaces(a).n) for a in ordered_agents}
 
-                fixed = FixedTimeController(action_size_by_agent=action_dims, green_duration_s=cfg.delta_time)
+                fixed = FixedTimeController(
+                    action_size_by_agent=action_dims, green_duration_s=cfg.delta_time
+                )
                 max_pressure = MaxPressureController(action_size_by_agent=action_dims)
                 reward_weights = RewardWeights(
                     delay=cfg.reward_delay_weight,
@@ -273,7 +310,10 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 trainer = None
                 if controller_name == "mappo":
-                    obs_dim = max(int(np.asarray(obs[a], dtype=np.float32).size) for a in ordered_agents)
+                    obs_dim = max(
+                        int(np.asarray(obs[a], dtype=np.float32).size)
+                        for a in ordered_agents
+                    )
                     global_obs_dim = int(flatten_obs_by_agent(obs, ordered_agents).size)
                     n_actions = max(action_dims.values())
                     trainer = MAPPOTrainer(
@@ -289,7 +329,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     obs = extract_reset_obs(env.reset(seed=cfg.seed + ep))
                     done = False
                     ep_rewards = []
-                    per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
+                    per_agent_reward_totals: Dict[str, float] = {
+                        a: 0.0 for a in sorted(obs.keys())
+                    }
                     objective_ep_rewards = []
                     objective_per_agent_reward_totals: Dict[str, float] = {
                         a: 0.0 for a in sorted(obs.keys())
@@ -300,26 +342,35 @@ class LocalMappoBackend(AsceTrainerBackend):
                     while not done:
                         active_agents = sorted(obs.keys())
                         prev_obs = {
-                            a: np.asarray(obs[a], dtype=np.float32) for a in active_agents
+                            a: np.asarray(obs[a], dtype=np.float32)
+                            for a in active_agents
                         }
                         skip_kpi_update = False
 
                         if controller_name == "mappo":
                             gobs = flatten_obs_by_agent(obs, active_agents)
                             padded_obs_list = [
-                                pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
+                                pad_observation(
+                                    np.asarray(obs[a], dtype=np.float32),
+                                    target_dim=obs_dim,
+                                )
                                 for a in active_agents
                             ]
                             n_valid_list = [action_dims[a] for a in active_agents]
-                            batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
-                            actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
+                            batch_out = trainer.act_batch(
+                                padded_obs_list, gobs, n_valid_list
+                            )
+                            actions = {
+                                a: int(batch_out[i]["action"])
+                                for i, a in enumerate(active_agents)
+                            }
                         elif controller_name == "fixed_time":
                             actions = fixed.actions(obs)
                         else:
                             actions = max_pressure.actions(obs, env=env)
 
                         try:
-                            obs, rewards, done, infos = extract_step(env.step(actions))
+                            obs, rewards, done, _infos = extract_step(env.step(actions))
                         except FatalTraCIError:
                             logger.warning(
                                 f"Eval {controller_name} ep{ep}: SUMO connection closed at step {steps} "
@@ -329,7 +380,6 @@ class LocalMappoBackend(AsceTrainerBackend):
                             skip_kpi_update = True
                             obs = {}
                             rewards = {a: 0.0 for a in active_agents}
-                            infos = {}
                         sim_time = float(steps + 1) * float(cfg.delta_time)
                         objective_shaped_rewards: Dict[str, float] = {}
                         if not done:
@@ -361,27 +411,43 @@ class LocalMappoBackend(AsceTrainerBackend):
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():
-                                per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
+                                per_agent_reward_totals[a] = (
+                                    per_agent_reward_totals.get(a, 0.0) + float(r)
+                                )
                         if objective_shaped_rewards:
-                            objective_ep_rewards.append(float(np.mean(list(objective_shaped_rewards.values()))))
+                            objective_ep_rewards.append(
+                                float(np.mean(list(objective_shaped_rewards.values())))
+                            )
                             for a, r in objective_shaped_rewards.items():
-                                objective_per_agent_reward_totals[a] = objective_per_agent_reward_totals.get(
-                                    a, 0.0
-                                ) + float(r)
+                                objective_per_agent_reward_totals[a] = (
+                                    objective_per_agent_reward_totals.get(a, 0.0)
+                                    + float(r)
+                                )
                         steps += 1
                         if not skip_kpi_update:
                             kpi.update(env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
-                    throughput_proxy = float(sum(max(0.0, v) for v in per_agent_reward_totals.values()))
+                    throughput_proxy = float(
+                        sum(max(0.0, v) for v in per_agent_reward_totals.values())
+                    )
                     delay_proxy = float(-avg_reward)
                     fairness = jain_index(list(per_agent_reward_totals.values()))
-                    objective_avg_reward = float(np.mean(objective_ep_rewards)) if objective_ep_rewards else 0.0
+                    objective_avg_reward = (
+                        float(np.mean(objective_ep_rewards))
+                        if objective_ep_rewards
+                        else 0.0
+                    )
                     objective_throughput_proxy = float(
-                        sum(max(0.0, v) for v in objective_per_agent_reward_totals.values())
+                        sum(
+                            max(0.0, v)
+                            for v in objective_per_agent_reward_totals.values()
+                        )
                     )
                     objective_delay_proxy = float(-objective_avg_reward)
-                    objective_fairness = jain_index(list(objective_per_agent_reward_totals.values()))
+                    objective_fairness = jain_index(
+                        list(objective_per_agent_reward_totals.values())
+                    )
                     k = kpi.summary()
 
                     records.append(

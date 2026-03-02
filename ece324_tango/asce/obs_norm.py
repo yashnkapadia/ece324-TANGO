@@ -1,4 +1,5 @@
 """Online running observation normalizer using Welford's algorithm."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -25,7 +26,9 @@ class ObsRunningNorm:
         """Update running stats with one observation vector (shape: [dim])."""
         x = np.asarray(x, dtype=np.float64).ravel()
         if not np.all(np.isfinite(x)):
-            raise ValueError(f"ObsRunningNorm.update: non-finite values in observation: {x}")
+            raise ValueError(
+                f"ObsRunningNorm.update: non-finite values in observation: {x}"
+            )
         if x.size != self.dim:
             raise ValueError(f"ObsRunningNorm: expected dim={self.dim}, got {x.size}")
         self._count += 1

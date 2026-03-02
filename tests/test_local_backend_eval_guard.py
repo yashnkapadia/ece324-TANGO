@@ -6,9 +6,13 @@ from ece324_tango.asce.trainers.base import EvalConfig
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 
 
-def test_local_eval_checks_model_exists_before_creating_env(monkeypatch, tmp_path: Path):
+def test_local_eval_checks_model_exists_before_creating_env(
+    monkeypatch, tmp_path: Path
+):
     def _unexpected_env_create(*args, **kwargs):
-        raise AssertionError("create_parallel_env should not run when model file is missing")
+        raise AssertionError(
+            "create_parallel_env should not run when model file is missing"
+        )
 
     monkeypatch.setattr(
         "ece324_tango.asce.trainers.local_mappo_backend.create_parallel_env",

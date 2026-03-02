@@ -158,7 +158,8 @@ class XuanceBackend(AsceTrainerBackend):
                 )
                 actions_for_env = policy_out["actions"][0]
                 actions = {
-                    a: int(np.asarray(actions_for_env[a]).reshape(-1)[0]) for a in sorted(obs.keys())
+                    a: int(np.asarray(actions_for_env[a]).reshape(-1)[0])
+                    for a in sorted(obs.keys())
                 }
 
                 next_obs, rewards, done, _ = extract_step(env.step(actions))
@@ -173,7 +174,9 @@ class XuanceBackend(AsceTrainerBackend):
                     scenario_id=getattr(cfg, "scenario_id", "baseline"),
                     observations=obs,
                 )
-                shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                shaped = rewards_from_metrics(
+                    metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights
+                )
                 if shaped:
                     rewards = shaped
                 if rewards:
@@ -200,7 +203,9 @@ class XuanceBackend(AsceTrainerBackend):
         logger.info(f"Xuance training device: {self._resolve_device(cfg.device)}")
         with quiet_output(enabled=not cfg.backend_verbose):
             runner = self._build_runner(cfg, seed=cfg.seed)
-        runner.config.running_steps = max(16, int(cfg.episodes * max(1, cfg.seconds // cfg.delta_time)))
+        runner.config.running_steps = max(
+            16, int(cfg.episodes * max(1, cfg.seconds // cfg.delta_time))
+        )
         runner.config.buffer_size = max(16, int(cfg.minibatch_size))
         runner.config.n_epochs = max(1, int(cfg.ppo_epochs))
         runner.config.n_minibatch = 1
@@ -225,11 +230,13 @@ class XuanceBackend(AsceTrainerBackend):
             logger.success(f"Saved Xuance MAPPO model: {cfg.model_path}")
 
             with quiet_output(enabled=not cfg.backend_verbose):
-                rows, mean_reward, per_agent_totals, steps, _ = self._run_episode_with_agent(
-                    cfg=cfg,
-                    agent=runner.agents,
-                    deterministic=False,
-                    episode_seed=cfg.seed,
+                rows, mean_reward, per_agent_totals, steps, _ = (
+                    self._run_episode_with_agent(
+                        cfg=cfg,
+                        agent=runner.agents,
+                        deterministic=False,
+                        episode_seed=cfg.seed,
+                    )
                 )
             rollout_df = pd.DataFrame(rows)
             if rollout_df.empty:
@@ -284,21 +291,31 @@ class XuanceBackend(AsceTrainerBackend):
                 )
             for ep in range(cfg.episodes):
                 with quiet_output(enabled=not cfg.backend_verbose):
-                    rows, mean_reward, per_agent_totals, steps, k = self._run_episode_with_agent(
-                        cfg=cfg,
-                        agent=runner.agents,
-                        deterministic=True,
-                        episode_seed=cfg.seed + ep,
+                    rows, mean_reward, per_agent_totals, steps, k = (
+                        self._run_episode_with_agent(
+                            cfg=cfg,
+                            agent=runner.agents,
+                            deterministic=True,
+                            episode_seed=cfg.seed + ep,
+                        )
                     )
-                objective_mean_reward = mean_reward if cfg.reward_mode == "objective" else float("nan")
-                objective_delay_proxy = float(-mean_reward) if cfg.reward_mode == "objective" else float("nan")
+                objective_mean_reward = (
+                    mean_reward if cfg.reward_mode == "objective" else float("nan")
+                )
+                objective_delay_proxy = (
+                    float(-mean_reward)
+                    if cfg.reward_mode == "objective"
+                    else float("nan")
+                )
                 objective_throughput_proxy = (
                     float(sum(max(0.0, value) for value in per_agent_totals.values()))
                     if cfg.reward_mode == "objective"
                     else float("nan")
                 )
                 objective_fairness = (
-                    jain_index(list(per_agent_totals.values())) if cfg.reward_mode == "objective" else float("nan")
+                    jain_index(list(per_agent_totals.values()))
+                    if cfg.reward_mode == "objective"
+                    else float("nan")
                 )
                 records.append(
                     {
@@ -337,8 +354,12 @@ class XuanceBackend(AsceTrainerBackend):
             )
         try:
             obs = extract_reset_obs(baseline_env.reset(seed=cfg.seed))
-            action_dims = {a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())}
-            fixed = FixedTimeController(action_size_by_agent=action_dims, green_duration_s=cfg.delta_time)
+            action_dims = {
+                a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())
+            }
+            fixed = FixedTimeController(
+                action_size_by_agent=action_dims, green_duration_s=cfg.delta_time
+            )
             max_pressure = MaxPressureController(action_size_by_agent=action_dims)
             reward_weights = RewardWeights(
                 delay=cfg.reward_delay_weight,
@@ -346,12 +367,17 @@ class XuanceBackend(AsceTrainerBackend):
                 fairness=cfg.reward_fairness_weight,
             )
 
-            for controller_name, controller in [("fixed_time", fixed), ("max_pressure", max_pressure)]:
+            for controller_name, controller in [
+                ("fixed_time", fixed),
+                ("max_pressure", max_pressure),
+            ]:
                 for ep in range(cfg.episodes):
                     obs = extract_reset_obs(baseline_env.reset(seed=cfg.seed + ep))
                     done = False
                     ep_rewards = []
-                    per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
+                    per_agent_reward_totals: Dict[str, float] = {
+                        a: 0.0 for a in sorted(obs.keys())
+                    }
                     objective_ep_rewards = []
                     objective_per_agent_reward_totals: Dict[str, float] = {
                         a: 0.0 for a in sorted(obs.keys())
@@ -365,7 +391,9 @@ class XuanceBackend(AsceTrainerBackend):
                                 actions = controller.actions(obs)
                             else:
                                 actions = controller.actions(obs, env=baseline_env)
-                            obs, rewards, done, _ = extract_step(baseline_env.step(actions))
+                            obs, rewards, done, _ = extract_step(
+                                baseline_env.step(actions)
+                            )
                         sim_time = float(steps + 1) * float(cfg.delta_time)
                         metrics_by_agent = compute_metrics_for_agents(
                             env=baseline_env,
@@ -376,12 +404,18 @@ class XuanceBackend(AsceTrainerBackend):
                             scenario_id="baseline",
                             observations=obs,
                         )
-                        shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                        shaped = rewards_from_metrics(
+                            metrics_by_agent,
+                            mode=cfg.reward_mode,
+                            weights=reward_weights,
+                        )
                         objective_shaped = (
                             shaped
                             if cfg.reward_mode == "objective"
                             else rewards_from_metrics(
-                                metrics_by_agent, mode="objective", weights=reward_weights
+                                metrics_by_agent,
+                                mode="objective",
+                                weights=reward_weights,
                             )
                         )
                         if shaped:
@@ -389,18 +423,27 @@ class XuanceBackend(AsceTrainerBackend):
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():
-                                per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
+                                per_agent_reward_totals[a] = (
+                                    per_agent_reward_totals.get(a, 0.0) + float(r)
+                                )
                         if objective_shaped:
-                            objective_ep_rewards.append(float(np.mean(list(objective_shaped.values()))))
+                            objective_ep_rewards.append(
+                                float(np.mean(list(objective_shaped.values())))
+                            )
                             for a, r in objective_shaped.items():
-                                objective_per_agent_reward_totals[a] = objective_per_agent_reward_totals.get(
-                                    a, 0.0
-                                ) + float(r)
+                                objective_per_agent_reward_totals[a] = (
+                                    objective_per_agent_reward_totals.get(a, 0.0)
+                                    + float(r)
+                                )
                         steps += 1
                         kpi.update(baseline_env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
-                    objective_avg_reward = float(np.mean(objective_ep_rewards)) if objective_ep_rewards else 0.0
+                    objective_avg_reward = (
+                        float(np.mean(objective_ep_rewards))
+                        if objective_ep_rewards
+                        else 0.0
+                    )
                     k = kpi.summary()
                     records.append(
                         {
@@ -411,13 +454,21 @@ class XuanceBackend(AsceTrainerBackend):
                             "mean_reward": avg_reward,
                             "delay_proxy": float(-avg_reward),
                             "throughput_proxy": float(
-                                sum(max(0.0, value) for value in per_agent_reward_totals.values())
+                                sum(
+                                    max(0.0, value)
+                                    for value in per_agent_reward_totals.values()
+                                )
                             ),
-                            "fairness_jain": jain_index(list(per_agent_reward_totals.values())),
+                            "fairness_jain": jain_index(
+                                list(per_agent_reward_totals.values())
+                            ),
                             "objective_mean_reward": objective_avg_reward,
                             "objective_delay_proxy": float(-objective_avg_reward),
                             "objective_throughput_proxy": float(
-                                sum(max(0.0, value) for value in objective_per_agent_reward_totals.values())
+                                sum(
+                                    max(0.0, value)
+                                    for value in objective_per_agent_reward_totals.values()
+                                )
                             ),
                             "objective_fairness_jain": jain_index(
                                 list(objective_per_agent_reward_totals.values())

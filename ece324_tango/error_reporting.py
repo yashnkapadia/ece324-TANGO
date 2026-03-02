@@ -9,7 +9,9 @@ from loguru import logger
 
 
 _REPORTED_ONCE_KEYS: set[str] = set()
-_ERROR_LOG_PATH = Path(__file__).resolve().parents[1] / "reports" / "results" / "error_events.jsonl"
+_ERROR_LOG_PATH = (
+    Path(__file__).resolve().parents[1] / "reports" / "results" / "error_events.jsonl"
+)
 
 
 def report_exception(

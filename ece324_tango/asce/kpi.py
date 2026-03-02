@@ -67,7 +67,9 @@ class KPITracker:
 
             if vid not in self._depart_time_by_vehicle:
                 try:
-                    self._depart_time_by_vehicle[vid] = float(env.sumo.vehicle.getDeparture(vid))
+                    self._depart_time_by_vehicle[vid] = float(
+                        env.sumo.vehicle.getDeparture(vid)
+                    )
                 except Exception as exc:
                     report_exception(
                         context="kpi.departure_lookup_failed",
@@ -87,7 +89,11 @@ class KPITracker:
             self.arrived_vehicles += 1
 
     def summary(self) -> EpisodeKPI:
-        avg_trip = self.total_trip_time_s / self.arrived_vehicles if self.arrived_vehicles > 0 else 0.0
+        avg_trip = (
+            self.total_trip_time_s / self.arrived_vehicles
+            if self.arrived_vehicles > 0
+            else 0.0
+        )
         return EpisodeKPI(
             time_loss_s=float(self.total_time_loss_s),
             person_time_loss_s=float(self.total_person_time_loss_s),

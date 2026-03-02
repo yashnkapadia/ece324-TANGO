@@ -13,7 +13,11 @@ from ece324_tango.asce.env import create_parallel_env
 from ece324_tango.asce.kpi import KPITracker
 from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
-from ece324_tango.asce.traffic_metrics import RewardWeights, compute_metrics_for_agents, rewards_from_metrics
+from ece324_tango.asce.traffic_metrics import (
+    RewardWeights,
+    compute_metrics_for_agents,
+    rewards_from_metrics,
+)
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
 from ece324_tango.asce.trainers.benchmarl_task import SumoBenchmarlTask
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
@@ -93,7 +97,9 @@ class BenchmarlBackend(AsceTrainerBackend):
         from torchrl.envs.utils import ExplorationType, set_exploration_type
 
         exp.test_env.reset()
-        exploration = ExplorationType.DETERMINISTIC if deterministic else ExplorationType.RANDOM
+        exploration = (
+            ExplorationType.DETERMINISTIC if deterministic else ExplorationType.RANDOM
+        )
         with set_exploration_type(exploration):
             rollout = exp.test_env.rollout(
                 max_steps=exp.max_steps,
@@ -106,14 +112,26 @@ class BenchmarlBackend(AsceTrainerBackend):
         per_agent_totals: Dict[str, float] = {}
 
         for group_name, agents in exp.group_map.items():
-            reward_t = rollout.get(("next", group_name, "reward")).squeeze(-1).detach().cpu().numpy()
+            reward_t = (
+                rollout.get(("next", group_name, "reward"))
+                .squeeze(-1)
+                .detach()
+                .cpu()
+                .numpy()
+            )
             if reward_t.ndim == 1:
                 reward_t = reward_t[:, None]
             group_rewards.append(reward_t)
             for idx, agent in enumerate(agents):
-                per_agent_totals[agent] = per_agent_totals.get(agent, 0.0) + float(reward_t[:, idx].sum())
+                per_agent_totals[agent] = per_agent_totals.get(agent, 0.0) + float(
+                    reward_t[:, idx].sum()
+                )
 
-        stacked = np.concatenate(group_rewards, axis=1) if group_rewards else np.zeros((1, 1), dtype=np.float32)
+        stacked = (
+            np.concatenate(group_rewards, axis=1)
+            if group_rewards
+            else np.zeros((1, 1), dtype=np.float32)
+        )
         mean_reward = float(stacked.mean())
         steps = int(stacked.shape[0])
         return rollout, mean_reward, per_agent_totals, steps
@@ -121,7 +139,13 @@ class BenchmarlBackend(AsceTrainerBackend):
     @staticmethod
     def _rollout_to_schema_rows_from_replay(rollout, cfg: TrainConfig) -> List[dict]:
         rows: List[dict] = []
-        top_keys = sorted([k for k in rollout.keys() if k not in {"next", "done", "terminated", "truncated"}])
+        top_keys = sorted(
+            [
+                k
+                for k in rollout.keys()
+                if k not in {"next", "done", "terminated", "truncated"}
+            ]
+        )
         n_steps = int(rollout.batch_size[0]) if len(rollout.batch_size) > 0 else 0
 
         env = create_parallel_env(
@@ -162,7 +186,13 @@ class BenchmarlBackend(AsceTrainerBackend):
 
     @staticmethod
     def _kpi_from_rollout_replay(rollout, cfg: EvalConfig):
-        top_keys = sorted([k for k in rollout.keys() if k not in {"next", "done", "terminated", "truncated"}])
+        top_keys = sorted(
+            [
+                k
+                for k in rollout.keys()
+                if k not in {"next", "done", "terminated", "truncated"}
+            ]
+        )
         n_steps = int(rollout.batch_size[0]) if len(rollout.batch_size) > 0 else 0
 
         env = create_parallel_env(
@@ -201,7 +231,10 @@ class BenchmarlBackend(AsceTrainerBackend):
 
         with quiet_output(enabled=not cfg.backend_verbose):
             exp = self._build_experiment(
-                cfg, seed=cfg.seed, device=resolved_device, quiet_sumo=not cfg.backend_verbose
+                cfg,
+                seed=cfg.seed,
+                device=resolved_device,
+                quiet_sumo=not cfg.backend_verbose,
             )
         exp.config.max_n_iters = max(1, int(cfg.episodes))
         exp.config.on_policy_n_minibatch_iters = max(1, int(cfg.ppo_epochs))
@@ -210,8 +243,8 @@ class BenchmarlBackend(AsceTrainerBackend):
         try:
             with quiet_output(enabled=not cfg.backend_verbose):
                 exp.run()
-                rollout, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
-                    exp, deterministic=True
+                rollout, mean_reward, per_agent_totals, steps = (
+                    self._rollout_episode_stats(exp, deterministic=True)
                 )
             torch.save(
                 {
@@ -225,7 +258,9 @@ class BenchmarlBackend(AsceTrainerBackend):
             )
             logger.success(f"Saved BenchMARL model checkpoint: {cfg.model_path}")
 
-            rollout_rows = self._rollout_to_schema_rows_from_replay(rollout=rollout, cfg=cfg)
+            rollout_rows = self._rollout_to_schema_rows_from_replay(
+                rollout=rollout, cfg=cfg
+            )
             rollout_df = pd.DataFrame(rollout_rows)
             if rollout_df.empty:
                 rollout_df = pd.DataFrame(columns=ASCE_DATASET_COLUMNS)
@@ -252,7 +287,9 @@ class BenchmarlBackend(AsceTrainerBackend):
             try:
                 exp.close()
             except RuntimeError:
-                logger.warning("BenchMARL experiment env already closed; skipping duplicate close.")
+                logger.warning(
+                    "BenchMARL experiment env already closed; skipping duplicate close."
+                )
 
     def evaluate(self, cfg: EvalConfig) -> None:
         self._ensure_available()
@@ -272,24 +309,35 @@ class BenchmarlBackend(AsceTrainerBackend):
             episode_seed = cfg.seed + ep
             with quiet_output(enabled=not cfg.backend_verbose):
                 exp = self._build_experiment(
-                    cfg, seed=episode_seed, device=resolved_device, quiet_sumo=not cfg.backend_verbose
+                    cfg,
+                    seed=episode_seed,
+                    device=resolved_device,
+                    quiet_sumo=not cfg.backend_verbose,
                 )
             try:
                 exp.load_state_dict(payload["state_dict"])
                 with quiet_output(enabled=not cfg.backend_verbose):
-                    rollout, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
-                        exp, deterministic=True
+                    rollout, mean_reward, per_agent_totals, steps = (
+                        self._rollout_episode_stats(exp, deterministic=True)
                     )
                 k = self._kpi_from_rollout_replay(rollout=rollout, cfg=cfg)
-                objective_mean_reward = mean_reward if cfg.reward_mode == "objective" else float("nan")
-                objective_delay_proxy = float(-mean_reward) if cfg.reward_mode == "objective" else float("nan")
+                objective_mean_reward = (
+                    mean_reward if cfg.reward_mode == "objective" else float("nan")
+                )
+                objective_delay_proxy = (
+                    float(-mean_reward)
+                    if cfg.reward_mode == "objective"
+                    else float("nan")
+                )
                 objective_throughput_proxy = (
                     float(sum(max(0.0, value) for value in per_agent_totals.values()))
                     if cfg.reward_mode == "objective"
                     else float("nan")
                 )
                 objective_fairness = (
-                    jain_index(list(per_agent_totals.values())) if cfg.reward_mode == "objective" else float("nan")
+                    jain_index(list(per_agent_totals.values()))
+                    if cfg.reward_mode == "objective"
+                    else float("nan")
                 )
                 records.append(
                     {
@@ -317,7 +365,9 @@ class BenchmarlBackend(AsceTrainerBackend):
                 try:
                     exp.close()
                 except RuntimeError:
-                    logger.warning("BenchMARL experiment env already closed; skipping duplicate close.")
+                    logger.warning(
+                        "BenchMARL experiment env already closed; skipping duplicate close."
+                    )
 
         with quiet_output(enabled=not cfg.backend_verbose):
             baseline_env = create_parallel_env(
@@ -331,8 +381,12 @@ class BenchmarlBackend(AsceTrainerBackend):
             )
         try:
             obs = extract_reset_obs(baseline_env.reset(seed=cfg.seed))
-            action_dims = {a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())}
-            fixed = FixedTimeController(action_size_by_agent=action_dims, green_duration_s=cfg.delta_time)
+            action_dims = {
+                a: int(baseline_env.action_spaces(a).n) for a in sorted(obs.keys())
+            }
+            fixed = FixedTimeController(
+                action_size_by_agent=action_dims, green_duration_s=cfg.delta_time
+            )
             max_pressure = MaxPressureController(action_size_by_agent=action_dims)
             reward_weights = RewardWeights(
                 delay=cfg.reward_delay_weight,
@@ -340,12 +394,17 @@ class BenchmarlBackend(AsceTrainerBackend):
                 fairness=cfg.reward_fairness_weight,
             )
 
-            for controller_name, controller in [("fixed_time", fixed), ("max_pressure", max_pressure)]:
+            for controller_name, controller in [
+                ("fixed_time", fixed),
+                ("max_pressure", max_pressure),
+            ]:
                 for ep in range(cfg.episodes):
                     obs = extract_reset_obs(baseline_env.reset(seed=cfg.seed + ep))
                     done = False
                     ep_rewards = []
-                    per_agent_reward_totals: Dict[str, float] = {a: 0.0 for a in sorted(obs.keys())}
+                    per_agent_reward_totals: Dict[str, float] = {
+                        a: 0.0 for a in sorted(obs.keys())
+                    }
                     objective_ep_rewards = []
                     objective_per_agent_reward_totals: Dict[str, float] = {
                         a: 0.0 for a in sorted(obs.keys())
@@ -359,7 +418,9 @@ class BenchmarlBackend(AsceTrainerBackend):
                                 actions = controller.actions(obs)
                             else:
                                 actions = controller.actions(obs, env=baseline_env)
-                            obs, rewards, done, _ = extract_step(baseline_env.step(actions))
+                            obs, rewards, done, _ = extract_step(
+                                baseline_env.step(actions)
+                            )
                         sim_time = float(steps + 1) * float(cfg.delta_time)
                         metrics_by_agent = compute_metrics_for_agents(
                             env=baseline_env,
@@ -370,12 +431,18 @@ class BenchmarlBackend(AsceTrainerBackend):
                             scenario_id="baseline",
                             observations=obs,
                         )
-                        shaped = rewards_from_metrics(metrics_by_agent, mode=cfg.reward_mode, weights=reward_weights)
+                        shaped = rewards_from_metrics(
+                            metrics_by_agent,
+                            mode=cfg.reward_mode,
+                            weights=reward_weights,
+                        )
                         objective_shaped = (
                             shaped
                             if cfg.reward_mode == "objective"
                             else rewards_from_metrics(
-                                metrics_by_agent, mode="objective", weights=reward_weights
+                                metrics_by_agent,
+                                mode="objective",
+                                weights=reward_weights,
                             )
                         )
                         if shaped:
@@ -383,18 +450,27 @@ class BenchmarlBackend(AsceTrainerBackend):
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():
-                                per_agent_reward_totals[a] = per_agent_reward_totals.get(a, 0.0) + float(r)
+                                per_agent_reward_totals[a] = (
+                                    per_agent_reward_totals.get(a, 0.0) + float(r)
+                                )
                         if objective_shaped:
-                            objective_ep_rewards.append(float(np.mean(list(objective_shaped.values()))))
+                            objective_ep_rewards.append(
+                                float(np.mean(list(objective_shaped.values())))
+                            )
                             for a, r in objective_shaped.items():
-                                objective_per_agent_reward_totals[a] = objective_per_agent_reward_totals.get(
-                                    a, 0.0
-                                ) + float(r)
+                                objective_per_agent_reward_totals[a] = (
+                                    objective_per_agent_reward_totals.get(a, 0.0)
+                                    + float(r)
+                                )
                         steps += 1
                         kpi.update(baseline_env)
 
                     avg_reward = float(np.mean(ep_rewards)) if ep_rewards else 0.0
-                    objective_avg_reward = float(np.mean(objective_ep_rewards)) if objective_ep_rewards else 0.0
+                    objective_avg_reward = (
+                        float(np.mean(objective_ep_rewards))
+                        if objective_ep_rewards
+                        else 0.0
+                    )
                     k = kpi.summary()
                     records.append(
                         {
@@ -405,13 +481,21 @@ class BenchmarlBackend(AsceTrainerBackend):
                             "mean_reward": avg_reward,
                             "delay_proxy": float(-avg_reward),
                             "throughput_proxy": float(
-                                sum(max(0.0, value) for value in per_agent_reward_totals.values())
+                                sum(
+                                    max(0.0, value)
+                                    for value in per_agent_reward_totals.values()
+                                )
                             ),
-                            "fairness_jain": jain_index(list(per_agent_reward_totals.values())),
+                            "fairness_jain": jain_index(
+                                list(per_agent_reward_totals.values())
+                            ),
                             "objective_mean_reward": objective_avg_reward,
                             "objective_delay_proxy": float(-objective_avg_reward),
                             "objective_throughput_proxy": float(
-                                sum(max(0.0, value) for value in objective_per_agent_reward_totals.values())
+                                sum(
+                                    max(0.0, value)
+                                    for value in objective_per_agent_reward_totals.values()
+                                )
                             ),
                             "objective_fairness_jain": jain_index(
                                 list(objective_per_agent_reward_totals.values())

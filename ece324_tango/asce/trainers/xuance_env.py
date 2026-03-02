@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import List
 
 from gymnasium import spaces
 import numpy as np
@@ -45,8 +45,12 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             self.agents: List[str] = list(self._base_env.ts_ids)
             self.num_agents = len(self.agents)
             self.agent_groups = [self.agents]
-            self.observation_space = {a: self._base_env.observation_spaces(a) for a in self.agents}
-            self.action_space = {a: self._base_env.action_spaces(a) for a in self.agents}
+            self.observation_space = {
+                a: self._base_env.observation_spaces(a) for a in self.agents
+            }
+            self.action_space = {
+                a: self._base_env.action_spaces(a) for a in self.agents
+            }
 
             obs_dim = int(
                 sum(int(np.prod(self.observation_space[a].shape)) for a in self.agents)
@@ -57,14 +61,19 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
                 shape=(obs_dim,),
                 dtype=np.float32,
             )
-            self.max_episode_steps = max(1, int(config.sumo_seconds) // int(config.sumo_delta_time))
+            self.max_episode_steps = max(
+                1, int(config.sumo_seconds) // int(config.sumo_delta_time)
+            )
             self.render_mode = "human"
             self._episode_step = 0
             self._last_obs = {
-                a: np.zeros(self.observation_space[a].shape, dtype=np.float32) for a in self.agents
+                a: np.zeros(self.observation_space[a].shape, dtype=np.float32)
+                for a in self.agents
             }
             self._scenario_id = getattr(config, "scenario_id", "baseline")
-            self._reward_mode = str(getattr(config, "reward_mode", "objective")).strip().lower()
+            self._reward_mode = (
+                str(getattr(config, "reward_mode", "objective")).strip().lower()
+            )
             self._reward_weights = RewardWeights(
                 delay=float(getattr(config, "reward_delay_weight", 1.0)),
                 throughput=float(getattr(config, "reward_throughput_weight", 1.0)),
@@ -83,7 +92,10 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
 
         def state(self):
             return np.concatenate(
-                [np.asarray(self._last_obs[a], dtype=np.float32).ravel() for a in self.agents],
+                [
+                    np.asarray(self._last_obs[a], dtype=np.float32).ravel()
+                    for a in self.agents
+                ],
                 axis=0,
             )
 
@@ -91,7 +103,9 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             return {a: True for a in self.agents}
 
         def avail_actions(self):
-            return {a: np.ones(self.action_space[a].n, dtype=np.bool_) for a in self.agents}
+            return {
+                a: np.ones(self.action_space[a].n, dtype=np.bool_) for a in self.agents
+            }
 
         def reset(self):
             obs = extract_reset_obs(self._base_env.reset(seed=self._base_env.sumo_seed))
@@ -113,7 +127,9 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             if len(step_out) == 5:
                 obs, rewards, terminations, truncations, infos = step_out
                 terminated = {a: bool(terminations.get(a, False)) for a in self.agents}
-                truncated = bool(all(bool(truncations.get(a, False)) for a in self.agents))
+                truncated = bool(
+                    all(bool(truncations.get(a, False)) for a in self.agents)
+                )
             else:
                 obs, rewards, dones, infos = step_out
                 terminated = {a: bool(dones.get(a, False)) for a in self.agents}
@@ -121,18 +137,26 @@ def register_xuance_sumo_env(env_name: str = "sumo_custom") -> str:
             obs = {a: np.asarray(obs[a], dtype=np.float32) for a in self.agents}
             self._last_obs = obs
             truncated = bool(truncated or self._episode_step >= self.max_episode_steps)
-            rewards = {a: float(np.asarray(r).reshape(-1)[0]) for a, r in rewards.items()}
-            sim_time = float(self._episode_step) * float(getattr(self._base_env, "delta_time", 1))
+            rewards = {
+                a: float(np.asarray(r).reshape(-1)[0]) for a, r in rewards.items()
+            }
+            sim_time = float(self._episode_step) * float(
+                getattr(self._base_env, "delta_time", 1)
+            )
             metrics_by_agent = compute_metrics_for_agents(
                 env=self._base_env,
                 agent_ids=self.agents,
                 time_step=sim_time,
-                actions={a: int(np.asarray(actions[a]).reshape(-1)[0]) for a in self.agents},
+                actions={
+                    a: int(np.asarray(actions[a]).reshape(-1)[0]) for a in self.agents
+                },
                 action_green_dur=float(getattr(self._base_env, "delta_time", 1)),
                 scenario_id=self._scenario_id,
                 observations=obs,
             )
-            shaped_rewards = rewards_from_metrics(metrics_by_agent, mode=self._reward_mode, weights=self._reward_weights)
+            shaped_rewards = rewards_from_metrics(
+                metrics_by_agent, mode=self._reward_mode, weights=self._reward_weights
+            )
             if shaped_rewards:
                 rewards = shaped_rewards
             info = {

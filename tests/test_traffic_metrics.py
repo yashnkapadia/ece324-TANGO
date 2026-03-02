@@ -117,7 +117,10 @@ class _DummyEdgeDomain:
 
 class _DummyTrafficLightDomain:
     def getControlledLinks(self, ts_id: str):
-        return [[("lane_ns", "out_lane_0", "via_0")], [("lane_ew", "out_lane_1", "via_1")]]
+        return [
+            [("lane_ns", "out_lane_0", "via_0")],
+            [("lane_ew", "out_lane_1", "via_1")],
+        ]
 
     def getPhase(self, ts_id: str) -> int:
         return 0

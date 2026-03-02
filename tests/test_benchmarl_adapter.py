@@ -42,7 +42,9 @@ def test_sumo_parallel_adapter_reset_and_step_shapes():
     assert set(obs.keys()) == {"tls_0", "tls_1"}
     assert set(infos.keys()) == {"tls_0", "tls_1"}
 
-    next_obs, rewards, terminations, truncations, next_infos = adapter.step({"tls_0": 0, "tls_1": 1})
+    next_obs, rewards, terminations, truncations, next_infos = adapter.step(
+        {"tls_0": 0, "tls_1": 1}
+    )
     assert set(next_obs.keys()) == {"tls_0", "tls_1"}
     assert rewards["tls_0"] == 1.0
     assert terminations["tls_1"] is True

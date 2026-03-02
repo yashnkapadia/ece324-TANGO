@@ -101,12 +101,27 @@ class MAPPOTrainer:
 
     @torch.no_grad()
     def act(
-        self, obs: np.ndarray, global_obs: np.ndarray, n_valid_actions: int | None = None
+        self,
+        obs: np.ndarray,
+        global_obs: np.ndarray,
+        n_valid_actions: int | None = None,
     ) -> Dict[str, float]:
-        obs_n = self.obs_norm.normalize(obs) if self.obs_norm is not None else np.asarray(obs, dtype=np.float32)
-        gobs_n = self.gobs_norm.normalize(global_obs) if self.gobs_norm is not None else np.asarray(global_obs, dtype=np.float32)
-        obs_t = torch.tensor(obs_n, dtype=torch.float32, device=self.device).unsqueeze(0)
-        gobs_t = torch.tensor(gobs_n, dtype=torch.float32, device=self.device).unsqueeze(0)
+        obs_n = (
+            self.obs_norm.normalize(obs)
+            if self.obs_norm is not None
+            else np.asarray(obs, dtype=np.float32)
+        )
+        gobs_n = (
+            self.gobs_norm.normalize(global_obs)
+            if self.gobs_norm is not None
+            else np.asarray(global_obs, dtype=np.float32)
+        )
+        obs_t = torch.tensor(obs_n, dtype=torch.float32, device=self.device).unsqueeze(
+            0
+        )
+        gobs_t = torch.tensor(
+            gobs_n, dtype=torch.float32, device=self.device
+        ).unsqueeze(0)
         logits = self.actor(obs_t)
         if n_valid_actions is not None and n_valid_actions < logits.shape[-1]:
             logits[0, n_valid_actions:] = float("-inf")
@@ -129,17 +144,25 @@ class MAPPOTrainer:
     ) -> list:
         """Single forward pass for all N agents — one GPU call per environment step."""
         N = len(obs_list)
-        obs_arr = np.stack([
-            self.obs_norm.normalize(o) if self.obs_norm is not None else np.asarray(o, dtype=np.float32)
-            for o in obs_list
-        ])
+        obs_arr = np.stack(
+            [
+                self.obs_norm.normalize(o)
+                if self.obs_norm is not None
+                else np.asarray(o, dtype=np.float32)
+                for o in obs_list
+            ]
+        )
         gobs_n = (
             self.gobs_norm.normalize(global_obs)
             if self.gobs_norm is not None
             else np.asarray(global_obs, dtype=np.float32)
         )
         obs_t = torch.tensor(obs_arr, dtype=torch.float32, device=self.device)
-        gobs_t = torch.tensor(gobs_n, dtype=torch.float32, device=self.device).unsqueeze(0).expand(N, -1)
+        gobs_t = (
+            torch.tensor(gobs_n, dtype=torch.float32, device=self.device)
+            .unsqueeze(0)
+            .expand(N, -1)
+        )
 
         logits = self.actor(obs_t)
         for i, n_valid in enumerate(n_valid_actions_list):
@@ -167,22 +190,36 @@ class MAPPOTrainer:
         advantages = np.zeros_like(rewards)
         gae = 0.0
         for t in reversed(range(len(rewards))):
-            delta = rewards[t] + self.gamma * values[t + 1] * (1.0 - dones[t]) - values[t]
+            delta = (
+                rewards[t] + self.gamma * values[t + 1] * (1.0 - dones[t]) - values[t]
+            )
             gae = delta + self.gamma * self.gae_lambda * (1.0 - dones[t]) * gae
             advantages[t] = gae
         returns = advantages + values[:-1]
         return returns, advantages
 
-    def update(self, batch: Dict[str, np.ndarray], ppo_epochs: int = 5, minibatch_size: int = 512):
+    def update(
+        self,
+        batch: Dict[str, np.ndarray],
+        ppo_epochs: int = 5,
+        minibatch_size: int = 512,
+    ):
         obs = torch.tensor(batch["obs"], dtype=torch.float32, device=self.device)
-        gobs = torch.tensor(batch["global_obs"], dtype=torch.float32, device=self.device)
+        gobs = torch.tensor(
+            batch["global_obs"], dtype=torch.float32, device=self.device
+        )
         actions = torch.tensor(batch["actions"], dtype=torch.long, device=self.device)
         old_logp = torch.tensor(batch["logp"], dtype=torch.float32, device=self.device)
-        returns = torch.tensor(batch["returns"], dtype=torch.float32, device=self.device)
+        returns = torch.tensor(
+            batch["returns"], dtype=torch.float32, device=self.device
+        )
         adv = torch.tensor(batch["advantages"], dtype=torch.float32, device=self.device)
         n_actions_total = int(self.actor.net[-1].out_features)
         n_valid_actions = torch.tensor(
-            batch.get("n_valid_actions", np.full((actions.shape[0],), n_actions_total, dtype=np.int64)),
+            batch.get(
+                "n_valid_actions",
+                np.full((actions.shape[0],), n_actions_total, dtype=np.int64),
+            ),
             dtype=torch.long,
             device=self.device,
         )
@@ -194,11 +231,13 @@ class MAPPOTrainer:
             gobs_np = batch["global_obs"]
             obs = torch.tensor(
                 np.stack([self.obs_norm.normalize(o) for o in obs_np]),
-                dtype=torch.float32, device=self.device,
+                dtype=torch.float32,
+                device=self.device,
             )
             gobs = torch.tensor(
                 np.stack([self.gobs_norm.normalize(g) for g in gobs_np]),
-                dtype=torch.float32, device=self.device,
+                dtype=torch.float32,
+                device=self.device,
             )
 
         n = obs.shape[0]
@@ -213,7 +252,9 @@ class MAPPOTrainer:
                 logits = self.actor(obs[mb])
                 mb_valid = torch.clamp(n_valid_actions[mb], min=1, max=logits.shape[-1])
                 if torch.any(mb_valid < logits.shape[-1]):
-                    action_ids = torch.arange(logits.shape[-1], device=self.device).unsqueeze(0)
+                    action_ids = torch.arange(
+                        logits.shape[-1], device=self.device
+                    ).unsqueeze(0)
                     invalid_mask = action_ids >= mb_valid.unsqueeze(1)
                     logits = logits.masked_fill(invalid_mask, float("-inf"))
                 dist = Categorical(logits=logits)
@@ -222,8 +263,13 @@ class MAPPOTrainer:
 
                 ratio = torch.exp(logp - old_logp[mb])
                 surr1 = ratio * adv[mb]
-                surr2 = torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps) * adv[mb]
-                actor_loss = -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
+                surr2 = (
+                    torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps)
+                    * adv[mb]
+                )
+                actor_loss = (
+                    -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
+                )
 
                 values = self.critic(gobs[mb])
                 critic_loss = nn.functional.mse_loss(values, returns[mb])
@@ -287,8 +333,12 @@ class MAPPOTrainer:
         payload = {
             "actor": self.actor.state_dict(),
             "critic": self.critic.state_dict(),
-            "obs_norm": self.obs_norm.state_dict() if self.obs_norm is not None else None,
-            "gobs_norm": self.gobs_norm.state_dict() if self.gobs_norm is not None else None,
+            "obs_norm": self.obs_norm.state_dict()
+            if self.obs_norm is not None
+            else None,
+            "gobs_norm": self.gobs_norm.state_dict()
+            if self.gobs_norm is not None
+            else None,
             "use_obs_norm": bool(self.use_obs_norm),
         }
         torch.save(payload, out_path)
@@ -299,7 +349,9 @@ class MAPPOTrainer:
         if "use_obs_norm" in payload:
             return bool(payload["use_obs_norm"])
         # Backward compatibility for checkpoints predating explicit metadata.
-        return bool(payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None)
+        return bool(
+            payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None
+        )
 
     def load(self, in_path: str):
         # weights_only=False is required because the payload includes numpy/list arrays
@@ -309,7 +361,8 @@ class MAPPOTrainer:
         ckpt_use_obs_norm = bool(
             payload.get(
                 "use_obs_norm",
-                payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None,
+                payload.get("obs_norm") is not None
+                or payload.get("gobs_norm") is not None,
             )
         )
         if ckpt_use_obs_norm != bool(self.use_obs_norm):
