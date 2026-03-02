@@ -255,7 +255,8 @@
 ## 2026-03-02 (time-loss reward mode + objective-scored baseline eval)
 - Added new reward mode:
   - `reward_mode=time_loss` in `rewards_from_metrics()`
-  - semantics: per-agent reward `= -reward_delay_weight * delay` (delay-only surrogate to align with proposal `time_loss_s`)
+  - semantics: per-agent reward uses delay-only surrogate aligned to `time_loss_s`
+    (`-reward_delay_weight * log1p(delay)` after normalization fix in same-day rerun)
   - unsupported reward-mode strings now fail fast with a clear `ValueError`.
 - Added cross-controller objective-scored eval outputs:
   - local/benchmarl/xuance eval CSV rows now include:
