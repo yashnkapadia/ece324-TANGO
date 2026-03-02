@@ -11,7 +11,7 @@ from ece324_tango.asce.baselines import FixedTimeController, MaxPressureControll
 from ece324_tango.asce.env import create_parallel_env, flatten_obs_by_agent, pad_observation
 from ece324_tango.asce.kpi import KPITracker
 from ece324_tango.asce.mappo import MAPPOTrainer, Transition
-from ece324_tango.asce.runtime import extract_reset_obs, extract_step, jain_index
+from ece324_tango.asce.runtime import extract_reset_obs, extract_step, extract_step_details, jain_index
 from ece324_tango.asce.schema import ASCE_DATASET_COLUMNS
 from ece324_tango.asce.traffic_metrics import (
     RewardWeights,
@@ -84,6 +84,10 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 trajectories: Dict[str, List[Transition]] = {a: [] for a in sorted(obs.keys())}
                 done = False
+                max_steps = max(1, int(cfg.seconds // cfg.delta_time))
+                episode_terminated = False
+                episode_truncated = False
+                bootstrap_obs = None
                 ep_reward = 0.0
                 ep_steps = 0
 
@@ -107,8 +111,13 @@ class LocalMappoBackend(AsceTrainerBackend):
                     actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
+                    terminated = False
+                    truncated = False
                     try:
-                        next_obs, rewards, done, infos = extract_step(env.step(actions))
+                        next_obs, rewards, done, infos, terminated, truncated = extract_step_details(env.step(actions))
+                        if done and not terminated and not truncated and (ep_steps + 1) >= max_steps:
+                            # Legacy dones-only API: infer timeout from configured horizon.
+                            truncated = True
                     except FatalTraCIError:
                         # SUMO process terminated early (demand exhausted before sim end).
                         # Treat as terminal step so the episode is cleanly finalised.
@@ -117,9 +126,18 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "(demand exhausted). Treating as episode end."
                         )
                         done = True
+                        terminated = True
+                        truncated = False
                         next_obs = {}
                         rewards = {a: 0.0 for a in active_agents}
                         infos = {}
+                    if done and truncated and next_obs:
+                        bootstrap_obs = {
+                            a: np.asarray(next_obs[a], dtype=np.float32)
+                            for a in sorted(next_obs.keys())
+                        }
+                    episode_terminated = episode_terminated or (done and terminated)
+                    episode_truncated = episode_truncated or (done and truncated)
                     sim_time = float(ep_steps + 1) * float(cfg.delta_time)
                     if not done:
                         metrics_by_agent = compute_metrics_for_agents(
@@ -157,8 +175,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 action=int(actions[agent]),
                                 logp=float(action_meta[agent]["logp"]),
                                 reward=agent_reward,
-                                done=done,
+                                done=bool(terminated),
                                 value=float(action_meta[agent]["value"]),
+                                n_valid_actions=int(action_dims[agent]),
                             )
                         )
 
@@ -166,12 +185,12 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Bootstrap value for truncated (non-terminal) episodes
                 last_values: Dict[str, float] = {}
-                if obs and not done:
-                    # Episode ended by time limit, not terminal — bootstrap
-                    final_gobs = flatten_obs_by_agent(obs, sorted(obs.keys()))
-                    for agent in sorted(obs.keys()):
+                if episode_truncated and not episode_terminated and bootstrap_obs:
+                    final_agents = sorted(bootstrap_obs.keys())
+                    final_gobs = flatten_obs_by_agent(bootstrap_obs, final_agents)
+                    for agent in final_agents:
                         padded = pad_observation(
-                            np.asarray(obs[agent], dtype=np.float32), target_dim=obs_dim
+                            np.asarray(bootstrap_obs[agent], dtype=np.float32), target_dim=obs_dim
                         )
                         v = trainer.act(padded, final_gobs, n_valid_actions=action_dims[agent])
                         last_values[agent] = v["value"]
@@ -216,6 +235,12 @@ class LocalMappoBackend(AsceTrainerBackend):
         logger.info(f"Inference device: {resolved_device}")
         if not cfg.model_path.exists():
             raise FileNotFoundError(f"Model checkpoint not found: {cfg.model_path}")
+        ckpt_use_obs_norm = MAPPOTrainer.checkpoint_use_obs_norm(str(cfg.model_path))
+        if ckpt_use_obs_norm != bool(cfg.use_obs_norm):
+            raise RuntimeError(
+                f"Checkpoint use_obs_norm={ckpt_use_obs_norm} but eval requested "
+                f"use_obs_norm={cfg.use_obs_norm}. Re-run with matching --use-obs-norm/--no-use-obs-norm."
+            )
 
         records = []
         controllers = ["mappo", "fixed_time", "max_pressure"]

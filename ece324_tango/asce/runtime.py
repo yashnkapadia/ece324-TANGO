@@ -19,16 +19,35 @@ def safe_done(terminations: Dict[str, bool], truncations: Dict[str, bool]) -> bo
     return all(bool(terminations.get(k, False) or truncations.get(k, False)) for k in keys)
 
 
-def extract_step(step_output):
+def extract_step_details(step_output):
+    """Normalize step output and preserve end-type when available.
+
+    Returns:
+        obs, rewards, done, infos, terminated, truncated
+    """
     if len(step_output) == 5:
         obs, rewards, terminations, truncations, infos = step_output
         done = safe_done(terminations, truncations)
-        return obs, rewards, done, infos
+        keys = set(terminations.keys()) | set(truncations.keys())
+        if keys:
+            terminated = all(bool(terminations.get(k, False)) for k in keys)
+            truncated = all(bool(truncations.get(k, False)) for k in keys)
+        else:
+            terminated = False
+            truncated = False
+        return obs, rewards, done, infos, terminated, truncated
+
     obs, rewards, dones, infos = step_output
     if "__all__" in dones:
         done = bool(dones["__all__"])
     else:
         done = all(bool(v) for v in dones.values()) if dones else False
+    # Legacy API does not separate terminal vs truncation.
+    return obs, rewards, done, infos, done, False
+
+
+def extract_step(step_output):
+    obs, rewards, done, infos, _, _ = extract_step_details(step_output)
     return obs, rewards, done, infos
 
 

@@ -267,15 +267,15 @@ class BenchmarlBackend(AsceTrainerBackend):
                 "Train with --trainer-backend benchmarl first."
             )
 
-        with quiet_output(enabled=not cfg.backend_verbose):
-            exp = self._build_experiment(
-                cfg, seed=cfg.seed, device=resolved_device, quiet_sumo=not cfg.backend_verbose
-            )
-        exp.load_state_dict(payload["state_dict"])
-
         records: List[dict] = []
-        try:
-            for ep in range(cfg.episodes):
+        for ep in range(cfg.episodes):
+            episode_seed = cfg.seed + ep
+            with quiet_output(enabled=not cfg.backend_verbose):
+                exp = self._build_experiment(
+                    cfg, seed=episode_seed, device=resolved_device, quiet_sumo=not cfg.backend_verbose
+                )
+            try:
+                exp.load_state_dict(payload["state_dict"])
                 with quiet_output(enabled=not cfg.backend_verbose):
                     rollout, mean_reward, per_agent_totals, steps = self._rollout_episode_stats(
                         exp, deterministic=True
@@ -285,7 +285,7 @@ class BenchmarlBackend(AsceTrainerBackend):
                     {
                         "controller": "mappo",
                         "episode": ep,
-                        "seed": cfg.seed + ep,
+                        "seed": episode_seed,
                         "steps": steps,
                         "mean_reward": mean_reward,
                         "delay_proxy": float(-mean_reward),
@@ -299,11 +299,11 @@ class BenchmarlBackend(AsceTrainerBackend):
                         "arrived_vehicles": k.arrived_vehicles,
                     }
                 )
-        finally:
-            try:
-                exp.close()
-            except RuntimeError:
-                logger.warning("BenchMARL experiment env already closed; skipping duplicate close.")
+            finally:
+                try:
+                    exp.close()
+                except RuntimeError:
+                    logger.warning("BenchMARL experiment env already closed; skipping duplicate close.")
 
         with quiet_output(enabled=not cfg.backend_verbose):
             baseline_env = create_parallel_env(

@@ -34,7 +34,11 @@ def main(
     reward_delay_weight: float = 1.0,
     reward_throughput_weight: float = 1.0,
     reward_fairness_weight: float = 0.25,
-    use_obs_norm: bool = typer.Option(False, "--use-obs-norm", help="Enable running observation normalization (Welford per-feature)"),
+    use_obs_norm: bool = typer.Option(
+        True,
+        "--use-obs-norm/--no-use-obs-norm",
+        help="Enable running observation normalization (Welford per-feature)",
+    ),
 ):
     """Train ASCE controller using selected trainer backend."""
     model_path.parent.mkdir(parents=True, exist_ok=True)

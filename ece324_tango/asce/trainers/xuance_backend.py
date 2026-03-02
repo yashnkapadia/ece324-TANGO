@@ -120,17 +120,19 @@ class XuanceBackend(AsceTrainerBackend):
         cfg: TrainConfig | EvalConfig,
         agent,
         deterministic: bool = False,
+        episode_seed: int | None = None,
     ):
+        seed = int(cfg.seed if episode_seed is None else episode_seed)
         env = create_parallel_env(
             net_file=cfg.net_file,
             route_file=cfg.route_file,
-            seed=cfg.seed,
+            seed=seed,
             use_gui=cfg.use_gui,
             seconds=cfg.seconds,
             delta_time=cfg.delta_time,
             quiet_sumo=not cfg.backend_verbose,
         )
-        obs = extract_reset_obs(env.reset(seed=cfg.seed))
+        obs = extract_reset_obs(env.reset(seed=seed))
         done = False
         steps = 0
         mean_rewards = []
@@ -227,6 +229,7 @@ class XuanceBackend(AsceTrainerBackend):
                     cfg=cfg,
                     agent=runner.agents,
                     deterministic=False,
+                    episode_seed=cfg.seed,
                 )
             rollout_df = pd.DataFrame(rows)
             if rollout_df.empty:
@@ -285,6 +288,7 @@ class XuanceBackend(AsceTrainerBackend):
                         cfg=cfg,
                         agent=runner.agents,
                         deterministic=True,
+                        episode_seed=cfg.seed + ep,
                     )
                 records.append(
                     {

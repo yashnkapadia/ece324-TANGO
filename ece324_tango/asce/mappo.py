@@ -50,6 +50,7 @@ class Transition:
     reward: float
     done: bool
     value: float
+    n_valid_actions: int = 0
 
 
 class MAPPOTrainer:
@@ -179,6 +180,12 @@ class MAPPOTrainer:
         old_logp = torch.tensor(batch["logp"], dtype=torch.float32, device=self.device)
         returns = torch.tensor(batch["returns"], dtype=torch.float32, device=self.device)
         adv = torch.tensor(batch["advantages"], dtype=torch.float32, device=self.device)
+        n_actions_total = int(self.actor.net[-1].out_features)
+        n_valid_actions = torch.tensor(
+            batch.get("n_valid_actions", np.full((actions.shape[0],), n_actions_total, dtype=np.int64)),
+            dtype=torch.long,
+            device=self.device,
+        )
 
         adv = (adv - adv.mean()) / (adv.std() + 1e-8)
 
@@ -204,6 +211,11 @@ class MAPPOTrainer:
                 mb = idx[start : start + minibatch_size]
 
                 logits = self.actor(obs[mb])
+                mb_valid = torch.clamp(n_valid_actions[mb], min=1, max=logits.shape[-1])
+                if torch.any(mb_valid < logits.shape[-1]):
+                    action_ids = torch.arange(logits.shape[-1], device=self.device).unsqueeze(0)
+                    invalid_mask = action_ids >= mb_valid.unsqueeze(1)
+                    logits = logits.masked_fill(invalid_mask, float("-inf"))
                 dist = Categorical(logits=logits)
                 logp = dist.log_prob(actions[mb])
                 entropy = dist.entropy().mean()
@@ -245,6 +257,7 @@ class MAPPOTrainer:
         logp_list: List[float] = []
         ret_list: List[float] = []
         adv_list: List[float] = []
+        n_valid_list: List[int] = []
 
         for agent_id, traj in trajectories.items():
             bootstrap = 0.0
@@ -258,6 +271,7 @@ class MAPPOTrainer:
                 logp_list.append(transition.logp)
                 ret_list.append(float(returns[t]))
                 adv_list.append(float(advantages[t]))
+                n_valid_list.append(int(transition.n_valid_actions))
 
         return {
             "obs": np.stack(obs_list).astype(np.float32),
@@ -266,6 +280,7 @@ class MAPPOTrainer:
             "logp": np.asarray(logp_list, dtype=np.float32),
             "returns": np.asarray(ret_list, dtype=np.float32),
             "advantages": np.asarray(adv_list, dtype=np.float32),
+            "n_valid_actions": np.asarray(n_valid_list, dtype=np.int64),
         }
 
     def save(self, out_path: str):
@@ -274,14 +289,34 @@ class MAPPOTrainer:
             "critic": self.critic.state_dict(),
             "obs_norm": self.obs_norm.state_dict() if self.obs_norm is not None else None,
             "gobs_norm": self.gobs_norm.state_dict() if self.gobs_norm is not None else None,
+            "use_obs_norm": bool(self.use_obs_norm),
         }
         torch.save(payload, out_path)
+
+    @staticmethod
+    def checkpoint_use_obs_norm(in_path: str) -> bool:
+        payload = torch.load(in_path, map_location="cpu", weights_only=False)
+        if "use_obs_norm" in payload:
+            return bool(payload["use_obs_norm"])
+        # Backward compatibility for checkpoints predating explicit metadata.
+        return bool(payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None)
 
     def load(self, in_path: str):
         # weights_only=False is required because the payload includes numpy/list arrays
         # from ObsRunningNorm.state_dict(). These are written by our own save() method
         # and loaded from the local models/ directory only — not from untrusted sources.
         payload = torch.load(in_path, map_location=self.device, weights_only=False)
+        ckpt_use_obs_norm = bool(
+            payload.get(
+                "use_obs_norm",
+                payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None,
+            )
+        )
+        if ckpt_use_obs_norm != bool(self.use_obs_norm):
+            raise RuntimeError(
+                f"Checkpoint use_obs_norm={ckpt_use_obs_norm} but trainer configured with "
+                f"use_obs_norm={self.use_obs_norm}. Align flags and retry."
+            )
         self.actor.load_state_dict(payload["actor"])
         self.critic.load_state_dict(payload["critic"])
         if self.obs_norm is not None and payload.get("obs_norm") is not None:
