@@ -180,3 +180,30 @@
 - Added assessment note:
   - `docs/notes/libsignal_backend_assessment.md`
   - decision: treat LibSignal as deferred backend until adapter can map our `net_file`/`route_file` and schema/KPI outputs.
+
+## 2026-03-01 (Toronto asset integration + correctness fixes)
+- Integrated teammate SUMO corridor assets from `origin/data-setup` without merging the whole branch (to avoid overwriting current ASCE backend code):
+  - `sumo/network/osm.net.xml.gz` + unzipped `sumo/network/osm.net.xml`
+  - `sumo/demand/demand.rou.xml`
+  - `sumo/demand/random_trips.rou.xml`
+  - `sumo/config/baseline.sumocfg`
+- Added pixi tasks for Toronto corridor smoke runs:
+  - `train-asce-toronto-demand`
+  - `eval-asce-toronto-demand`
+  - `train-asce-toronto-random`
+- Removed unused scaffold package directory: `ece324_tango_model/`.
+- Investigated train/eval warnings using local runtime + upstream `sumo-rl` source:
+  - root cause confirmed: `traci.edge.getShape` is unavailable; lane geometry must be read from `traci.lane.getShape`.
+- Fixed ASCE metric extraction correctness:
+  - Replaced edge-shape axis inference with lane-shape voting per incoming edge in `traffic_metrics.py`.
+  - Stopped swallowing unexpected programming errors in `compute_metrics_for_agent` (fallback now only for expected runtime/TraCI-style extraction failures).
+- Fixed local MAPPO for real corridor topology:
+  - root cause: heterogeneous per-intersection observation lengths caused actor shape mismatch.
+  - added zero-padding to shared actor input (`pad_observation`) and wired local train/eval to use max per-agent observation length.
+- Hardened eval failure path:
+  - `LocalMappoBackend.evaluate` now checks model existence before creating SUMO env.
+  - wrapped per-controller env lifecycle in `try/finally` close.
+- Validation evidence:
+  - `pixi run pytest tests` => pass (`26 passed, 2 skipped`)
+  - local MAPPO train/eval on sample SUMO network succeeds with KPI fields in eval CSV.
+  - local MAPPO train/eval on Toronto `demand.rou.xml` succeeds and writes rollout/train/eval artifacts.

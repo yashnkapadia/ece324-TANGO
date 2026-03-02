@@ -75,3 +75,21 @@ pixi run eval-asce
 pixi run validate-asce-schema
 pixi run benchmark-backends
 ```
+
+## Toronto Corridor Runs
+
+```bash
+pixi run train-asce-toronto-demand
+pixi run eval-asce-toronto-demand
+pixi run train-asce-toronto-random
+```
+
+Toronto SUMO files live under `sumo/`:
+- `sumo/network/osm.net.xml` (unzipped net)
+- `sumo/demand/demand.rou.xml` (TMC-derived flow)
+- `sumo/demand/random_trips.rou.xml` (random-trip flow)
+
+If needed, regenerate the unzipped net with:
+```bash
+gzip -dk -f sumo/network/osm.net.xml.gz
+```

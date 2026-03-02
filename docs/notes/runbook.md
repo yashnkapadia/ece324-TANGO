@@ -1,7 +1,7 @@
 # TANGO Runbook
 
 ## Last Updated
-2026-02-19
+2026-03-01
 
 ## Environment
 - Package manager: pixi
@@ -21,6 +21,9 @@
 - Run tests: `pixi run pytest tests`
 - Train ASCE: `pixi run python -m ece324_tango.modeling.train --trainer-backend local_mappo --device auto`
 - Eval ASCE: `pixi run python -m ece324_tango.modeling.predict --trainer-backend local_mappo --device auto`
+- Train Toronto (TMC demand): `pixi run train-asce-toronto-demand`
+- Eval Toronto (TMC demand): `pixi run eval-asce-toronto-demand`
+- Train Toronto (random trips): `pixi run train-asce-toronto-random`
 - Validate schema: `pixi run python -m ece324_tango.dataset`
 - Benchmark backends: `pixi run benchmark-backends`
 - Backend verbose logs (optional): add `--backend-verbose`
@@ -43,14 +46,30 @@
 
 ## Artifact Paths
 - Model checkpoint: `models/asce_mappo.pt`
+- Toronto demand checkpoint: `models/asce_mappo_toronto_demand.pt`
+- Toronto random checkpoint: `models/asce_mappo_toronto_random.pt`
 - Rollout dataset: `data/processed/asce_rollout_samples.csv`
+- Toronto demand rollout: `data/processed/asce_rollout_toronto_demand.csv`
+- Toronto random rollout: `data/processed/asce_rollout_toronto_random.csv`
 - Train metrics: `reports/results/asce_train_episode_metrics.csv`
 - Eval metrics: `reports/results/asce_eval_metrics.csv`
+- Toronto demand eval metrics: `reports/results/asce_eval_metrics_toronto_demand.csv`
 - Non-fatal exception/fallback log: `reports/results/error_events.jsonl`
+
+## Toronto SUMO Assets
+- Integrated from `origin/data-setup` under:
+  - `sumo/network/osm.net.xml.gz` (source archive)
+  - `sumo/network/osm.net.xml` (unzipped net file used by training/eval)
+  - `sumo/demand/demand.rou.xml` (TMC-derived flows)
+  - `sumo/demand/random_trips.rou.xml` (random flow baseline)
+- Use `sumo/network/osm.net.xml` as `--net-file` for both route files.
+- If `osm.net.xml` is missing locally, regenerate it with:
+  - `gzip -dk -f sumo/network/osm.net.xml.gz`
 
 ## Known Risks
 - BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower to train than Xuance in current micro setup.
 - Xuance value normalization is enabled via local compat patch. If regressions appear, disable with `TANGO_XUANCE_USE_VALUE_NORM=0`.
+- Third-party deprecation warnings from `torchrl` appear during pytest collection. They do not currently affect run correctness but should be tracked for dependency updates.
 
 ## Reward Objective
 - `reward_mode`: `objective` (default) or `sumo`

@@ -1,7 +1,10 @@
-# ASCE Dataset Schema (Teammate Proposal)
+# ASCE Rollout Dataset Schema (Phase 1)
 
 Date noted: 2026-02-19
 Status: adopted as target contract for rollout logging.
+
+This schema is for **ASCE Phase 1 rollout logging** (`state_t`, `action_t`, traffic metrics).
+It is **not** the final PIRA scenario-level dataset schema (Phase 2/3 work).
 
 | Column | Type | Meaning | Source | Computation |
 | --- | --- | --- | --- | --- |
