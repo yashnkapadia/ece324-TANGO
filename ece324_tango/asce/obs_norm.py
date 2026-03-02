@@ -24,7 +24,10 @@ class ObsRunningNorm:
     def update(self, x: np.ndarray) -> None:
         """Update running stats with one observation vector (shape: [dim])."""
         x = np.asarray(x, dtype=np.float64).ravel()
-        assert x.size == self.dim, f"Expected dim={self.dim}, got {x.size}"
+        if not np.all(np.isfinite(x)):
+            raise ValueError(f"ObsRunningNorm.update: non-finite values in observation: {x}")
+        if x.size != self.dim:
+            raise ValueError(f"ObsRunningNorm: expected dim={self.dim}, got {x.size}")
         self._count += 1
         delta = x - self._mean
         self._mean += delta / self._count
