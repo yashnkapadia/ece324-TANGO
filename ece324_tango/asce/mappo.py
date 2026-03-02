@@ -81,10 +81,14 @@ class MAPPOTrainer:
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=critic_lr)
 
     @torch.no_grad()
-    def act(self, obs: np.ndarray, global_obs: np.ndarray) -> Dict[str, float]:
+    def act(
+        self, obs: np.ndarray, global_obs: np.ndarray, n_valid_actions: int | None = None
+    ) -> Dict[str, float]:
         obs_t = torch.tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(0)
         gobs_t = torch.tensor(global_obs, dtype=torch.float32, device=self.device).unsqueeze(0)
         logits = self.actor(obs_t)
+        if n_valid_actions is not None and n_valid_actions < logits.shape[-1]:
+            logits[0, n_valid_actions:] = float("-inf")
         dist = Categorical(logits=logits)
         action = dist.sample()
         logp = dist.log_prob(action)
@@ -159,7 +163,11 @@ class MAPPOTrainer:
 
         return last_losses
 
-    def build_batch(self, trajectories: Dict[str, List[Transition]]):
+    def build_batch(
+        self,
+        trajectories: Dict[str, List[Transition]],
+        last_values: Dict[str, float] | None = None,
+    ):
         obs_list: List[np.ndarray] = []
         gobs_list: List[np.ndarray] = []
         act_list: List[int] = []
@@ -167,8 +175,11 @@ class MAPPOTrainer:
         ret_list: List[float] = []
         adv_list: List[float] = []
 
-        for traj in trajectories.values():
-            returns, advantages = self._compute_gae(traj)
+        for agent_id, traj in trajectories.items():
+            bootstrap = 0.0
+            if last_values is not None and agent_id in last_values:
+                bootstrap = last_values[agent_id]
+            returns, advantages = self._compute_gae(traj, last_value=bootstrap)
             for t, transition in enumerate(traj):
                 obs_list.append(transition.obs)
                 gobs_list.append(transition.global_obs)

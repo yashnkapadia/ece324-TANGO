@@ -58,8 +58,8 @@ class RewardWeights:
     fairness: float
 
 
-def _edge_axis(env, edge_id: str) -> str:
-    shape = env.sumo.edge.getShape(edge_id)
+def _lane_axis(env, lane_id: str) -> str:
+    shape = env.sumo.lane.getShape(lane_id)
     if not shape or len(shape) < 2:
         return "ns"
     (x0, y0), (x1, y1) = shape[0], shape[-1]
@@ -79,10 +79,10 @@ def _incoming_edges_for_ts(env, ts_id: str) -> Dict[str, List[str]]:
             if lane_in:
                 incoming_lanes.add(lane_in)
 
-    edge_ids = set()
+    edge_to_lanes: Dict[str, List[str]] = {}
     for lane_id in incoming_lanes:
         try:
-            edge_ids.add(env.sumo.lane.getEdgeID(lane_id))
+            edge_id = env.sumo.lane.getEdgeID(lane_id)
         except Exception as exc:
             report_exception(
                 context="traffic_metrics.incoming_edge_lookup_failed",
@@ -91,20 +91,24 @@ def _incoming_edges_for_ts(env, ts_id: str) -> Dict[str, List[str]]:
                 once_key=f"incoming_edge_lookup:{ts_id}:{lane_id}",
             )
             continue
+        edge_to_lanes.setdefault(str(edge_id), []).append(str(lane_id))
 
     ns_edges: List[str] = []
     ew_edges: List[str] = []
-    for edge_id in sorted(edge_ids):
-        try:
-            axis = _edge_axis(env, edge_id)
-        except Exception as exc:
-            report_exception(
-                context="traffic_metrics.edge_axis_failed",
-                exc=exc,
-                details={"ts_id": ts_id, "edge_id": edge_id},
-                once_key=f"edge_axis:{ts_id}:{edge_id}",
-            )
-            axis = "ns"
+    for edge_id in sorted(edge_to_lanes.keys()):
+        lane_axes: List[str] = []
+        for lane_id in edge_to_lanes[edge_id]:
+            try:
+                lane_axes.append(_lane_axis(env, lane_id))
+            except Exception as exc:
+                report_exception(
+                    context="traffic_metrics.lane_axis_failed",
+                    exc=exc,
+                    details={"ts_id": ts_id, "edge_id": edge_id, "lane_id": lane_id},
+                    once_key=f"lane_axis:{ts_id}:{edge_id}:{lane_id}",
+                )
+        ew_votes = sum(1 for axis in lane_axes if axis == "ew")
+        axis = "ew" if ew_votes > (len(lane_axes) / 2.0) else "ns"
         if axis == "ew":
             ew_edges.append(edge_id)
         else:
@@ -125,6 +129,19 @@ def _mean_edge_speed(env, edge_ids: Sequence[str]) -> float:
         return 0.0
     vals = [float(env.sumo.edge.getLastStepMeanSpeed(edge_id)) for edge_id in edge_ids]
     return float(np.mean(vals)) if vals else 0.0
+
+
+def _is_expected_metric_fallback_error(exc: BaseException) -> bool:
+    if isinstance(exc, (AttributeError, KeyError, RuntimeError)):
+        return True
+    cls = type(exc)
+    module_name = str(getattr(cls, "__module__", "")).lower()
+    class_name = str(getattr(cls, "__name__", "")).lower()
+    if module_name.startswith("traci"):
+        return True
+    if "traci" in class_name:
+        return True
+    return False
 
 
 def compute_metrics_for_agent(
@@ -156,6 +173,8 @@ def compute_metrics_for_agent(
         throughput = int(round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber")))
         current_phase = int(env.sumo.trafficlight.getPhase(agent_id))
     except Exception as exc:
+        if not _is_expected_metric_fallback_error(exc):
+            raise
         report_exception(
             context="traffic_metrics.compute_metrics_fallback",
             exc=exc,

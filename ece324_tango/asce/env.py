@@ -54,6 +54,20 @@ def flatten_obs_by_agent(obs: Dict[str, np.ndarray], ordered_agents: Iterable[st
     return np.concatenate(parts, axis=0)
 
 
+def pad_observation(obs: np.ndarray, target_dim: int) -> np.ndarray:
+    vec = np.asarray(obs, dtype=np.float32).ravel()
+    if vec.size > target_dim:
+        raise ValueError(
+            f"Observation length {vec.size} exceeds target_dim={target_dim}. "
+            "Increase target_dim or inspect observation schema drift."
+        )
+    if vec.size == target_dim:
+        return vec
+    out = np.zeros((target_dim,), dtype=np.float32)
+    out[: vec.size] = vec
+    return out
+
+
 def split_ns_ew_from_obs(obs: np.ndarray) -> Tuple[float, float, float, float]:
     """Best-effort splitter for queue/arrival proxies.
 
