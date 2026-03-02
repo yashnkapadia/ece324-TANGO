@@ -78,6 +78,25 @@
   - `+ reward_throughput_weight * log1p(throughput)`
   - `+ reward_fairness_weight * Jain(throughput across intersections)`
 
+## Observation Normalization
+- Enabled with `--use-obs-norm` flag (default: off).
+- `ObsRunningNorm` (Welford online, per-feature) is applied to padded local obs and global obs.
+- Stats are saved under keys `"obs_norm"` / `"gobs_norm"` in the model checkpoint.
+- Eval path loads and applies the same stats without updating them.
+
+## GPU Notes
+- RTX 4070 Laptop, CUDA 12.6. Use `--device auto` (default) to pick GPU automatically.
+- All N-agent observations are batched into a single GPU forward pass per step (`act_batch()`).
+- Training throughput is SUMO-limited (CPU), not GPU-limited. Longer episodes give more data.
+- To maximize data per wall-clock minute: increase `--episodes` rather than `--seconds`
+  if the long-horizon SUMO crash recurs.
+
+## Known Bugs Fixed (2026-03-01)
+- **Action space crippled**: `n_actions` was `min(action_dims)` = 2; 10/12 agents could
+  never select phases 2-5. Fixed: use `max` + `-inf` masking in `act()` / `act_batch()`.
+- **GAE bias on truncation**: `last_value` was hardcoded 0.0; now bootstrapped from critic.
+- **Credit assignment lost**: all agents received global mean reward; now each gets own reward.
+
 ## Proposal KPI Path
 - Evaluation CSV now includes proposal-aligned fields:
   - `time_loss_s`
