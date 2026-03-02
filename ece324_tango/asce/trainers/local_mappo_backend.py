@@ -295,6 +295,9 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                     while not done:
                         active_agents = sorted(obs.keys())
+                        prev_obs = {
+                            a: np.asarray(obs[a], dtype=np.float32) for a in active_agents
+                        }
 
                         if controller_name == "mappo":
                             gobs = flatten_obs_by_agent(obs, active_agents)
@@ -330,7 +333,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 actions=actions,
                                 action_green_dur=float(cfg.delta_time),
                                 scenario_id="baseline",
-                                observations=obs,
+                                observations=prev_obs,
                             )
                             shaped_rewards = rewards_from_metrics(
                                 metrics_by_agent=metrics_by_agent,

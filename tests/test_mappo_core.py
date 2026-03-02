@@ -62,3 +62,37 @@ def test_build_batch_carries_per_transition_valid_action_count() -> None:
     batch = trainer.build_batch(trajectories, last_values={"a0": 0.0})
     assert "n_valid_actions" in batch
     assert batch["n_valid_actions"].tolist() == [2]
+
+
+def test_act_never_samples_masked_actions() -> None:
+    torch.manual_seed(0)
+    trainer = MAPPOTrainer(obs_dim=1, global_obs_dim=1, n_actions=4)
+
+    # Make invalid action 3 overwhelmingly likely if mask were absent.
+    _zero_module_parameters(trainer.actor)
+    with torch.no_grad():
+        trainer.actor.net[-1].bias[:] = torch.tensor([0.0, 0.0, 0.0, 50.0])
+
+    for _ in range(64):
+        out = trainer.act(
+            obs=np.asarray([0.0], dtype=np.float32),
+            global_obs=np.asarray([0.0], dtype=np.float32),
+            n_valid_actions=2,
+        )
+        assert out["action"] in {0, 1}
+
+
+def test_act_batch_never_samples_masked_actions() -> None:
+    torch.manual_seed(0)
+    trainer = MAPPOTrainer(obs_dim=1, global_obs_dim=1, n_actions=4)
+
+    _zero_module_parameters(trainer.actor)
+    with torch.no_grad():
+        trainer.actor.net[-1].bias[:] = torch.tensor([0.0, 0.0, 0.0, 50.0])
+
+    outs = trainer.act_batch(
+        obs_list=[np.asarray([0.0], dtype=np.float32) for _ in range(16)],
+        global_obs=np.asarray([0.0], dtype=np.float32),
+        n_valid_actions_list=[2 for _ in range(16)],
+    )
+    assert all(o["action"] in {0, 1} for o in outs)

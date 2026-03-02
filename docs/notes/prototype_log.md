@@ -227,3 +227,27 @@
   - Max-pressure: time_loss_s=1783.50, arrived=47
 - time_loss ratio (MAPPO / max_pressure): 1.68x (previous: 1.82x from 10-episode run)
 - Remaining gap to proposal target (≤0.90x): 0.78x
+
+## 2026-03-02 (MAPPO correctness hardening + parity checks)
+- Fixed a core PPO correctness issue in local MAPPO:
+  - action masking is now applied consistently in both action collection and PPO update.
+  - `n_valid_actions` is now tracked per transition and used in `MAPPOTrainer.update()`.
+- Fixed truncation handling semantics:
+  - runtime now exposes `extract_step_details()` with `terminated`/`truncated` flags.
+  - local training now bootstraps critic values on truncation using final observations.
+  - GAE terminal mask now uses true termination only (not generic done).
+- Fixed backend evaluation seed parity:
+  - BenchMARL MAPPO eval now builds per-episode experiments with `seed + ep`.
+  - Xuance MAPPO eval now passes `episode_seed=seed + ep` through rollout execution.
+- Observation normalization operational safety:
+  - `use_obs_norm` is now persisted in checkpoints.
+  - local eval now validates checkpoint `use_obs_norm` parity before env creation.
+  - CLI default switched to obs normalization on (`--use-obs-norm/--no-use-obs-norm`).
+- Added new regression tests:
+  - `tests/test_mappo_core.py`
+  - `tests/test_local_backend_bootstrap.py`
+  - `tests/test_runtime_step_flags.py`
+  - `tests/test_backend_eval_seeding.py`
+  - `tests/test_obs_norm_parity.py`
+  - `tests/test_cli_obs_norm_defaults.py`
+  - `tests/test_local_eval_fallback_observation_alignment.py`
