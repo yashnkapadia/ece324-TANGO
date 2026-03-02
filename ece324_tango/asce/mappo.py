@@ -8,6 +8,8 @@ import torch
 from torch import nn
 from torch.distributions import Categorical
 
+from ece324_tango.asce.obs_norm import ObsRunningNorm
+
 
 class Actor(nn.Module):
     def __init__(self, obs_dim: int, n_actions: int, hidden_dim: int = 128):
@@ -66,6 +68,7 @@ class MAPPOTrainer:
         critic_lr: float = 1e-3,
         entropy_coef: float = 0.01,
         value_coef: float = 0.5,
+        use_obs_norm: bool = False,
     ):
         self.device = torch.device(device)
         self.gamma = gamma
@@ -80,12 +83,29 @@ class MAPPOTrainer:
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=actor_lr)
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=critic_lr)
 
+        self.use_obs_norm = use_obs_norm
+        if use_obs_norm:
+            self.obs_norm: ObsRunningNorm | None = ObsRunningNorm(obs_dim)
+            self.gobs_norm: ObsRunningNorm | None = ObsRunningNorm(global_obs_dim)
+        else:
+            self.obs_norm = None
+            self.gobs_norm = None
+
+    def norm_update(self, obs: np.ndarray, global_obs: np.ndarray) -> None:
+        """Update running normalizer stats. Call once per transition during training."""
+        if self.obs_norm is not None:
+            self.obs_norm.update(obs)
+        if self.gobs_norm is not None:
+            self.gobs_norm.update(global_obs)
+
     @torch.no_grad()
     def act(
         self, obs: np.ndarray, global_obs: np.ndarray, n_valid_actions: int | None = None
     ) -> Dict[str, float]:
-        obs_t = torch.tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(0)
-        gobs_t = torch.tensor(global_obs, dtype=torch.float32, device=self.device).unsqueeze(0)
+        obs_n = self.obs_norm.normalize(obs) if self.obs_norm is not None else np.asarray(obs, dtype=np.float32)
+        gobs_n = self.gobs_norm.normalize(global_obs) if self.gobs_norm is not None else np.asarray(global_obs, dtype=np.float32)
+        obs_t = torch.tensor(obs_n, dtype=torch.float32, device=self.device).unsqueeze(0)
+        gobs_t = torch.tensor(gobs_n, dtype=torch.float32, device=self.device).unsqueeze(0)
         logits = self.actor(obs_t)
         if n_valid_actions is not None and n_valid_actions < logits.shape[-1]:
             logits[0, n_valid_actions:] = float("-inf")
@@ -122,6 +142,18 @@ class MAPPOTrainer:
         adv = torch.tensor(batch["advantages"], dtype=torch.float32, device=self.device)
 
         adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+
+        if self.obs_norm is not None:
+            obs_np = batch["obs"]
+            gobs_np = batch["global_obs"]
+            obs = torch.tensor(
+                np.stack([self.obs_norm.normalize(o) for o in obs_np]),
+                dtype=torch.float32, device=self.device,
+            )
+            gobs = torch.tensor(
+                np.stack([self.gobs_norm.normalize(g) for g in gobs_np]),
+                dtype=torch.float32, device=self.device,
+            )
 
         n = obs.shape[0]
         idx = np.arange(n)
@@ -201,6 +233,8 @@ class MAPPOTrainer:
         payload = {
             "actor": self.actor.state_dict(),
             "critic": self.critic.state_dict(),
+            "obs_norm": self.obs_norm.state_dict() if self.obs_norm is not None else None,
+            "gobs_norm": self.gobs_norm.state_dict() if self.gobs_norm is not None else None,
         }
         torch.save(payload, out_path)
 
@@ -208,3 +242,7 @@ class MAPPOTrainer:
         payload = torch.load(in_path, map_location=self.device)
         self.actor.load_state_dict(payload["actor"])
         self.critic.load_state_dict(payload["critic"])
+        if self.obs_norm is not None and payload.get("obs_norm") is not None:
+            self.obs_norm.load_state_dict(payload["obs_norm"])
+        if self.gobs_norm is not None and payload.get("gobs_norm") is not None:
+            self.gobs_norm.load_state_dict(payload["gobs_norm"])
