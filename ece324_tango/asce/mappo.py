@@ -119,6 +119,45 @@ class MAPPOTrainer:
             "value": float(value.item()),
         }
 
+    @torch.no_grad()
+    def act_batch(
+        self,
+        obs_list: list,
+        global_obs: np.ndarray,
+        n_valid_actions_list: list,
+    ) -> list:
+        """Single forward pass for all N agents — one GPU call per environment step."""
+        N = len(obs_list)
+        obs_arr = np.stack([
+            self.obs_norm.normalize(o) if self.obs_norm is not None else np.asarray(o, dtype=np.float32)
+            for o in obs_list
+        ])
+        gobs_n = (
+            self.gobs_norm.normalize(global_obs)
+            if self.gobs_norm is not None
+            else np.asarray(global_obs, dtype=np.float32)
+        )
+        obs_t = torch.tensor(obs_arr, dtype=torch.float32, device=self.device)
+        gobs_t = torch.tensor(gobs_n, dtype=torch.float32, device=self.device).unsqueeze(0).expand(N, -1)
+
+        logits = self.actor(obs_t)
+        for i, n_valid in enumerate(n_valid_actions_list):
+            if n_valid < logits.shape[-1]:
+                logits[i, n_valid:] = float("-inf")
+        dist = Categorical(logits=logits)
+        actions = dist.sample()
+        logps = dist.log_prob(actions)
+        values = self.critic(gobs_t)
+
+        return [
+            {
+                "action": int(actions[i].item()),
+                "logp": float(logps[i].item()),
+                "value": float(values[i].item()),
+            }
+            for i in range(N)
+        ]
+
     def _compute_gae(self, traj: List[Transition], last_value: float = 0.0):
         rewards = np.array([t.reward for t in traj], dtype=np.float32)
         values = np.array([t.value for t in traj] + [last_value], dtype=np.float32)

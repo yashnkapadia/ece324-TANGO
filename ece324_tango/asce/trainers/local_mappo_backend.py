@@ -65,6 +65,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 global_obs_dim=global_obs_dim,
                 n_actions=n_actions,
                 device=resolved_device,
+                use_obs_norm=cfg.use_obs_norm,
             )
 
             all_rows: List[dict] = []
@@ -89,13 +90,17 @@ class LocalMappoBackend(AsceTrainerBackend):
                     active_agents = sorted(obs.keys())
                     gobs = flatten_obs_by_agent(obs, active_agents)
 
-                    actions = {}
-                    action_meta = {}
-                    for agent in active_agents:
-                        padded_obs = pad_observation(np.asarray(obs[agent], dtype=np.float32), target_dim=obs_dim)
-                        out = trainer.act(padded_obs, gobs, n_valid_actions=action_dims[agent])
-                        actions[agent] = int(out["action"])
-                        action_meta[agent] = out
+                    padded_obs_list = [
+                        pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
+                        for a in active_agents
+                    ]
+                    n_valid_list = [action_dims[a] for a in active_agents]
+                    # Update normalizer stats before acting
+                    for padded_obs in padded_obs_list:
+                        trainer.norm_update(padded_obs, gobs)
+                    batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
+                    actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
+                    action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
                     next_obs, rewards, done, infos = extract_step(env.step(actions))
                     sim_time = float(ep_steps + 1) * float(cfg.delta_time)
@@ -120,10 +125,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     ep_reward += global_reward
                     ep_steps += 1
 
-                    for agent in active_agents:
-                        a_obs = pad_observation(np.asarray(obs[agent], dtype=np.float32), target_dim=obs_dim)
+                    for i, agent in enumerate(active_agents):
+                        a_obs = padded_obs_list[i]
                         all_rows.append(metrics_by_agent[agent].to_row())
-
                         agent_reward = float(rewards.get(agent, global_reward))
                         trajectories[agent].append(
                             Transition(
@@ -231,6 +235,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         global_obs_dim=global_obs_dim,
                         n_actions=n_actions,
                         device=resolved_device,
+                        use_obs_norm=cfg.use_obs_norm,
                     )
                     trainer.load(str(cfg.model_path))
 
@@ -247,11 +252,13 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                         if controller_name == "mappo":
                             gobs = flatten_obs_by_agent(obs, active_agents)
-                            actions = {}
-                            for a in active_agents:
-                                padded_obs = pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
-                                out = trainer.act(padded_obs, gobs, n_valid_actions=action_dims[a])
-                                actions[a] = int(out["action"])
+                            padded_obs_list = [
+                                pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
+                                for a in active_agents
+                            ]
+                            n_valid_list = [action_dims[a] for a in active_agents]
+                            batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
+                            actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
                         elif controller_name == "fixed_time":
                             actions = fixed.actions(obs)
                         else:
