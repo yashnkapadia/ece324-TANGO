@@ -95,9 +95,13 @@ class LocalMappoBackend(AsceTrainerBackend):
                         for a in active_agents
                     ]
                     n_valid_list = [action_dims[a] for a in active_agents]
-                    # Update normalizer stats before acting
-                    for padded_obs in padded_obs_list:
-                        trainer.norm_update(padded_obs, gobs)
+                    # Update normalizer stats before acting:
+                    # obs_norm gets one sample per agent; gobs_norm gets one per step
+                    if trainer.obs_norm is not None:
+                        for padded_obs in padded_obs_list:
+                            trainer.obs_norm.update(padded_obs)
+                    if trainer.gobs_norm is not None:
+                        trainer.gobs_norm.update(gobs)
                     batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
                     actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
