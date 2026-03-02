@@ -1,0 +1,19 @@
+<configuration>
+    <input>
+        <net-file value="../network/osm.net.xml.gz"/>
+        <route-files value="../demand/demand.rou.xml"/>
+        <additional-files value="../network/tls_overrides.add.xml.gz"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+        <step-length value="1.0"/>
+    </time>
+    <processing>
+        <time-to-teleport value="300"/>
+        <ignore-route-errors value="true"/>
+    </processing>
+    <report>
+        <no-step-log value="true"/>
+    </report>
+</configuration>
