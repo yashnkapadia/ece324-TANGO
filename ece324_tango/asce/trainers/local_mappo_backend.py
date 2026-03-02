@@ -5,6 +5,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 from loguru import logger
+from traci.exceptions import FatalTraCIError
 
 from ece324_tango.asce.baselines import FixedTimeController, MaxPressureController
 from ece324_tango.asce.env import create_parallel_env, flatten_obs_by_agent, pad_observation
@@ -106,7 +107,19 @@ class LocalMappoBackend(AsceTrainerBackend):
                     actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
-                    next_obs, rewards, done, infos = extract_step(env.step(actions))
+                    try:
+                        next_obs, rewards, done, infos = extract_step(env.step(actions))
+                    except FatalTraCIError:
+                        # SUMO process terminated early (demand exhausted before sim end).
+                        # Treat as terminal step so the episode is cleanly finalised.
+                        logger.warning(
+                            f"Episode {ep}: SUMO connection closed at step {ep_steps} "
+                            "(demand exhausted). Treating as episode end."
+                        )
+                        done = True
+                        next_obs = {}
+                        rewards = {a: 0.0 for a in active_agents}
+                        infos = {}
                     sim_time = float(ep_steps + 1) * float(cfg.delta_time)
                     metrics_by_agent = compute_metrics_for_agents(
                         env=env,
@@ -268,7 +281,17 @@ class LocalMappoBackend(AsceTrainerBackend):
                         else:
                             actions = max_pressure.actions(obs, env=env)
 
-                        obs, rewards, done, infos = extract_step(env.step(actions))
+                        try:
+                            obs, rewards, done, infos = extract_step(env.step(actions))
+                        except FatalTraCIError:
+                            logger.warning(
+                                f"Eval {controller_name} ep{ep}: SUMO connection closed at step {steps} "
+                                "(demand exhausted). Treating as episode end."
+                            )
+                            done = True
+                            obs = {}
+                            rewards = {a: 0.0 for a in active_agents}
+                            infos = {}
                         sim_time = float(steps + 1) * float(cfg.delta_time)
                         metrics_by_agent = compute_metrics_for_agents(
                             env=env,

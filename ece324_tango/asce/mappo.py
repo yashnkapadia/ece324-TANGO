@@ -278,7 +278,7 @@ class MAPPOTrainer:
         torch.save(payload, out_path)
 
     def load(self, in_path: str):
-        payload = torch.load(in_path, map_location=self.device)
+        payload = torch.load(in_path, map_location=self.device, weights_only=False)
         self.actor.load_state_dict(payload["actor"])
         self.critic.load_state_dict(payload["critic"])
         if self.obs_norm is not None and payload.get("obs_norm") is not None:

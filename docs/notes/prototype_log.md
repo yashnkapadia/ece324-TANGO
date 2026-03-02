@@ -207,3 +207,23 @@
   - `pixi run pytest tests` => pass (`26 passed, 2 skipped`)
   - local MAPPO train/eval on sample SUMO network succeeds with KPI fields in eval CSV.
   - local MAPPO train/eval on Toronto `demand.rou.xml` succeeds and writes rollout/train/eval artifacts.
+
+## 2026-03-01 (30-episode obs-norm training on Toronto demand)
+- Trained local MAPPO for 30 episodes × 300s on Toronto TMC demand with --use-obs-norm.
+- Batch actor inference (act_batch) reduces GPU round-trips from 12 to 1 per step.
+- Two bugs fixed in this session:
+  - `FatalTraCIError` (SUMO demand exhaustion at ~285s into 300s episode) now caught per-step and treated as done=True, allowing episode to close cleanly and training to continue.
+  - `torch.load` called with `weights_only=False` to handle numpy arrays in obs-norm checkpoint payload (PyTorch 2.6 default changed to `weights_only=True`).
+- Episode reward progression (mean_global_reward per episode):
+  - ep0: -0.2804, ep1: -0.1439, ep2: -0.1332, ep3: -0.1598, ep4: -0.2080
+  - ep5: -0.1892, ep6: -0.1618, ep7: -0.0427, ep8: -0.1910, ep9: -0.1448
+  - ep10: -0.1084, ep11: -0.1516, ep12: -0.2604, ep13: -0.1863, ep14: -0.1827
+  - ep15: -0.2315, ep16: -0.2843, ep17: -0.0653, ep18: -0.0954, ep19: -0.2449
+  - ep20: -0.0949, ep21: -0.1625, ep22: +0.0189, ep23: -0.1128, ep24: +0.0020
+  - ep25: -0.0211, ep26: -0.0527, ep27: +0.0497, ep28: -0.0618, ep29: -0.0163
+- Eval results vs baselines (seed 17, 1 episode, 120s):
+  - MAPPO:        time_loss_s=2993.75, arrived=42, mean_reward=-0.0888
+  - Fixed-time:   time_loss_s=2244.61, arrived=45
+  - Max-pressure: time_loss_s=1783.50, arrived=47
+- time_loss ratio (MAPPO / max_pressure): 1.68x (previous: 1.82x from 10-episode run)
+- Remaining gap to proposal target (≤0.90x): 0.78x
