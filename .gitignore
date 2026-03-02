@@ -6,6 +6,22 @@
 /reports/results/backend_compare/
 /reports/results/error_events.jsonl
 
+# Generated model checkpoints (reproduced via pixi tasks)
+/models/*.pt
+
+# Per-run result CSVs and sweeps
+/reports/results/*.csv
+/reports/results/toronto_sweep/
+
+# Unzipped SUMO network (regenerated from .gz)
+/sumo/network/osm.net.xml
+
+# Third-party reference dumps
+/xuance_custom_refs/
+
+# Editor
+.vscode/
+
 # Mac OS-specific storage files
 .DS_Store
 
