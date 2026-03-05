@@ -19,31 +19,20 @@
 ## Canonical Commands
 - Install env: `pixi install`
 - Run tests: `pixi run pytest tests`
-- Train ASCE: `pixi run python -m ece324_tango.modeling.train --trainer-backend local_mappo --device auto`
-- Eval ASCE: `pixi run python -m ece324_tango.modeling.predict --trainer-backend local_mappo --device auto`
+- Train ASCE: `pixi run python -m ece324_tango.modeling.train --device auto`
+- Eval ASCE: `pixi run python -m ece324_tango.modeling.predict --device auto`
 - Train Toronto (TMC demand): `pixi run train-asce-toronto-demand`
 - Eval Toronto (TMC demand): `pixi run eval-asce-toronto-demand`
 - Train Toronto (random trips): `pixi run train-asce-toronto-random`
 - Validate schema: `pixi run python -m ece324_tango.dataset`
-- Benchmark backends: `pixi run benchmark-backends`
 - Backend verbose logs (optional): add `--backend-verbose`
 - Use objective reward shaping (default): `--reward-mode objective`
 - Use SUMO-native rewards: `--reward-mode sumo`
 - Use delay-only surrogate for proposal KPI alignment: `--reward-mode time_loss`
 
-## Backend Selection
-- Supported values: `local_mappo`, `benchmarl`, `xuance`, `libsignal`
-- Current production backend: `local_mappo`
-- BenchMARL backend is native via custom SUMO PettingZoo adapter + BenchMARL MAPPO.
-- Xuance backend is native via custom SUMO env registration + Xuance MAPPO.
-- LibSignal backend is currently a planning placeholder (fails fast by design); see `docs/notes/libsignal_backend_assessment.md`.
-- Xuance now loads a project-owned config file: `ece324_tango/asce/trainers/configs/xuance_mappo_sumo.yaml`.
-
-## Xuance Stability Toggles
-- `TANGO_XUANCE_USE_GAE` (default `1`)
-- `TANGO_XUANCE_USE_VALUE_NORM` (default `1`, via local compat patch)
-- `TANGO_XUANCE_USE_ADVNORM` (default `0`)
-- `TANGO_XUANCE_PATCH_VALUE_NORM` (default `1`)
+## Backend
+- The training and evaluation CLI now run only the local MAPPO backend.
+- There is no backend selection flag anymore; correctness fixes land in the local path directly.
 
 ## Artifact Paths
 - Model checkpoint: `models/asce_mappo.pt`
@@ -68,8 +57,6 @@
   - `gzip -dk -f sumo/network/osm.net.xml.gz`
 
 ## Known Risks
-- BenchMARL runs are currently noisy (SUMO/torchrl logs) and slower to train than Xuance in current micro setup.
-- Xuance value normalization is enabled via local compat patch. If regressions appear, disable with `TANGO_XUANCE_USE_VALUE_NORM=0`.
 - Third-party deprecation warnings from `torchrl` appear during pytest collection. They do not currently affect run correctness but should be tracked for dependency updates.
 
 ## Reward Objective
@@ -128,6 +115,6 @@
 
 ## Handoff Checklist
 1. Confirm latest good commit hash.
-2. Confirm backend used for latest run.
+2. Confirm local backend command used for latest run.
 3. Attach latest command line used for train/eval.
 4. Record open risks and next 3 tasks in `docs/notes/prototype_log.md`.

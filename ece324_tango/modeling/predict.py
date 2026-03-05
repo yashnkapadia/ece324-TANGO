@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from loguru import logger
 import typer
 
 from ece324_tango.asce.env import get_default_sumo_files
-from ece324_tango.asce.trainers import EvalConfig, get_backend
+from ece324_tango.asce.trainers import EvalConfig
+from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.config import MODELS_DIR, RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
@@ -25,7 +25,6 @@ def main(
     seed: int = 17,
     use_gui: bool = False,
     device: str = "auto",
-    trainer_backend: str = "local_mappo",
     backend_verbose: bool = False,
     reward_mode: str = typer.Option(
         "objective",
@@ -40,7 +39,7 @@ def main(
         help="Enable running observation normalization (Welford per-feature)",
     ),
 ):
-    """Evaluate ASCE controller vs baselines using selected backend."""
+    """Evaluate the local ASCE MAPPO controller vs baselines."""
     out_csv.parent.mkdir(parents=True, exist_ok=True)
 
     if not net_file or not route_file:
@@ -52,8 +51,7 @@ def main(
             f"Expected one of: {', '.join(sorted(_VALID_REWARD_MODES))}."
         )
 
-    logger.info(f"Trainer backend: {trainer_backend}")
-    backend = get_backend(trainer_backend)
+    backend = LocalMappoBackend()
     cfg = EvalConfig(
         model_path=model_path,
         out_csv=out_csv,

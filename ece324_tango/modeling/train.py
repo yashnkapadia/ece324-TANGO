@@ -6,8 +6,9 @@ from loguru import logger
 import typer
 
 from ece324_tango.asce.env import get_default_sumo_files
+from ece324_tango.asce.trainers import TrainConfig
+from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.config import MODELS_DIR, PROCESSED_DATA_DIR, RESULTS_DIR
-from ece324_tango.asce.trainers import TrainConfig, get_backend
 
 app = typer.Typer(add_completion=False)
 _VALID_REWARD_MODES = {"objective", "sumo", "time_loss"}
@@ -29,7 +30,6 @@ def main(
     seed: int = 7,
     use_gui: bool = False,
     device: str = "auto",
-    trainer_backend: str = "local_mappo",
     backend_verbose: bool = False,
     reward_mode: str = typer.Option(
         "objective",
@@ -44,7 +44,7 @@ def main(
         help="Enable running observation normalization (Welford per-feature)",
     ),
 ):
-    """Train ASCE controller using selected trainer backend."""
+    """Train the local ASCE MAPPO controller."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
     rollout_csv.parent.mkdir(parents=True, exist_ok=True)
     episode_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -60,8 +60,7 @@ def main(
 
     logger.info(f"Using SUMO net: {net_file}")
     logger.info(f"Using SUMO route: {route_file}")
-    logger.info(f"Trainer backend: {trainer_backend}")
-    backend = get_backend(trainer_backend)
+    backend = LocalMappoBackend()
     cfg = TrainConfig(
         model_path=model_path,
         rollout_csv=rollout_csv,

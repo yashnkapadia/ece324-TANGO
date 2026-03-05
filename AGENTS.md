@@ -12,7 +12,6 @@ for real-time traffic signal control on a Toronto corridor SUMO network.
 | `pixi run train-asce-toronto-demand` | Train MAPPO on Toronto TMC demand |
 | `pixi run eval-asce-toronto-demand` | Evaluate checkpoint vs baselines |
 | `pixi run train-asce-toronto-random` | Train on random-trip demand |
-| `pixi run benchmark-backends` | Multi-seed backend comparison (slow) |
 
 See `docs/notes/runbook.md` for all CLI flags and artifact paths.
 
@@ -32,14 +31,10 @@ ece324_tango/
     trainers/
       base.py             # TrainConfig, EvalConfig dataclasses (all CLI args live here)
       local_mappo_backend.py  # Main train/eval loop (LocalMappoBackend)
-      benchmarl_backend.py    # BenchMARL MAPPO path
-      xuance_backend.py       # Xuance MAPPO path
-      libsignal_backend.py    # Placeholder (fail-fast)
       noise_control.py        # Quiet SUMO helper
   modeling/
     train.py              # CLI entry point: python -m ece324_tango.modeling.train
     predict.py            # CLI entry point: python -m ece324_tango.modeling.predict
-    benchmark_backends.py # CLI: multi-seed backend comparison
   config.py               # PROJ_ROOT, MODELS_DIR, RESULTS_DIR, DATA_DIR
   dataset.py              # Schema validation CLI
   error_reporting.py      # report_exception() — non-fatal fallback logger
@@ -90,5 +85,4 @@ Use `person_time_loss_s` for the person-weighted version. Report from eval CSV.
 - ADRs: `docs/notes/adr/`.
 
 ## Test suite
-`pixi run pytest tests -q` — 26 tests, 2 skipped (slow integration).
-Slow integration tests: `RUN_SLOW_INTEGRATION=1 pixi run pytest tests/test_backend_integration_slow.py`
+`pixi run pytest tests -q` — fast unit/regression suite for the local backend and shared utilities.
