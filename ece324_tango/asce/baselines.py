@@ -18,6 +18,9 @@ class FixedTimeController:
         if not self.cursor:
             self.cursor = {k: 0 for k in self.action_size_by_agent}
 
+    def reset(self) -> None:
+        self.cursor = {k: 0 for k in self.action_size_by_agent}
+
     def actions(self, observations: Dict[str, np.ndarray]) -> Dict[str, int]:
         out: Dict[str, int] = {}
         for agent, n_actions in self.action_size_by_agent.items():

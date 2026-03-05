@@ -328,6 +328,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                 for ep in range(cfg.episodes):
                     obs = extract_reset_obs(env.reset(seed=cfg.seed + ep))
                     done = False
+                    if controller_name == "fixed_time" and hasattr(fixed, "reset"):
+                        fixed.reset()
                     ep_rewards = []
                     per_agent_reward_totals: Dict[str, float] = {
                         a: 0.0 for a in sorted(obs.keys())
