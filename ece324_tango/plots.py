@@ -156,7 +156,7 @@ def _panel_c_eval_metrics(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
     ax.set_xticks(x)
     ax.set_xticklabels([label for _, label in metrics], fontsize=8)
     ax.set_ylabel("Ratio vs Max-Pressure")
-    ax.legend(fontsize=7, loc="upper left")
+    ax.legend(fontsize=7, loc="lower right")
     ax.set_title(
         "C) Eval Metrics (normalized to Max-Pressure)",
         fontsize=10,
