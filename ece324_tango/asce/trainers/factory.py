@@ -8,6 +8,4 @@ def get_backend(name: str) -> AsceTrainerBackend:
     key = name.strip().lower()
     if key == "local_mappo":
         return LocalMappoBackend()
-    raise ValueError(
-        f"Unknown trainer backend '{name}'. Expected one of: local_mappo"
-    )
+    raise ValueError(f"Unknown trainer backend '{name}'. Expected one of: local_mappo")

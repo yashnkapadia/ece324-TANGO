@@ -14,9 +14,7 @@ FIGURES_DIR = REPO_ROOT / "reports" / "figures"
 RESULTS_DIR = REPO_ROOT / "reports" / "results"
 
 TRAIN_CSV = RESULTS_DIR / "asce_train_episode_metrics_toronto_demand.csv"
-EVAL_CSV = (
-    RESULTS_DIR / "asce_eval_metrics_toronto_demand_objective_retest_e10.csv"
-)
+EVAL_CSV = RESULTS_DIR / "asce_eval_metrics_toronto_demand_objective_retest_e10.csv"
 
 OUTPUT_STEM = "interim_objective_results"
 
@@ -42,13 +40,26 @@ def _load_csv(path: Path, required: set[str]) -> pd.DataFrame:
 
 # ── Aggregate helpers ──────────────────────────────────────────────────────
 _CONTROLLER_ORDER = ["mappo", "fixed_time", "max_pressure"]
-_CONTROLLER_LABELS = {"mappo": "ASCE", "fixed_time": "Fixed-Time", "max_pressure": "Max-Pressure"}
-_CONTROLLER_COLORS = {"mappo": "#4C72B0", "fixed_time": "#DD8452", "max_pressure": "#55A868"}
+_CONTROLLER_LABELS = {
+    "mappo": "ASCE",
+    "fixed_time": "Fixed-Time",
+    "max_pressure": "Max-Pressure",
+}
+_CONTROLLER_COLORS = {
+    "mappo": "#4C72B0",
+    "fixed_time": "#DD8452",
+    "max_pressure": "#55A868",
+}
 
 
 def _controller_summary(eval_df: pd.DataFrame) -> pd.DataFrame:
     """Return per-controller mean and std for key eval metrics."""
-    metrics = ["person_time_loss_s", "avg_trip_time_s", "arrived_vehicles", "vehicle_delay_jain"]
+    metrics = [
+        "person_time_loss_s",
+        "avg_trip_time_s",
+        "arrived_vehicles",
+        "vehicle_delay_jain",
+    ]
     grouped = eval_df.groupby("controller")[metrics]
     summary = grouped.agg(["mean", "std"]).reindex(_CONTROLLER_ORDER)
     return summary
@@ -115,9 +126,7 @@ def _panel_b_time_loss(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
         patch.set_alpha(0.7)
 
     ax.set_ylabel("Person Time Loss (s)")
-    ax.set_title(
-        "B) Person Time Loss by Controller", fontsize=10, fontweight="bold"
-    )
+    ax.set_title("B) Person Time Loss by Controller", fontsize=10, fontweight="bold")
     ax.grid(True, axis="y", alpha=0.3)
 
 
@@ -140,9 +149,7 @@ def _panel_c_eval_metrics(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
     offsets = np.arange(len(_CONTROLLER_ORDER)) - 1
 
     for i, ctrl in enumerate(_CONTROLLER_ORDER):
-        ratios = [
-            summary.loc[ctrl, (m, "mean")] / mp_means[m] for m, _ in metrics
-        ]
+        ratios = [summary.loc[ctrl, (m, "mean")] / mp_means[m] for m, _ in metrics]
         ax.bar(
             x + offsets[i] * width,
             ratios,
@@ -176,31 +183,53 @@ def _panel_d_context(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
     pct_worse = (mappo_mean - mp_mean) / mp_mean * 100
 
     lines = [
-        ("Environment", [
-            "Toronto OSM corridor, 12 signalized intersections",
-            "70 car flows, all active 0–3600 s",
-            "Single-mode (car only), nominal demand",
-        ]),
-        ("Evaluation", [
-            "10 seeds per controller",
-            "Controllers: MAPPO (30-ep), Fixed-Time, Max-Pressure",
-            f"Simulation: 300 s episodes, Δt = 5 s",
-        ]),
-        ("Key Takeaway", [
-            f"ASCE person-time-loss is {pct_worse:.0f}% higher than Max-Pressure",
-            "Max-Pressure dominates in this nominal single-mode regime",
-            "Expected - MAPPO needs harder scenarios to show value",
-        ]),
+        (
+            "Environment",
+            [
+                "Toronto OSM corridor, 12 signalized intersections",
+                "70 car flows, all active 0–3600 s",
+                "Single-mode (car only), nominal demand",
+            ],
+        ),
+        (
+            "Evaluation",
+            [
+                "10 seeds per controller",
+                "Controllers: MAPPO (30-ep), Fixed-Time, Max-Pressure",
+                "Simulation: 300 s episodes, Δt = 5 s",
+            ],
+        ),
+        (
+            "Key Takeaway",
+            [
+                f"ASCE person-time-loss is {pct_worse:.0f}% higher than Max-Pressure",
+                "Max-Pressure dominates in this nominal single-mode regime",
+                "Expected - MAPPO needs harder scenarios to show value",
+            ],
+        ),
     ]
 
     y = 0.95
     for heading, bullets in lines:
-        ax.text(0.05, y, heading, fontsize=9, fontweight="bold",
-                transform=ax.transAxes, verticalalignment="top")
+        ax.text(
+            0.05,
+            y,
+            heading,
+            fontsize=9,
+            fontweight="bold",
+            transform=ax.transAxes,
+            verticalalignment="top",
+        )
         y -= 0.07
         for bullet in bullets:
-            ax.text(0.08, y, f"• {bullet}", fontsize=7.5,
-                    transform=ax.transAxes, verticalalignment="top")
+            ax.text(
+                0.08,
+                y,
+                f"• {bullet}",
+                fontsize=7.5,
+                transform=ax.transAxes,
+                verticalalignment="top",
+            )
             y -= 0.07
         y -= 0.04
 
