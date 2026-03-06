@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent
-FIGURES_DIR = REPO_ROOT / "reports" / "figures"
-RESULTS_DIR = REPO_ROOT / "reports" / "results"
+FIGURES_DIR = REPO_ROOT / "interim" / "reports" / "figures"
+RESULTS_DIR = REPO_ROOT / "interim" / "reports" / "results"
 
 TRAIN_CSV = RESULTS_DIR / "asce_train_episode_metrics_toronto_demand.csv"
 EVAL_CSV = RESULTS_DIR / "asce_eval_metrics_toronto_demand_objective_retest_e10.csv"
@@ -88,7 +89,7 @@ def render_figure(
     return fig
 
 
-def _panel_a_training_curve(ax: plt.Axes, train_df: pd.DataFrame) -> None:
+def _panel_a_training_curve(ax: Axes, train_df: pd.DataFrame) -> None:
     """Panel A: MAPPO objective training progress."""
     ax.plot(
         train_df["episode"],
@@ -105,7 +106,7 @@ def _panel_a_training_curve(ax: plt.Axes, train_df: pd.DataFrame) -> None:
     ax.grid(True, alpha=0.3)
 
 
-def _panel_b_time_loss(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
+def _panel_b_time_loss(ax: Axes, eval_df: pd.DataFrame) -> None:
     """Panel B: per-controller person_time_loss_s distribution."""
     data = [
         eval_df.loc[eval_df["controller"] == c, "person_time_loss_s"].values
@@ -130,7 +131,7 @@ def _panel_b_time_loss(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
     ax.grid(True, axis="y", alpha=0.3)
 
 
-def _panel_c_eval_metrics(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
+def _panel_c_eval_metrics(ax: Axes, eval_df: pd.DataFrame) -> None:
     """Panel C: metrics normalized to Max-Pressure baseline (ratio = 1.0)."""
     import numpy as np
 
@@ -172,7 +173,7 @@ def _panel_c_eval_metrics(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
     ax.grid(True, axis="y", alpha=0.3)
 
 
-def _panel_d_context(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
+def _panel_d_context(ax: Axes, eval_df: pd.DataFrame) -> None:
     """Panel D: environment facts and takeaway context card."""
     ax.set_axis_off()
 
