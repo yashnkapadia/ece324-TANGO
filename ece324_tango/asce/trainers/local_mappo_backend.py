@@ -470,6 +470,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "person_time_loss_s": k.person_time_loss_s,
                             "avg_trip_time_s": k.avg_trip_time_s,
                             "arrived_vehicles": k.arrived_vehicles,
+                            "vehicle_delay_jain": k.vehicle_delay_jain,
                         }
                     )
             finally:

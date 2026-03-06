@@ -38,7 +38,7 @@ pixi install
 # Train MAPPO on Toronto demand
 pixi run train-asce-toronto-demand
 
-# Evaluate all controllers (objective retest)
+# Evaluate all controllers
 pixi run eval-asce-toronto-demand
 
 # Generate interim report figures
@@ -53,9 +53,9 @@ The figure below summarizes results from the objective retest evaluation (10 see
 
 **Key results:**
 
-- **Max-Pressure dominates** across all metrics in this nominal single-mode regime. It achieves the lowest person-time-loss (~5,660 s), highest fairness (Jain index ~0.63), and highest throughput.
-- **MAPPO underperforms Max-Pressure** on person-time-loss by approximately 24%. Its Jain fairness index is near zero, indicating highly unequal delay distribution across intersections.
-- **Fixed-Time is the weakest controller**, with the highest person-time-loss (~8,000 s) and low fairness.
+- **Max-Pressure dominates** on delay and throughput in this nominal single-mode regime. It achieves the lowest person-time-loss (~5,660 s) and highest arrived-vehicle count.
+- **MAPPO underperforms Max-Pressure** on person-time-loss by approximately 25%. Vehicle-delay fairness (Jain index ~0.48) is also lower than Max-Pressure (~0.59), though no controller reaches the proposal's 0.8 target.
+- **Fixed-Time is the weakest controller** on delay (~7,450 s person-time-loss), but matches Max-Pressure on vehicle-delay fairness (~0.58).
 - **MAPPO's training curve** (Panel A) shows learning progress over 30 episodes, with mean global reward trending upward — the policy is improving but has not converged.
 
 These results are **expected in the current environment**. Max-Pressure is provably throughput-optimal for single-commodity demand and performs very well when all flows are homogeneous cars on a simple corridor. MAPPO is expected to show its value in harder scenarios: multi-modal demand, incident response, and demand spikes that break the assumptions Max-Pressure relies on.
@@ -64,7 +64,7 @@ These results are **expected in the current environment**. Max-Pressure is prova
 
 ## Why Max-Pressure Is Strong Here
 
-Max-Pressure grants green to the phase with the highest queue differential, which is provably throughput-optimal under stationary, single-commodity demand. The current Toronto benchmark — 70 uniform car flows on a single corridor — is exactly the regime where Max-Pressure excels. MAPPO must learn coordination patterns that are trivially solved by Max-Pressure's local queue-balancing heuristic. The gap is expected to narrow (or reverse) when:
+Max-Pressure grants green to the phase with the highest queue differential, which is provably throughput-optimal under stationary, single-commodity demand. The current Toronto benchmark — 70 uniform car flows on a single corridor — is exactly the regime where Max-Pressure excels. MAPPO must learn coordination patterns that are trivially solved by Max-Pressure's local queue-balancing heuristic. The gap is expected to narrow and reverse when:
 
 - Transit and pedestrian flows introduce multi-modal conflicts.
 - Demand spikes or incidents create non-stationary conditions.
@@ -82,7 +82,7 @@ Max-Pressure grants green to the phase with the highest queue differential, whic
 ```
 ├── ece324_tango/           <- Source code (ASCE env, MAPPO, baselines, plotting)
 │   ├── asce/               <- ASCE env adapters, baselines, MAPPO, schema
-│   ├── modeling/            <- Train and predict entry points
+│   ├── modeling/           <- Train and predict entry points
 │   └── plots.py            <- Interim report figure generation
 ├── sumo/                   <- SUMO network and demand files
 │   ├── network/            <- Toronto OSM network

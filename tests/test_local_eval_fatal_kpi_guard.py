@@ -70,6 +70,7 @@ class _KPIAssertsNotCalledAfterFatal:
             person_time_loss_s=0.0,
             avg_trip_time_s=0.0,
             arrived_vehicles=0,
+            vehicle_delay_jain=0.0,
         )
 
 

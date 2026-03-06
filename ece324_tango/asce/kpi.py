@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
+
+import numpy as np
 
 from ece324_tango.error_reporting import report_exception
 
@@ -13,12 +15,23 @@ def occupancy_for_vehicle_type(type_id: str) -> float:
     return 1.3
 
 
+def _jain_index(values: List[float]) -> float:
+    arr = np.asarray(values, dtype=np.float64)
+    if arr.size == 0:
+        return 0.0
+    den = arr.size * np.square(arr).sum()
+    if den <= 0:
+        return 0.0
+    return float(np.square(arr.sum()) / den)
+
+
 @dataclass
 class EpisodeKPI:
     time_loss_s: float
     person_time_loss_s: float
     avg_trip_time_s: float
     arrived_vehicles: int
+    vehicle_delay_jain: float
 
 
 class KPITracker:
@@ -27,6 +40,7 @@ class KPITracker:
     def __init__(self):
         self._last_time_loss_by_vehicle: Dict[str, float] = {}
         self._depart_time_by_vehicle: Dict[str, float] = {}
+        self._arrived_time_losses: List[float] = []
         self.total_time_loss_s = 0.0
         self.total_person_time_loss_s = 0.0
         self.total_trip_time_s = 0.0
@@ -81,7 +95,9 @@ class KPITracker:
 
         for vid in list(env.sumo.simulation.getArrivedIDList()):
             depart_time = self._depart_time_by_vehicle.pop(vid, None)
-            self._last_time_loss_by_vehicle.pop(vid, None)
+            final_tl = self._last_time_loss_by_vehicle.pop(vid, None)
+            if final_tl is not None:
+                self._arrived_time_losses.append(final_tl)
             if depart_time is None:
                 continue
             trip_t = max(0.0, sim_time - float(depart_time))
@@ -99,4 +115,5 @@ class KPITracker:
             person_time_loss_s=float(self.total_person_time_loss_s),
             avg_trip_time_s=float(avg_trip),
             arrived_vehicles=int(self.arrived_vehicles),
+            vehicle_delay_jain=_jain_index(self._arrived_time_losses),
         )

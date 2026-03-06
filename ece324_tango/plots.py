@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ _EVAL_REQUIRED = {
     "person_time_loss_s",
     "avg_trip_time_s",
     "arrived_vehicles",
-    "fairness_jain",
+    "vehicle_delay_jain",
 }
 
 
@@ -47,7 +48,7 @@ _CONTROLLER_COLORS = {"mappo": "#4C72B0", "fixed_time": "#DD8452", "max_pressure
 
 def _controller_summary(eval_df: pd.DataFrame) -> pd.DataFrame:
     """Return per-controller mean and std for key eval metrics."""
-    metrics = ["person_time_loss_s", "avg_trip_time_s", "arrived_vehicles", "fairness_jain"]
+    metrics = ["person_time_loss_s", "avg_trip_time_s", "arrived_vehicles", "vehicle_delay_jain"]
     grouped = eval_df.groupby("controller")[metrics]
     summary = grouped.agg(["mean", "std"]).reindex(_CONTROLLER_ORDER)
     return summary
@@ -57,11 +58,11 @@ def _controller_summary(eval_df: pd.DataFrame) -> pd.DataFrame:
 def render_figure(
     train_df: pd.DataFrame,
     eval_df: pd.DataFrame,
-) -> plt.Figure:
+) -> Figure:
     """Create the 2x2 composite interim-report figure."""
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
     fig.suptitle(
-        "TANGO Interim Results — Toronto Objective Retest (10 seeds)",
+        "TANGO Interim Results — Toronto (10 seeds)",
         fontsize=13,
         fontweight="bold",
         y=0.97,
@@ -128,7 +129,7 @@ def _panel_c_eval_metrics(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
     metrics = [
         ("avg_trip_time_s", "Avg Trip\nTime"),
         ("arrived_vehicles", "Arrived\nVehicles"),
-        ("fairness_jain", "Fairness\n(Jain)"),
+        ("vehicle_delay_jain", "Vehicle Delay\nFairness (Jain)"),
     ]
 
     # Normalize each metric to the max_pressure mean
@@ -181,14 +182,14 @@ def _panel_d_context(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
             "Single-mode (car only), nominal demand",
         ]),
         ("Evaluation", [
-            "Objective retest: 10 seeds per controller",
+            "10 seeds per controller",
             "Controllers: MAPPO (30-ep), Fixed-Time, Max-Pressure",
             f"Simulation: 300 s episodes, Δt = 5 s",
         ]),
         ("Key Takeaway", [
             f"MAPPO person-time-loss is {pct_worse:.0f}% higher than Max-Pressure",
             "Max-Pressure dominates in this nominal single-mode regime",
-            "Expected — MAPPO needs harder scenarios to show value",
+            "Expected - MAPPO needs harder scenarios to show value",
         ]),
     ]
 
@@ -207,7 +208,7 @@ def _panel_d_context(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
 
 
 # ── Save helpers ───────────────────────────────────────────────────────────
-def save_figure(fig: plt.Figure) -> list[Path]:
+def save_figure(fig: Figure) -> list[Path]:
     """Write PNG and PDF to reports/figures/."""
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     paths = []
