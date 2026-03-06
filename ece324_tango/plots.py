@@ -42,7 +42,7 @@ def _load_csv(path: Path, required: set[str]) -> pd.DataFrame:
 
 # ── Aggregate helpers ──────────────────────────────────────────────────────
 _CONTROLLER_ORDER = ["mappo", "fixed_time", "max_pressure"]
-_CONTROLLER_LABELS = {"mappo": "MAPPO", "fixed_time": "Fixed-Time", "max_pressure": "Max-Pressure"}
+_CONTROLLER_LABELS = {"mappo": "ASCE", "fixed_time": "Fixed-Time", "max_pressure": "Max-Pressure"}
 _CONTROLLER_COLORS = {"mappo": "#4C72B0", "fixed_time": "#DD8452", "max_pressure": "#55A868"}
 
 
@@ -187,7 +187,7 @@ def _panel_d_context(ax: plt.Axes, eval_df: pd.DataFrame) -> None:
             f"Simulation: 300 s episodes, Δt = 5 s",
         ]),
         ("Key Takeaway", [
-            f"MAPPO person-time-loss is {pct_worse:.0f}% higher than Max-Pressure",
+            f"ASCE person-time-loss is {pct_worse:.0f}% higher than Max-Pressure",
             "Max-Pressure dominates in this nominal single-mode regime",
             "Expected - MAPPO needs harder scenarios to show value",
         ]),

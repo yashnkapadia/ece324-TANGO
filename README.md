@@ -17,7 +17,7 @@ This branch implements the **Adaptive Signal Control Engine (ASCE)** pipeline:
 2. **Evaluate** MAPPO against Fixed-Time and Max-Pressure baselines.
 3. **Generate** reproducible report figures from evaluation artifacts.
 
-The current benchmark uses a Toronto OSM corridor with TMC-calibrated demand under nominal (car-only) conditions. The evaluation story centers on the **objective retest** run (10 seeds per controller).
+The current benchmark uses a Toronto OSM (OpenStreetMap) corridor with Turning Movement Counts (TMC) calibrated demand under nominal (car-only) conditions.
 
 ## Current Toronto Setup
 
@@ -30,7 +30,7 @@ The current benchmark uses a Toronto OSM corridor with TMC-calibrated demand und
 | Training | 30 episodes, objective reward mode, observation normalization |
 | Evaluation | 10 random seeds per controller (MAPPO, Fixed-Time, Max-Pressure) |
 
-## Quick Start
+## Quick Start (requires pixi)
 
 ```bash
 pixi install
