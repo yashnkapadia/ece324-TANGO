@@ -1,0 +1,2181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TANGO Presentation | Toronto Signal Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=JetBrains+Mono:wght@500;700&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-0: #080b0f;
+      --bg-1: #0e141c;
+      --bg-2: #141f2b;
+      --ink-high: #f6f8fb;
+      --ink-mid: #c9d2dd;
+      --ink-soft: #a8b4c2;
+      --line: rgba(230, 237, 248, 0.2);
+      --line-strong: rgba(230, 237, 248, 0.36);
+      --lane: #f4d36f;
+      --lane-muted: rgba(244, 211, 111, 0.4);
+      --signal-red: #ff5f53;
+      --signal-amber: #ffb347;
+      --signal-green: #31c98a;
+      --accent-blue: #7db5f4;
+      --ease-slide: cubic-bezier(0.2, 0.78, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: "Sora", "Segoe UI", sans-serif;
+      color: var(--ink-high);
+      background:
+        radial-gradient(1150px 600px at 50% 98%, rgba(244, 211, 111, 0.08), transparent 68%),
+        radial-gradient(1000px 560px at 6% -8%, rgba(125, 181, 244, 0.18), transparent 72%),
+        linear-gradient(156deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%);
+      letter-spacing: 0.003em;
+    }
+
+    .deck {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      isolation: isolate;
+    }
+
+    .ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.38;
+    }
+
+    .ambient::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(420px 420px at 50% 50%, rgba(244, 211, 111, 0.11), transparent 74%);
+      opacity: 0.55;
+    }
+
+    .road {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(5, 9, 12, 0.62);
+    }
+
+    .road-h {
+      left: -8%;
+      right: -8%;
+      top: 50%;
+      height: min(21vw, 210px);
+      transform: translateY(-50%);
+    }
+
+    .road-v {
+      top: -14%;
+      bottom: -14%;
+      left: 50%;
+      width: min(23vw, 230px);
+      transform: translateX(-50%);
+    }
+
+    .flow {
+      position: absolute;
+      opacity: 0.26;
+    }
+
+    .flow::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+    }
+
+    .flow-h {
+      left: -6%;
+      right: -6%;
+      top: 50%;
+      height: 8px;
+      transform: translateY(-50%);
+    }
+
+    .flow-h::before {
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(244, 211, 111, 0.95) 0 16px,
+        transparent 16px 34px
+      );
+      animation: laneTravelX 16s linear infinite;
+    }
+
+    .flow-h.alt::before {
+      animation-duration: 21s;
+      opacity: 0.6;
+    }
+
+    .flow-v {
+      top: -8%;
+      bottom: -8%;
+      left: 50%;
+      width: 8px;
+      transform: translateX(-50%);
+    }
+
+    .flow-v::before {
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(244, 211, 111, 0.95) 0 16px,
+        transparent 16px 34px
+      );
+      animation: laneTravelY 18s linear infinite;
+    }
+
+    .flow-v.alt::before {
+      animation-duration: 24s;
+      opacity: 0.6;
+    }
+
+    .car {
+      position: absolute;
+      width: 24px;
+      height: 11px;
+      border-radius: 4px;
+      background: rgba(223, 230, 238, 0.54);
+      box-shadow: 0 0 0 1px rgba(15, 23, 32, 0.52);
+    }
+
+    .car.a {
+      left: -40px;
+      top: calc(50% - 27px);
+      animation: carEast 18s linear infinite;
+    }
+
+    .car.b {
+      right: -40px;
+      top: calc(50% + 16px);
+      animation: carWest 20s linear infinite;
+      animation-delay: -4s;
+    }
+
+    .car.c {
+      top: -35px;
+      left: calc(50% - 34px);
+      animation: carSouth 19s linear infinite;
+      animation-delay: -9s;
+    }
+
+    .car.d {
+      bottom: -35px;
+      left: calc(50% + 18px);
+      animation: carNorth 17s linear infinite;
+      animation-delay: -6s;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 14px;
+      left: 20px;
+      right: 20px;
+      z-index: 11;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand {
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.7rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .brand strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.2rem;
+      font-family: "Bodoni Moda", Georgia, serif;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      color: var(--ink-high);
+    }
+
+    .status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: min(640px, 62vw);
+    }
+
+    .slide-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.19em;
+      color: var(--ink-mid);
+      min-width: 132px;
+      text-align: right;
+    }
+
+    .phase-pack {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .phase-head {
+      display: grid;
+      gap: 6px;
+      padding: 7px;
+      border: 1px solid var(--line);
+      background: rgba(6, 12, 17, 0.6);
+    }
+
+    .phase-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(215, 224, 236, 0.12);
+      transition: background 200ms ease, box-shadow 200ms ease;
+    }
+
+    .phase-light.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 12px rgba(255, 95, 83, 0.75);
+    }
+
+    .phase-light.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 12px rgba(255, 179, 71, 0.75);
+    }
+
+    .phase-light.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 12px rgba(49, 201, 138, 0.75);
+    }
+
+    .progress-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .progress-track span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--signal-red) 0%, var(--signal-amber) 45%, var(--signal-green) 100%);
+      transition: width 460ms var(--ease-slide);
+    }
+
+    .progress-label {
+      min-width: 74px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.11em;
+      color: var(--ink-mid);
+      text-align: right;
+    }
+
+    .slides {
+      list-style: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 4;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: clamp(82px, 10vh, 112px) clamp(20px, 5.5vw, 76px) clamp(124px, 16vh, 170px);
+      display: grid;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate3d(9vw, 0, 0) scale(0.988);
+      filter: blur(4px);
+      transition:
+        transform 760ms var(--ease-slide),
+        opacity 460ms ease,
+        filter 760ms ease;
+    }
+
+    .slide.is-active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: none;
+    }
+
+    .slide.is-entering-forward {
+      transform: translate3d(10vw, 0, 0) scale(0.992);
+      opacity: 0.22;
+    }
+
+    .slide.is-entering-backward {
+      transform: translate3d(-10vw, 0, 0) scale(0.992);
+      opacity: 0.22;
+    }
+
+    .slide.is-leaving-forward {
+      transform: translate3d(-9vw, 0, 0) scale(0.977);
+      opacity: 0;
+    }
+
+    .slide.is-leaving-backward {
+      transform: translate3d(9vw, 0, 0) scale(0.977);
+      opacity: 0;
+    }
+
+    .frame {
+      width: min(1260px, 100%);
+      margin: 0 auto;
+      display: grid;
+      align-content: center;
+      gap: 30px;
+    }
+
+    .frame.split {
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+    }
+
+    .frame.dual {
+      grid-template-columns: 1fr 1fr;
+      gap: 34px;
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.23em;
+      color: var(--ink-mid);
+      margin-bottom: 12px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: "Bodoni Moda", Georgia, serif;
+      font-weight: 700;
+      line-height: 1.03;
+      letter-spacing: 0.015em;
+      margin: 0;
+      color: var(--ink-high);
+    }
+
+    h1 {
+      font-size: clamp(3.1rem, 8vw, 6.4rem);
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: clamp(2rem, 5vw, 4rem);
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: clamp(1.2rem, 2.2vw, 2rem);
+      margin-bottom: 10px;
+    }
+
+    p,
+    li {
+      color: var(--ink-soft);
+      line-height: 1.65;
+      font-size: clamp(0.96rem, 1.22vw, 1.08rem);
+    }
+
+    .lead {
+      max-width: 64ch;
+      font-size: clamp(1.13rem, 1.7vw, 1.4rem);
+      color: var(--ink-high);
+      line-height: 1.55;
+    }
+
+    .tag-row {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      color: var(--ink-mid);
+      padding: 8px 12px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      background: rgba(244, 211, 111, 0.08);
+    }
+
+    .note {
+      margin-top: 16px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+    }
+
+    .title-plate,
+    .detail-panel {
+      border: 1px solid var(--line);
+      padding: clamp(16px, 2.4vw, 26px);
+      min-height: 270px;
+      background: linear-gradient(165deg, rgba(10, 16, 22, 0.8), rgba(16, 24, 34, 0.66));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .title-plate::before,
+    .detail-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(244, 211, 111, 0.11), transparent 36%);
+      pointer-events: none;
+    }
+
+    .plate-city {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--lane);
+      margin-bottom: 10px;
+    }
+
+    .plate-title {
+      font-size: 1.16rem;
+      color: var(--ink-high);
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .plate-lines {
+      display: grid;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .plate-lines div {
+      display: grid;
+      gap: 4px;
+    }
+
+    .plate-lines span {
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .plate-lines strong {
+      font-size: 0.96rem;
+      font-weight: 600;
+      color: var(--ink-high);
+    }
+
+    .metric-grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 0;
+    }
+
+    .metric small {
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.66rem;
+      color: var(--ink-mid);
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: clamp(1.2rem, 2.5vw, 1.9rem);
+      line-height: 1;
+      color: var(--ink-high);
+    }
+
+    .flow-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .flow-item {
+      padding: 13px 14px;
+      border-left: 2px solid var(--lane-muted);
+      background: linear-gradient(90deg, rgba(244, 211, 111, 0.11), transparent 76%);
+    }
+
+    .flow-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+    }
+
+    .process {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .process-step {
+      border-top: 1px solid var(--line-strong);
+      padding-top: 11px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .process-step b {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.13em;
+      color: var(--lane);
+      text-transform: uppercase;
+    }
+
+    .process-step h3 {
+      margin-bottom: 0;
+      font-size: 1.07rem;
+      line-height: 1.2;
+    }
+
+    .module-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 2px;
+    }
+
+    .module-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .module-row b {
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--lane);
+      padding-top: 3px;
+    }
+
+    .result-bars {
+      margin-top: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .result-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    .result-row header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      font-size: 0.77rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--ink-mid);
+    }
+
+    .result-row strong {
+      color: var(--signal-green);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+    }
+
+    .result-track {
+      height: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .result-track span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--signal-red), var(--signal-amber) 42%, var(--signal-green));
+    }
+
+    .inline-list {
+      margin-top: 14px;
+      display: grid;
+      gap: 11px;
+    }
+
+    .inline-item {
+      padding: 11px 12px;
+      border-left: 2px solid rgba(125, 181, 244, 0.75);
+      background: linear-gradient(90deg, rgba(125, 181, 244, 0.11), transparent 78%);
+    }
+
+    .demo-layout,
+    .corridor-layout {
+      display: grid;
+      grid-template-columns: 1.06fr 0.94fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .junction {
+      position: relative;
+      min-height: 336px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, transparent 0 49%, rgba(244, 211, 111, 0.28) 49% 51%, transparent 51% 100%),
+        linear-gradient(transparent 0 49%, rgba(244, 211, 111, 0.28) 49% 51%, transparent 51% 100%),
+        linear-gradient(180deg, rgba(7, 11, 16, 0.94), rgba(13, 20, 28, 0.9));
+    }
+
+    .junction::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 34px;
+      transform: translateY(-50%);
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.12) 0 10px,
+        transparent 10px 24px
+      );
+      opacity: 0.33;
+    }
+
+    .signal-head-demo {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      width: 58px;
+      border: 1px solid var(--line);
+      padding: 8px;
+      background: rgba(5, 10, 15, 0.8);
+      display: grid;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .signal-head-demo span {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(4, 8, 12, 0.6);
+    }
+
+    .signal-head-demo span.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 14px rgba(255, 95, 83, 0.72);
+    }
+
+    .signal-head-demo span.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 14px rgba(255, 179, 71, 0.72);
+    }
+
+    .signal-head-demo span.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 14px rgba(49, 201, 138, 0.72);
+    }
+
+    .phase-readout {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: grid;
+      gap: 5px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      z-index: 2;
+    }
+
+    .phase-readout b {
+      color: var(--ink-high);
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+    }
+
+    .queue-board {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    .queue-line {
+      display: grid;
+      grid-template-columns: 132px 1fr 56px;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.69rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .queue-track {
+      height: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .queue-fill {
+      height: 100%;
+      width: 20%;
+      background: linear-gradient(90deg, var(--signal-green), var(--signal-amber) 55%, var(--signal-red));
+      transition: width 450ms ease;
+    }
+
+    .queue-value {
+      text-align: right;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      color: var(--ink-high);
+    }
+
+    .control-panel,
+    .detail-panel {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.17em;
+      color: var(--ink-mid);
+    }
+
+    .field output {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.8rem;
+      color: var(--ink-high);
+      letter-spacing: 0.08em;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      background: transparent;
+      height: 24px;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border: 1px solid var(--line);
+      background: linear-gradient(
+        90deg,
+        rgba(255, 95, 83, 0.92) 0%,
+        rgba(255, 179, 71, 0.92) 48%,
+        rgba(49, 201, 138, 0.92) 100%
+      );
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      margin-top: -6px;
+      border-radius: 999px;
+      border: 1px solid rgba(5, 10, 16, 0.8);
+      background: #f9fbff;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 8px;
+      border: 1px solid var(--line);
+      background: linear-gradient(
+        90deg,
+        rgba(255, 95, 83, 0.92) 0%,
+        rgba(255, 179, 71, 0.92) 48%,
+        rgba(49, 201, 138, 0.92) 100%
+      );
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(5, 10, 16, 0.8);
+      background: #f9fbff;
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(246, 250, 255, 0.08);
+      color: var(--ink-high);
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      font-size: 0.69rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 200ms ease, border-color 200ms ease;
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      background: rgba(244, 211, 111, 0.2);
+      border-color: var(--line-strong);
+      outline: none;
+    }
+
+    .mini-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .mini {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .mini small {
+      font-size: 0.63rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--ink-mid);
+    }
+
+    .mini strong {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 1.12rem;
+      color: var(--ink-high);
+    }
+
+    .corridor-stage {
+      border: 1px solid var(--line-strong);
+      padding: 16px;
+      background: linear-gradient(165deg, rgba(8, 13, 18, 0.8), rgba(16, 24, 34, 0.7));
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .corridor-map {
+      position: relative;
+      height: 94px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(7, 11, 16, 0.84), rgba(13, 20, 28, 0.86));
+    }
+
+    .corridor-map .lane {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 42px;
+      height: 10px;
+      background: repeating-linear-gradient(90deg, rgba(244, 211, 111, 0.65) 0 14px, transparent 14px 30px);
+      opacity: 0.45;
+    }
+
+    .corridor-map .wave {
+      position: absolute;
+      top: 46px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--signal-green);
+      box-shadow: 0 0 12px rgba(49, 201, 138, 0.7);
+      transform: translate(-50%, -50%);
+      left: 40%;
+      transition: left 380ms var(--ease-slide);
+    }
+
+    .corridor-map .pulse,
+    .corridor-map .pulse-alt {
+      position: absolute;
+      top: 47px;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--signal-amber);
+      transform: translate(-50%, -50%);
+      opacity: 0.18;
+      animation: pulseRun var(--pulse-speed, 4s) linear infinite;
+    }
+
+    .corridor-map .pulse-alt {
+      animation-delay: -2s;
+      opacity: 0.26;
+    }
+
+    .corridor-band {
+      position: absolute;
+      top: 30px;
+      left: 0;
+      width: 54%;
+      height: 34px;
+      border: 1px solid rgba(49, 201, 138, 0.55);
+      background: rgba(49, 201, 138, 0.16);
+      transition: width 380ms var(--ease-slide);
+    }
+
+    .corridor-tip {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--ink-high);
+    }
+
+    .jump-nav {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      display: grid;
+      gap: 8px;
+      max-height: 70vh;
+      overflow: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+    }
+
+    .jump-btn {
+      border: 1px solid var(--line);
+      background: rgba(6, 12, 18, 0.62);
+      color: var(--ink-mid);
+      padding: 7px 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: 0.65rem;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 190ms ease, color 190ms ease, border-color 190ms ease;
+    }
+
+    .jump-btn:hover,
+    .jump-btn:focus-visible {
+      background: rgba(244, 211, 111, 0.2);
+      color: var(--ink-high);
+      outline: none;
+    }
+
+    .jump-btn.is-current {
+      color: #1a2026;
+      border-color: rgba(255, 255, 255, 0.3);
+      background: linear-gradient(90deg, #f4d36f, #f8df8f);
+      font-weight: 700;
+    }
+
+    .controls {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 14px;
+      z-index: 11;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .controls .hint {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    .nav-actions {
+      display: inline-flex;
+      gap: 9px;
+    }
+
+    .nav-btn {
+      min-width: 122px;
+      border: 1px solid var(--line-strong);
+      background: rgba(245, 249, 255, 0.08);
+      color: var(--ink-high);
+      padding: 11px 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: 0.67rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 200ms ease, border-color 200ms ease;
+    }
+
+    .nav-btn:hover,
+    .nav-btn:focus-visible {
+      background: rgba(244, 211, 111, 0.22);
+      outline: none;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .transition-lane {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9;
+      overflow: hidden;
+    }
+
+    .transition-lane::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 38vw;
+      min-width: 340px;
+      max-width: 640px;
+      height: 10px;
+      transform: translateY(-50%);
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(244, 211, 111, 0.95) 0 12px,
+        rgba(244, 211, 111, 0.05) 12px 22px
+      );
+      opacity: 0;
+    }
+
+    .transition-lane.forward::before {
+      left: -42vw;
+      animation: laneSweepForward 620ms var(--ease-slide) forwards;
+    }
+
+    .transition-lane.backward::before {
+      right: -42vw;
+      animation: laneSweepBackward 620ms var(--ease-slide) forwards;
+    }
+
+    @keyframes laneTravelX {
+      to {
+        transform: translateX(130px);
+      }
+    }
+
+    @keyframes laneTravelY {
+      to {
+        transform: translateY(130px);
+      }
+    }
+
+    @keyframes carEast {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(calc(100vw + 90px));
+      }
+    }
+
+    @keyframes carWest {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(calc(-100vw - 90px));
+      }
+    }
+
+    @keyframes carSouth {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(calc(100vh + 90px));
+      }
+    }
+
+    @keyframes carNorth {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(calc(-100vh - 90px));
+      }
+    }
+
+    @keyframes laneSweepForward {
+      0% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0;
+      }
+      24% {
+        opacity: 0.84;
+      }
+      100% {
+        transform: translateY(-50%) translateX(160vw);
+        opacity: 0;
+      }
+    }
+
+    @keyframes laneSweepBackward {
+      0% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0;
+      }
+      24% {
+        opacity: 0.84;
+      }
+      100% {
+        transform: translateY(-50%) translateX(-160vw);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulseRun {
+      0% {
+        left: 0%;
+        opacity: 0.1;
+      }
+      12% {
+        opacity: 0.8;
+      }
+      100% {
+        left: 100%;
+        opacity: 0.08;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .frame.split,
+      .frame.dual,
+      .demo-layout,
+      .corridor-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-grid,
+      .mini-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .process {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .jump-nav {
+        right: 12px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .topbar {
+        left: 12px;
+        right: 12px;
+        top: 10px;
+        flex-wrap: wrap;
+      }
+
+      .status {
+        min-width: 100%;
+      }
+
+      .slide-title {
+        min-width: 0;
+      }
+
+      .slide {
+        padding: 96px 12px 164px;
+      }
+
+      .jump-nav {
+        top: auto;
+        bottom: 72px;
+        left: 12px;
+        right: 12px;
+        transform: none;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: none;
+        padding: 0 0 2px;
+      }
+
+      .controls {
+        left: 12px;
+        right: 12px;
+        bottom: 10px;
+      }
+
+      .module-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .queue-line {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .queue-value {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .metric-grid,
+      .mini-metrics,
+      .process {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .nav-actions {
+        width: 100%;
+      }
+
+      .nav-btn {
+        flex: 1;
+      }
+
+      .controls .hint {
+        text-align: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition-duration: 0ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-label="TANGO project presentation">
+    <div class="ambient" aria-hidden="true">
+      <span class="road road-h"></span>
+      <span class="road road-v"></span>
+      <span class="flow flow-h"></span>
+      <span class="flow flow-h alt"></span>
+      <span class="flow flow-v"></span>
+      <span class="flow flow-v alt"></span>
+      <span class="car a"></span>
+      <span class="car b"></span>
+      <span class="car c"></span>
+      <span class="car d"></span>
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        ECE324 Signal Intelligence
+        <strong>TANGO</strong>
+      </div>
+      <div class="status">
+        <div class="slide-title" id="slideTitle">Opening</div>
+        <div class="phase-pack" aria-hidden="true">
+          <div class="phase-head">
+            <span class="phase-light red" id="phaseRed"></span>
+            <span class="phase-light amber" id="phaseAmber"></span>
+            <span class="phase-light green" id="phaseGreen"></span>
+          </div>
+        </div>
+        <div class="progress-wrap" aria-hidden="true">
+          <div class="progress-track">
+            <span id="progressFill"></span>
+          </div>
+          <div class="progress-label" id="progressLabel">1 / 8</div>
+        </div>
+      </div>
+    </header>
+
+    <ol class="slides" id="slides">
+      <li class="slide is-active" data-title="Arrival" data-phase="red">
+        <article class="frame split">
+          <section>
+            <div class="eyebrow">Capstone Presentation - Toronto Core</div>
+            <h1>TANGO</h1>
+            <p class="lead">
+              Traffic Analytics for Networked Green-wave Operations.
+              A downtown-first intelligence stack for signal timing, corridor balancing,
+              and measurable mobility gains without sacrificing reliability.
+            </p>
+            <div class="tag-row" aria-label="Project tags">
+              <span class="tag">Signal Timing Intelligence</span>
+              <span class="tag">SUMO Scenario Engine</span>
+              <span class="tag">Data-to-Decision Pipeline</span>
+              <span class="tag">Operator-friendly Outputs</span>
+            </div>
+            <p class="note">Keyboard: Left/Right, PageUp/PageDown, Home/End. Touch swipe enabled.</p>
+          </section>
+          <aside class="title-plate" aria-label="Presentation context">
+            <p class="plate-city">Toronto - Downtown Junction Language</p>
+            <p class="plate-title">
+              The visual language of this deck mirrors an arterial intersection:
+              lane markings, controlled phase flow, and measured transitions.
+            </p>
+            <div class="plate-lines">
+              <div>
+                <span>Corridor Focus</span>
+                <strong>King St / Queen St / Spadina Ave</strong>
+              </div>
+              <div>
+                <span>Operating Principle</span>
+                <strong>Adaptive timing with transparent trade-offs</strong>
+              </div>
+              <div>
+                <span>Presentation Theme</span>
+                <strong>Apple-grade restraint meets traffic engineering clarity</strong>
+              </div>
+            </div>
+          </aside>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Challenge" data-phase="red">
+        <article class="frame split">
+          <section>
+            <div class="eyebrow">Urban Friction</div>
+            <h2>Why the Downtown Grid Breaks Under Pressure</h2>
+            <p>
+              Fixed-cycle plans are brittle when arrivals become uneven, turn demand spikes,
+              and pedestrian waves consume green windows. TANGO models each signal as one
+              node inside a coupled network rather than isolated clocks.
+            </p>
+            <div class="metric-grid">
+              <div class="metric">
+                <small>Typical Delay</small>
+                <strong>58s</strong>
+              </div>
+              <div class="metric">
+                <small>Queue Spillback Risk</small>
+                <strong>High</strong>
+              </div>
+              <div class="metric">
+                <small>Telemetry Freshness</small>
+                <strong>&lt;60s</strong>
+              </div>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Diagnosis</div>
+            <div class="flow-list">
+              <article class="flow-item">
+                <strong>01 Detector Streams</strong>
+                <p>High-variance arrivals expose where static offsets fail to hold progression.</p>
+              </article>
+              <article class="flow-item">
+                <strong>02 Movement Pressure</strong>
+                <p>Lane-level queue pressure and turning conflicts are estimated every cycle.</p>
+              </article>
+              <article class="flow-item">
+                <strong>03 Decision Layer</strong>
+                <p>Recommendations prioritize delay reduction while preserving operational stability.</p>
+              </article>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Pipeline" data-phase="amber">
+        <article class="frame">
+          <section>
+            <div class="eyebrow">Data Flow</div>
+            <h2>From Raw Feeds to Timing Actions</h2>
+            <p>
+              TANGO uses a strict signal operations pipeline so every recommendation can be traced
+              from source telemetry through model assumptions to deployment outcomes.
+            </p>
+          </section>
+          <section class="process">
+            <article class="process-step">
+              <b>Step 1</b>
+              <h3>Ingest</h3>
+              <p>TMC traces, detector counts, and scenario metadata are synchronized in time.</p>
+            </article>
+            <article class="process-step">
+              <b>Step 2</b>
+              <h3>Engineer</h3>
+              <p>Queue proxies, phase pressure, and turn penalties become model features.</p>
+            </article>
+            <article class="process-step">
+              <b>Step 3</b>
+              <h3>Train</h3>
+              <p>Scenario-aware predictors estimate delay, throughput, and progression quality.</p>
+            </article>
+            <article class="process-step">
+              <b>Step 4</b>
+              <h3>Simulate</h3>
+              <p>SUMO runs stress recommendations under baseline, peak, and disrupted demand.</p>
+            </article>
+            <article class="process-step">
+              <b>Step 5</b>
+              <h3>Explain</h3>
+              <p>Decision cards summarize expected gains, confidence, and operational caveats.</p>
+            </article>
+            <article class="process-step">
+              <b>Step 6</b>
+              <h3>Iterate</h3>
+              <p>Feedback loops retune parameters as corridor signatures drift by daypart.</p>
+            </article>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Architecture" data-phase="amber">
+        <article class="frame dual">
+          <section>
+            <div class="eyebrow">System Design</div>
+            <h2>Modular and Reproducible by Construction</h2>
+            <p>
+              Training, simulation, and reporting are separated into explicit contracts.
+              This keeps experiments fast while preserving reproducibility for final results.
+            </p>
+            <div class="module-grid">
+              <div class="module-row">
+                <b>asce/trainers</b>
+                <p>Candidate model generation with confidence-aware output bundles.</p>
+              </div>
+              <div class="module-row">
+                <b>modeling</b>
+                <p>Scenario evaluators for delay, queue persistence, and cycle stability.</p>
+              </div>
+              <div class="module-row">
+                <b>sumo/scenarios</b>
+                <p>Network demand variants for baseline, incidents, and peak-hour shifts.</p>
+              </div>
+              <div class="module-row">
+                <b>reports</b>
+                <p>Operator-facing storylines that translate model choices into actions.</p>
+              </div>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Engineering Principles</div>
+            <div class="flow-list">
+              <article class="flow-item">
+                <strong>Data Contracts</strong>
+                <p>Every layer has fixed schema boundaries to prevent hidden coupling.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Scenario Registry</strong>
+                <p>Comparisons remain fair because interventions run on shared scenario definitions.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Metrics First</strong>
+                <p>Delay, progression hit-rate, and queue tails drive model acceptance criteria.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Script + Notebook Parity</strong>
+                <p>Exploratory and reproducible workflows stay aligned for final delivery.</p>
+              </article>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Results" data-phase="green">
+        <article class="frame split">
+          <section>
+            <div class="eyebrow">Measured Outcome</div>
+            <h2>Consistent Gains Across Downtown Scenarios</h2>
+            <p>
+              TANGO prioritizes reliability, not one-off peaks. The adaptive plans were evaluated
+              against the baseline with emphasis on corridor-level stability.
+            </p>
+            <div class="result-bars">
+              <article class="result-row">
+                <header><span>Mean Delay</span><strong>-22%</strong></header>
+                <div class="result-track"><span style="width: 78%;"></span></div>
+              </article>
+              <article class="result-row">
+                <header><span>Green-wave Hit Rate</span><strong>+31%</strong></header>
+                <div class="result-track"><span style="width: 86%;"></span></div>
+              </article>
+              <article class="result-row">
+                <header><span>95th Percentile Queue</span><strong>-18%</strong></header>
+                <div class="result-track"><span style="width: 70%;"></span></div>
+              </article>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Reliability Notes</div>
+            <div class="inline-list">
+              <div class="inline-item">Cycle-to-cycle split oscillation dropped under noisy arrivals.</div>
+              <div class="inline-item">Spillback duration reduced on high-pressure turning approaches.</div>
+              <div class="inline-item">Throughput remained stable during demand transients and incidents.</div>
+              <div class="inline-item">Observed gains were preserved across AM and PM calibration windows.</div>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Live Signal Demo" data-phase="green">
+        <article class="frame">
+          <section>
+            <div class="eyebrow">Interactive Demonstration</div>
+            <h2>Signal Phase Micro-Simulator</h2>
+            <p>
+              Tune cycle assumptions and demand balance to watch queue behavior evolve in real time.
+              This is intentionally lightweight for live presentation pacing.
+            </p>
+          </section>
+          <section class="demo-layout">
+            <div class="junction" aria-label="Intersection simulator">
+              <div class="signal-head-demo" aria-hidden="true">
+                <span class="red" id="simLightRed"></span>
+                <span class="amber" id="simLightAmber"></span>
+                <span class="green" id="simLightGreen"></span>
+              </div>
+              <div class="phase-readout">
+                <div>North-South: <b id="nsPhaseOut">Green</b></div>
+                <div>East-West: <b id="ewPhaseOut">Red</b></div>
+              </div>
+              <div class="queue-board">
+                <div class="queue-line">
+                  <span>North-South Queue</span>
+                  <div class="queue-track"><div class="queue-fill" id="nsQueueFill"></div></div>
+                  <div class="queue-value" id="nsQueueOut">16</div>
+                </div>
+                <div class="queue-line">
+                  <span>East-West Queue</span>
+                  <div class="queue-track"><div class="queue-fill" id="ewQueueFill"></div></div>
+                  <div class="queue-value" id="ewQueueOut">12</div>
+                </div>
+              </div>
+            </div>
+            <div class="control-panel detail-panel">
+              <div class="field">
+                <label for="simCycle">Cycle Length</label>
+                <input id="simCycle" type="range" min="50" max="150" value="96">
+                <output id="simCycleOut" for="simCycle">96 s</output>
+              </div>
+              <div class="field">
+                <label for="simSplit">North-South Green Share</label>
+                <input id="simSplit" type="range" min="35" max="70" value="52">
+                <output id="simSplitOut" for="simSplit">52 %</output>
+              </div>
+              <div class="field">
+                <label for="simDemand">Total Arrival Rate</label>
+                <input id="simDemand" type="range" min="12" max="38" value="24">
+                <output id="simDemandOut" for="simDemand">24 veh/min</output>
+              </div>
+              <div class="field">
+                <label for="simBias">Demand Bias (North-South)</label>
+                <input id="simBias" type="range" min="-35" max="35" value="6">
+                <output id="simBiasOut" for="simBias">+6 %</output>
+              </div>
+              <div class="actions">
+                <button class="btn" id="simPause" type="button">Pause Flow</button>
+                <button class="btn" id="simReset" type="button">Reset Queue</button>
+              </div>
+              <div class="mini-metrics">
+                <div class="mini">
+                  <small>Estimated Delay</small>
+                  <strong id="simDelayOut">39 s</strong>
+                </div>
+                <div class="mini">
+                  <small>Estimated Throughput</small>
+                  <strong id="simThroughputOut">1430 vph</strong>
+                </div>
+                <div class="mini">
+                  <small>Cycle Utilization</small>
+                  <strong id="simUtilOut">0.86</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Corridor Lab" data-phase="green">
+        <article class="frame">
+          <section>
+            <div class="eyebrow">Interactive Demonstration</div>
+            <h2>Offset and Bandwidth Estimator</h2>
+            <p>
+              Adjust corridor offset strategy, progression bandwidth, and transit priority,
+              then inspect the predicted quality of flow before simulation deployment.
+            </p>
+          </section>
+          <section class="corridor-layout">
+            <div class="corridor-stage">
+              <div class="corridor-map" id="corridorMap">
+                <span class="lane"></span>
+                <span class="corridor-band" id="corridorBand"></span>
+                <span class="pulse"></span>
+                <span class="pulse-alt"></span>
+                <span class="wave" id="corridorWave"></span>
+              </div>
+              <div class="mini-metrics">
+                <div class="mini">
+                  <small>Progression Quality</small>
+                  <strong id="progressionOut">69%</strong>
+                </div>
+                <div class="mini">
+                  <small>Average Delay</small>
+                  <strong id="delayOut">34 s</strong>
+                </div>
+                <div class="mini">
+                  <small>Stop Probability</small>
+                  <strong id="stopOut">41%</strong>
+                </div>
+              </div>
+              <p class="corridor-tip" id="corridorAdvice">
+                Balanced timing is viable. Keep current offset family and monitor PM spillback windows.
+              </p>
+            </div>
+            <div class="control-panel detail-panel">
+              <div class="field">
+                <label for="offsetRange">Offset Family</label>
+                <input id="offsetRange" type="range" min="0" max="120" value="46">
+                <output id="offsetOut" for="offsetRange">46 s</output>
+              </div>
+              <div class="field">
+                <label for="bandRange">Progression Bandwidth</label>
+                <input id="bandRange" type="range" min="25" max="85" value="58">
+                <output id="bandOut" for="bandRange">58 %</output>
+              </div>
+              <div class="field">
+                <label for="priorityRange">Transit Priority Weight</label>
+                <input id="priorityRange" type="range" min="0" max="40" value="15">
+                <output id="priorityOut" for="priorityRange">15 %</output>
+              </div>
+              <div class="inline-list">
+                <div class="inline-item">Use lower offsets for tighter platoons near short block spacing.</div>
+                <div class="inline-item">Increasing bandwidth improves resilience but may reduce side-street equity.</div>
+                <div class="inline-item">Transit priority should be staged to avoid abrupt cycle drift.</div>
+              </div>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Roadmap" data-phase="green">
+        <article class="frame split">
+          <section>
+            <div class="eyebrow">Next Phase</div>
+            <h2>Deployment Path for TANGO</h2>
+            <p>
+              The roadmap shifts from offline confidence building to monitored pilot operation,
+              with clear checkpoints for engineering and policy stakeholders.
+            </p>
+            <div class="flow-list" style="margin-top: 14px;">
+              <article class="flow-item">
+                <strong>Q2 - Scenario Expansion</strong>
+                <p>Add incident and event-driven demand profiles to strengthen robustness.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Q3 - Operator Interface</strong>
+                <p>Expose recommendations in a control-room friendly dashboard endpoint.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Q4 - Controlled Pilot</strong>
+                <p>Run a downtown pilot against fixed-time plans with strict success criteria.</p>
+              </article>
+            </div>
+          </section>
+          <aside class="detail-panel">
+            <div class="eyebrow">Closing Signal</div>
+            <h3>TANGO is an operating loop, not a one-off model.</h3>
+            <p>
+              Observe, infer, simulate, deploy, and learn. The value is the repeatable cycle
+              that keeps signal systems adaptive while staying interpretable for human operators.
+            </p>
+            <div class="metric-grid" style="margin-top: 10px;">
+              <div class="metric">
+                <small>Primary Goal</small>
+                <strong>Less Delay</strong>
+              </div>
+              <div class="metric">
+                <small>Secondary Goal</small>
+                <strong>Stable Flow</strong>
+              </div>
+              <div class="metric">
+                <small>Delivery Goal</small>
+                <strong>Operator Trust</strong>
+              </div>
+            </div>
+          </aside>
+        </article>
+      </li>
+    </ol>
+
+    <nav class="jump-nav" id="jumpRail" aria-label="Jump to slide"></nav>
+
+    <footer class="controls" aria-label="Slide navigation controls">
+      <div class="hint">Use arrow keys or swipe - jump buttons are on the side rail</div>
+      <div class="nav-actions">
+        <button id="prevBtn" class="nav-btn" type="button" aria-label="Previous slide">Previous</button>
+        <button id="nextBtn" class="nav-btn" type="button" aria-label="Next slide">Next</button>
+      </div>
+    </footer>
+
+    <div class="transition-lane" id="transitionLane" aria-hidden="true"></div>
+  </main>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const jumpRail = document.getElementById("jumpRail");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const progressFill = document.getElementById("progressFill");
+      const progressLabel = document.getElementById("progressLabel");
+      const slideTitle = document.getElementById("slideTitle");
+      const phaseRed = document.getElementById("phaseRed");
+      const phaseAmber = document.getElementById("phaseAmber");
+      const phaseGreen = document.getElementById("phaseGreen");
+      const transitionLane = document.getElementById("transitionLane");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      let current = 0;
+      const total = slides.length;
+      const jumpButtons = [];
+
+      function cleanupSlideClasses(slide) {
+        slide.classList.remove(
+          "is-active",
+          "is-entering-forward",
+          "is-entering-backward",
+          "is-leaving-forward",
+          "is-leaving-backward"
+        );
+      }
+
+      function setPhaseLights(phase) {
+        phaseRed.classList.toggle("is-on", phase === "red");
+        phaseAmber.classList.toggle("is-on", phase === "amber");
+        phaseGreen.classList.toggle("is-on", phase === "green");
+      }
+
+      function updateDeckUI() {
+        const ratio = ((current + 1) / total) * 100;
+        progressFill.style.width = ratio + "%";
+        progressLabel.textContent = (current + 1) + " / " + total;
+
+        const active = slides[current];
+        slideTitle.textContent = active.dataset.title || "Slide";
+        setPhaseLights(active.dataset.phase || "red");
+
+        jumpButtons.forEach((btn, index) => {
+          const selected = index === current;
+          btn.classList.toggle("is-current", selected);
+          btn.setAttribute("aria-current", selected ? "true" : "false");
+        });
+
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === total - 1;
+      }
+
+      function runLaneTransition(direction) {
+        transitionLane.classList.remove("forward", "backward");
+        if (reduceMotion) {
+          return;
+        }
+        void transitionLane.offsetWidth;
+        transitionLane.classList.add(direction === "forward" ? "forward" : "backward");
+      }
+
+      function showSlide(target) {
+        if (target < 0 || target >= total || target === current) {
+          return;
+        }
+
+        const direction = target > current ? "forward" : "backward";
+        const from = slides[current];
+        const to = slides[target];
+
+        cleanupSlideClasses(from);
+        cleanupSlideClasses(to);
+
+        to.classList.add(direction === "forward" ? "is-entering-forward" : "is-entering-backward");
+        from.classList.add(direction === "forward" ? "is-leaving-forward" : "is-leaving-backward");
+
+        runLaneTransition(direction);
+
+        requestAnimationFrame(function () {
+          to.classList.add("is-active");
+          to.classList.remove("is-entering-forward", "is-entering-backward");
+        });
+
+        window.setTimeout(function () {
+          from.classList.remove("is-active", "is-leaving-forward", "is-leaving-backward");
+        }, reduceMotion ? 0 : 780);
+
+        current = target;
+        updateDeckUI();
+      }
+
+      slides.forEach((slide, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "jump-btn";
+        button.textContent = (index + 1) + ". " + (slide.dataset.title || "Slide");
+        button.addEventListener("click", function () {
+          showSlide(index);
+        });
+        jumpRail.appendChild(button);
+        jumpButtons.push(button);
+      });
+
+      prevBtn.addEventListener("click", function () {
+        showSlide(current - 1);
+      });
+
+      nextBtn.addEventListener("click", function () {
+        showSlide(current + 1);
+      });
+
+      document.addEventListener("keydown", function (event) {
+        const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+        if (tag === "input" || tag === "select" || tag === "textarea") {
+          return;
+        }
+
+        if (event.key === "ArrowRight" || event.key === "PageDown") {
+          event.preventDefault();
+          showSlide(current + 1);
+        }
+
+        if (event.key === "ArrowLeft" || event.key === "PageUp") {
+          event.preventDefault();
+          showSlide(current - 1);
+        }
+
+        if (event.key === "Home") {
+          event.preventDefault();
+          showSlide(0);
+        }
+
+        if (event.key === "End") {
+          event.preventDefault();
+          showSlide(total - 1);
+        }
+      });
+
+      let touchStartX = null;
+
+      document.addEventListener(
+        "touchstart",
+        function (event) {
+          if (event.changedTouches.length > 0) {
+            touchStartX = event.changedTouches[0].clientX;
+          }
+        },
+        { passive: true }
+      );
+
+      document.addEventListener(
+        "touchend",
+        function (event) {
+          if (touchStartX === null || event.changedTouches.length === 0) {
+            return;
+          }
+
+          const delta = event.changedTouches[0].clientX - touchStartX;
+          if (Math.abs(delta) > 42) {
+            showSlide(current + (delta < 0 ? 1 : -1));
+          }
+          touchStartX = null;
+        },
+        { passive: true }
+      );
+
+      updateDeckUI();
+
+      const simCycle = document.getElementById("simCycle");
+      const simSplit = document.getElementById("simSplit");
+      const simDemand = document.getElementById("simDemand");
+      const simBias = document.getElementById("simBias");
+      const simCycleOut = document.getElementById("simCycleOut");
+      const simSplitOut = document.getElementById("simSplitOut");
+      const simDemandOut = document.getElementById("simDemandOut");
+      const simBiasOut = document.getElementById("simBiasOut");
+      const simPause = document.getElementById("simPause");
+      const simReset = document.getElementById("simReset");
+      const simLightRed = document.getElementById("simLightRed");
+      const simLightAmber = document.getElementById("simLightAmber");
+      const simLightGreen = document.getElementById("simLightGreen");
+      const nsPhaseOut = document.getElementById("nsPhaseOut");
+      const ewPhaseOut = document.getElementById("ewPhaseOut");
+      const nsQueueOut = document.getElementById("nsQueueOut");
+      const ewQueueOut = document.getElementById("ewQueueOut");
+      const nsQueueFill = document.getElementById("nsQueueFill");
+      const ewQueueFill = document.getElementById("ewQueueFill");
+      const simDelayOut = document.getElementById("simDelayOut");
+      const simThroughputOut = document.getElementById("simThroughputOut");
+      const simUtilOut = document.getElementById("simUtilOut");
+
+      const simState = {
+        tick: 0,
+        nsQueue: 16,
+        ewQueue: 12,
+        throughput: 1430,
+        running: true
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function setSimLight(mode) {
+        simLightRed.classList.toggle("is-on", mode === "red");
+        simLightAmber.classList.toggle("is-on", mode === "amber");
+        simLightGreen.classList.toggle("is-on", mode === "green");
+      }
+
+      function refreshSimLabels() {
+        simCycleOut.value = simCycle.value + " s";
+        simSplitOut.value = simSplit.value + " %";
+        simDemandOut.value = simDemand.value + " veh/min";
+        const biasNumber = Number(simBias.value);
+        simBiasOut.value = (biasNumber >= 0 ? "+" : "") + biasNumber + " %";
+      }
+
+      function refreshSimDisplay(delaySeconds, utilization) {
+        const nsRounded = Math.round(simState.nsQueue);
+        const ewRounded = Math.round(simState.ewQueue);
+
+        nsQueueOut.textContent = String(nsRounded);
+        ewQueueOut.textContent = String(ewRounded);
+
+        nsQueueFill.style.width = ((simState.nsQueue / 70) * 100).toFixed(1) + "%";
+        ewQueueFill.style.width = ((simState.ewQueue / 70) * 100).toFixed(1) + "%";
+
+        simDelayOut.textContent = Math.round(delaySeconds) + " s";
+        simThroughputOut.textContent = Math.round(simState.throughput) + " vph";
+        simUtilOut.textContent = utilization.toFixed(2);
+      }
+
+      function runSimStep() {
+        if (!simState.running) {
+          return;
+        }
+
+        const cycle = Number(simCycle.value);
+        const nsShare = Number(simSplit.value) / 100;
+        const demandPerSecond = Number(simDemand.value) / 60;
+        const bias = Number(simBias.value) / 100;
+
+        const amber = 4;
+        const nsGreen = Math.max(8, Math.round(cycle * nsShare));
+        const ewGreen = Math.max(8, cycle - nsGreen - amber * 2);
+        const fullCycle = nsGreen + amber + ewGreen + amber;
+
+        simState.tick = (simState.tick + 1) % fullCycle;
+
+        let phase = "ns";
+        if (simState.tick < nsGreen) {
+          phase = "ns";
+        } else if (simState.tick < nsGreen + amber) {
+          phase = "amber";
+        } else if (simState.tick < nsGreen + amber + ewGreen) {
+          phase = "ew";
+        } else {
+          phase = "amber";
+        }
+
+        const nsArrival = demandPerSecond * (1 + bias);
+        const ewArrival = demandPerSecond * (1 - bias);
+
+        let nsDeparture = 0.06;
+        let ewDeparture = 0.06;
+
+        if (phase === "ns") {
+          nsDeparture = 0.85;
+          ewDeparture = 0.06;
+          setSimLight("green");
+          nsPhaseOut.textContent = "Green";
+          ewPhaseOut.textContent = "Red";
+        } else if (phase === "ew") {
+          nsDeparture = 0.06;
+          ewDeparture = 0.85;
+          setSimLight("red");
+          nsPhaseOut.textContent = "Red";
+          ewPhaseOut.textContent = "Green";
+        } else {
+          nsDeparture = 0.12;
+          ewDeparture = 0.12;
+          setSimLight("amber");
+          nsPhaseOut.textContent = "Amber";
+          ewPhaseOut.textContent = "Amber";
+        }
+
+        simState.nsQueue = clamp(simState.nsQueue + nsArrival - nsDeparture, 0, 70);
+        simState.ewQueue = clamp(simState.ewQueue + ewArrival - ewDeparture, 0, 70);
+
+        const servedRate = Math.max(0, nsDeparture - 0.06) + Math.max(0, ewDeparture - 0.06);
+        simState.throughput = (simState.throughput * 0.86) + ((servedRate * 3600) * 0.14);
+
+        const combinedQueue = simState.nsQueue + simState.ewQueue;
+        const delaySeconds = clamp(10 + combinedQueue * 1.15, 8, 120);
+        const utilization = clamp((nsArrival + ewArrival) / Math.max(0.2, nsDeparture + ewDeparture), 0.2, 1.9);
+
+        refreshSimDisplay(delaySeconds, utilization);
+      }
+
+      [simCycle, simSplit, simDemand, simBias].forEach(function (control) {
+        control.addEventListener("input", refreshSimLabels);
+      });
+
+      simPause.addEventListener("click", function () {
+        simState.running = !simState.running;
+        simPause.textContent = simState.running ? "Pause Flow" : "Resume Flow";
+      });
+
+      simReset.addEventListener("click", function () {
+        simState.tick = 0;
+        simState.nsQueue = 16;
+        simState.ewQueue = 12;
+        simState.throughput = 1430;
+        setSimLight("green");
+        nsPhaseOut.textContent = "Green";
+        ewPhaseOut.textContent = "Red";
+        refreshSimDisplay(39, 0.86);
+      });
+
+      refreshSimLabels();
+      setSimLight("green");
+      refreshSimDisplay(39, 0.86);
+      window.setInterval(runSimStep, 900);
+
+      const offsetRange = document.getElementById("offsetRange");
+      const bandRange = document.getElementById("bandRange");
+      const priorityRange = document.getElementById("priorityRange");
+      const offsetOut = document.getElementById("offsetOut");
+      const bandOut = document.getElementById("bandOut");
+      const priorityOut = document.getElementById("priorityOut");
+      const progressionOut = document.getElementById("progressionOut");
+      const delayOut = document.getElementById("delayOut");
+      const stopOut = document.getElementById("stopOut");
+      const corridorBand = document.getElementById("corridorBand");
+      const corridorWave = document.getElementById("corridorWave");
+      const corridorMap = document.getElementById("corridorMap");
+      const corridorAdvice = document.getElementById("corridorAdvice");
+
+      function updateCorridorModel() {
+        const offset = Number(offsetRange.value);
+        const band = Number(bandRange.value);
+        const priority = Number(priorityRange.value);
+
+        const progression = clamp(32 + (band * 0.72) - (Math.abs(offset - 48) * 0.6) + (priority * 0.28), 6, 98);
+        const avgDelay = clamp(85 - (progression * 0.55) + ((100 - band) * 0.24) + (priority * 0.18), 9, 96);
+        const stopRate = clamp(90 - (progression * 0.7) + (Math.abs(offset - 48) * 0.22) + (priority * 0.08), 6, 95);
+
+        offsetOut.value = offset + " s";
+        bandOut.value = band + " %";
+        priorityOut.value = priority + " %";
+
+        progressionOut.textContent = Math.round(progression) + "%";
+        delayOut.textContent = Math.round(avgDelay) + " s";
+        stopOut.textContent = Math.round(stopRate) + "%";
+
+        corridorBand.style.width = band + "%";
+        corridorWave.style.left = ((offset / 120) * 100).toFixed(1) + "%";
+        corridorMap.style.setProperty("--pulse-speed", Math.max(2.1, 6.8 - (band / 15)).toFixed(2) + "s");
+
+        if (progression > 74 && avgDelay < 35) {
+          corridorAdvice.textContent = "Strong progression window. Keep this offset family and validate side-street equity before lock-in.";
+        } else if (progression > 55) {
+          corridorAdvice.textContent = "Balanced timing is viable. Keep current offset family and monitor PM spillback windows.";
+        } else {
+          corridorAdvice.textContent = "Progression is weak under current assumptions. Tighten offset spread or widen bandwidth before deployment.";
+        }
+      }
+
+      [offsetRange, bandRange, priorityRange].forEach(function (control) {
+        control.addEventListener("input", updateCorridorModel);
+      });
+
+      updateCorridorModel();
+    })();
+  </script>
+</body>
+</html>
