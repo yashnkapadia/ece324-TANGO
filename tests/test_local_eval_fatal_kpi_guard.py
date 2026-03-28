@@ -93,6 +93,7 @@ def test_local_eval_skips_kpi_update_after_fatal_step(monkeypatch, tmp_path: Pat
         reward_delay_weight=1.0,
         reward_throughput_weight=1.0,
         reward_fairness_weight=0.25,
+        reward_residual_weight=0.25,
         use_obs_norm=False,
     )
 

@@ -89,6 +89,7 @@ def _train_cfg(tmp_path: Path) -> TrainConfig:
         reward_delay_weight=1.0,
         reward_throughput_weight=1.0,
         reward_fairness_weight=0.25,
+        reward_residual_weight=0.25,
     )
 
 

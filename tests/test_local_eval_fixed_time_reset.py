@@ -109,6 +109,7 @@ def test_fixed_time_baseline_resets_cursor_each_eval_episode(
         reward_delay_weight=1.0,
         reward_throughput_weight=1.0,
         reward_fairness_weight=0.25,
+        reward_residual_weight=0.25,
         use_obs_norm=False,
     )
 

@@ -25,6 +25,7 @@ class TrainConfig:
     reward_delay_weight: float
     reward_throughput_weight: float
     reward_fairness_weight: float
+    reward_residual_weight: float
     use_obs_norm: bool = False
 
 
@@ -45,6 +46,7 @@ class EvalConfig:
     reward_delay_weight: float
     reward_throughput_weight: float
     reward_fairness_weight: float
+    reward_residual_weight: float
     use_obs_norm: bool = False
 
 

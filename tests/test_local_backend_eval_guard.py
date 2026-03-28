@@ -35,6 +35,7 @@ def test_local_eval_checks_model_exists_before_creating_env(
         reward_delay_weight=1.0,
         reward_throughput_weight=1.0,
         reward_fairness_weight=0.25,
+        reward_residual_weight=0.25,
     )
 
     with pytest.raises(FileNotFoundError, match="missing_model.pt"):

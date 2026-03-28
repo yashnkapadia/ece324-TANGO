@@ -78,6 +78,31 @@ def test_rewards_from_metrics_unknown_mode_raises():
         )
 
 
+def test_rewards_from_metrics_residual_mp_penalizes_deviation_from_max_pressure():
+    metrics = {
+        "a": _metric("a", delay=2.0, throughput=5),
+        "b": _metric("b", delay=2.0, throughput=5),
+    }
+    rewards = rewards_from_metrics(
+        metrics_by_agent=metrics,
+        mode="residual_mp",
+        weights=RewardWeights(delay=1.0, throughput=1.0, fairness=0.0, residual=0.5),
+        mp_deviation_by_agent={"a": 0.0, "b": 1.0},
+    )
+    assert rewards["a"] > rewards["b"]
+    assert rewards["a"] - rewards["b"] == pytest.approx(0.5)
+
+
+def test_rewards_from_metrics_residual_mp_requires_deviation_map():
+    metrics = {"a": _metric("a", delay=1.0, throughput=8)}
+    with pytest.raises(ValueError, match="requires mp_deviation_by_agent"):
+        rewards_from_metrics(
+            metrics_by_agent=metrics,
+            mode="residual_mp",
+            weights=RewardWeights(delay=1.0, throughput=1.0, fairness=0.25),
+        )
+
+
 class _DummyLaneDomain:
     def __init__(self):
         self.edge_by_lane = {

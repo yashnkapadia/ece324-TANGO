@@ -29,6 +29,7 @@
 - Use objective reward shaping (default): `--reward-mode objective`
 - Use SUMO-native rewards: `--reward-mode sumo`
 - Use delay-only surrogate for proposal KPI alignment: `--reward-mode time_loss`
+- Use residual objective around Max-Pressure: `--reward-mode residual_mp`
 
 ## Backend
 - The training and evaluation CLI now run only the local MAPPO backend.
@@ -60,13 +61,16 @@
 - Third-party deprecation warnings from `torchrl` appear during pytest collection. They do not currently affect run correctness but should be tracked for dependency updates.
 
 ## Reward Objective
-- `reward_mode`: `objective` (default), `sumo`, or `time_loss`
+- `reward_mode`: `objective` (default), `sumo`, `time_loss`, or `residual_mp`
 - Objective reward:
   - `- reward_delay_weight * log1p(delay)`
   - `+ reward_throughput_weight * log1p(throughput)`
   - `+ reward_fairness_weight * Jain(throughput across intersections)`
 - Time-loss mode reward:
   - `- reward_delay_weight * log1p(delay)` (normalized for stability)
+- Residual Max-Pressure mode reward:
+  - `objective_reward - reward_residual_weight * 1[action != action_max_pressure]`
+  - Encourages ASCE to learn selective deviations instead of fully replacing Max-Pressure.
 
 ## Observation Normalization
 - Enabled by default (`--use-obs-norm`).

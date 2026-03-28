@@ -56,6 +56,7 @@ class RewardWeights:
     delay: float
     throughput: float
     fairness: float
+    residual: float = 0.0
 
 
 def _lane_axis(env, lane_id: str) -> str:
@@ -265,13 +266,14 @@ def rewards_from_metrics(
     metrics_by_agent: Dict[str, IntersectionMetrics],
     mode: str,
     weights: RewardWeights,
+    mp_deviation_by_agent: Dict[str, float] | None = None,
 ) -> Dict[str, float]:
     reward_mode = str(mode).strip().lower()
     if reward_mode == "sumo":
         return {}
-    if reward_mode not in {"objective", "time_loss"}:
+    if reward_mode not in {"objective", "time_loss", "residual_mp"}:
         raise ValueError(
-            f"Unsupported reward mode: {mode!r}. Expected one of: objective, sumo, time_loss."
+            f"Unsupported reward mode: {mode!r}. Expected one of: objective, sumo, time_loss, residual_mp."
         )
 
     throughputs = [float(m.throughput) for m in metrics_by_agent.values()]
@@ -291,5 +293,13 @@ def rewards_from_metrics(
             + weights.throughput * throughput_term
             + weights.fairness * float(fairness)
         )
+        if reward_mode == "residual_mp":
+            if mp_deviation_by_agent is None:
+                raise ValueError(
+                    "residual_mp reward mode requires mp_deviation_by_agent values."
+                )
+            # Penalize deviations from max-pressure so RL learns residual corrections only
+            # when they improve downstream objective terms.
+            reward -= weights.residual * float(mp_deviation_by_agent.get(agent_id, 0.0))
         rewards[agent_id] = float(reward)
     return rewards

@@ -68,6 +68,7 @@ class LocalMappoBackend(AsceTrainerBackend):
 
             action_dims = {a: int(env.action_spaces(a).n) for a in ordered_agents}
             n_actions = max(action_dims.values())
+            max_pressure = MaxPressureController(action_size_by_agent=action_dims)
 
             resolved_device = self._resolve_device(cfg.device)
             logger.info(f"Training device: {resolved_device}")
@@ -86,6 +87,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 delay=cfg.reward_delay_weight,
                 throughput=cfg.reward_throughput_weight,
                 fairness=cfg.reward_fairness_weight,
+                residual=cfg.reward_residual_weight,
             )
 
             for ep in range(cfg.episodes):
@@ -127,6 +129,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         a: int(batch_out[i]["action"])
                         for i, a in enumerate(active_agents)
                     }
+                    mp_actions = max_pressure.actions(obs, env=env)
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
                     terminated = False
@@ -177,6 +180,12 @@ class LocalMappoBackend(AsceTrainerBackend):
                             metrics_by_agent=metrics_by_agent,
                             mode=cfg.reward_mode,
                             weights=reward_weights,
+                            mp_deviation_by_agent={
+                                a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
+                                for a in active_agents
+                            }
+                            if cfg.reward_mode == "residual_mp"
+                            else None,
                         )
                         if shaped_rewards:
                             rewards = shaped_rewards
@@ -306,6 +315,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     delay=cfg.reward_delay_weight,
                     throughput=cfg.reward_throughput_weight,
                     fairness=cfg.reward_fairness_weight,
+                    residual=cfg.reward_residual_weight,
                 )
 
                 trainer = None
@@ -370,6 +380,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             actions = fixed.actions(obs)
                         else:
                             actions = max_pressure.actions(obs, env=env)
+                        mp_actions = max_pressure.actions(obs, env=env)
 
                         try:
                             obs, rewards, done, _infos = extract_step(env.step(actions))
@@ -398,6 +409,12 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 metrics_by_agent=metrics_by_agent,
                                 mode=cfg.reward_mode,
                                 weights=reward_weights,
+                                mp_deviation_by_agent={
+                                    a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
+                                    for a in active_agents
+                                }
+                                if cfg.reward_mode == "residual_mp"
+                                else None,
                             )
                             objective_shaped_rewards = (
                                 shaped_rewards

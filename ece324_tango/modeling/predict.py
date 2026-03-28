@@ -10,7 +10,7 @@ from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.config import MODELS_DIR, RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
-_VALID_REWARD_MODES = {"objective", "sumo", "time_loss"}
+_VALID_REWARD_MODES = {"objective", "sumo", "time_loss", "residual_mp"}
 
 
 @app.command()
@@ -28,11 +28,12 @@ def main(
     backend_verbose: bool = False,
     reward_mode: str = typer.Option(
         "objective",
-        help="Reward mode: objective | sumo | time_loss",
+        help="Reward mode: objective | sumo | time_loss | residual_mp",
     ),
     reward_delay_weight: float = 1.0,
     reward_throughput_weight: float = 1.0,
     reward_fairness_weight: float = 0.25,
+    reward_residual_weight: float = 0.25,
     use_obs_norm: bool = typer.Option(
         True,
         "--use-obs-norm/--no-use-obs-norm",
@@ -68,6 +69,7 @@ def main(
         reward_delay_weight=reward_delay_weight,
         reward_throughput_weight=reward_throughput_weight,
         reward_fairness_weight=reward_fairness_weight,
+        reward_residual_weight=reward_residual_weight,
         use_obs_norm=use_obs_norm,
     )
     backend.evaluate(cfg)

@@ -48,6 +48,7 @@ def test_local_eval_rejects_obs_norm_mismatch_before_env_creation(
         reward_delay_weight=1.0,
         reward_throughput_weight=1.0,
         reward_fairness_weight=0.25,
+        reward_residual_weight=0.25,
         use_obs_norm=True,
     )
 
