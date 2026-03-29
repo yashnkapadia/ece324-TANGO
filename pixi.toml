@@ -25,4 +25,10 @@ pip = "*"
 
 [pypi-dependencies]
 python-dotenv = "*"
+dash = "*"
+plotly = "*"
+pyproj = "*"
+sumolib = "*"
+traci = "*"
+lxml = "*"
 ece324_tango = { path = ".", editable = true }

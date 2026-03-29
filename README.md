@@ -114,6 +114,49 @@ python scripts/05_calibrate.py
 
 Reads TMC turning-movement counts for the 8 study intersections, maps each TMC approach direction (N/S/E/W) to SUMO incoming edges via heading angles, resolves right/through/left outgoing edges, and writes one flow per valid approach-movement combination. After writing `sumo/demand/demand.rou.xml`, prints a GEH validation summary comparing assigned approach totals against the original TMC volumes and saves the results to `data/processed/calibration_report.csv`.
 
+### Demand Studio Web Interface
+
+Use the local web app below to generate custom SUMO demand and scenario configuration files from real TMC data without using SUMO OSM Web Wizard demand generation.
+
+```bash
+python apps/demand_studio/app.py
+```
+
+Then open `http://127.0.0.1:8050` in your browser.
+
+What the interface does:
+- Connects to a selected `*.net.xml` or `*.net.xml.gz` SUMO network file
+- Renders the network in-app with hover details for each junction
+    - junction ID
+    - signalized status
+    - incoming and outgoing edge counts
+- Maps TMC locations to nearest network junctions
+- Generates demand directly from `data/processed/tmc_parsed.csv`
+- Supports cars, trucks, buses, streetcars, and pedestrians
+- Lets you choose signal control mode
+    - MAPPO custom
+    - baseline fixed time
+    - baseline max pressure
+- Exposes MAPPO hyperparameters and signal settings in the same UI
+
+Important data rule:
+- Generated demand in this interface is based only on `data/processed/tmc_parsed.csv`
+- No random or placeholder demand is created
+
+Fixed output locations (not user-selectable):
+- Demand route files: `sumo/demand/generated/*.rou.xml`
+- SUMO config files: `sumo/config/generated/*.sumocfg`
+- Scenario settings export: `sumo/scenarios/generated/*.json`
+- Fixed-time TLS files: `sumo/network/generated/*_fixed_tls.add.xml.gz`
+
+The existing `sumo/demand/demand.rou.xml` remains unchanged and is not replaced by this app.
+
+Network file note:
+- `net.xml` (or `net.xml.gz`) stores network structure and traffic control topology
+- It does not store demand volumes
+- So it is valid to have built the network earlier without choosing demand options like streetcars or pedestrians
+- Demand behavior is applied later through route and scenario files
+
 ### Run Smoke Test
 
 ```bash

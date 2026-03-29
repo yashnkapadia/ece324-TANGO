@@ -1,6 +1,9 @@
 traci
 sumolib
 lxml
+dash
+plotly
+pyproj
 pandas
 numpy
 pyarrow
