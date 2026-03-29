@@ -6,19 +6,21 @@
   <title>TANGO Presentation | Toronto Signal Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=JetBrains+Mono:wght@500;700&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Manrope:wght@500;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-0: #080b0f;
-      --bg-1: #0e141c;
-      --bg-2: #141f2b;
-      --ink-high: #f6f8fb;
-      --ink-mid: #c9d2dd;
-      --ink-soft: #a8b4c2;
-      --line: rgba(230, 237, 248, 0.2);
-      --line-strong: rgba(230, 237, 248, 0.36);
+      --bg-0: #080b10;
+      --bg-1: #0d131b;
+      --bg-2: #121b27;
+      --ink-high: #f9fbff;
+      --ink-mid: #d6dfea;
+      --ink-soft: #bcc8d6;
+      --line: rgba(230, 237, 248, 0.24);
+      --line-strong: rgba(230, 237, 248, 0.42);
       --lane: #f4d36f;
-      --lane-muted: rgba(244, 211, 111, 0.4);
+      --lane-muted: rgba(244, 211, 111, 0.38);
+      --road-marking: rgba(255, 255, 255, 0.78);
+      --road-surface: rgba(7, 11, 15, 0.52);
       --signal-red: #ff5f53;
       --signal-amber: #ffb347;
       --signal-green: #31c98a;
@@ -40,13 +42,14 @@
     }
 
     body {
-      font-family: "Sora", "Segoe UI", sans-serif;
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
       color: var(--ink-high);
       background:
-        radial-gradient(1150px 600px at 50% 98%, rgba(244, 211, 111, 0.08), transparent 68%),
-        radial-gradient(1000px 560px at 6% -8%, rgba(125, 181, 244, 0.18), transparent 72%),
+        radial-gradient(1150px 600px at 50% 98%, rgba(244, 211, 111, 0.04), transparent 70%),
+        radial-gradient(1000px 560px at 6% -8%, rgba(125, 181, 244, 0.1), transparent 74%),
         linear-gradient(156deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%);
       letter-spacing: 0.003em;
+      text-rendering: optimizeLegibility;
     }
 
     .deck {
@@ -72,7 +75,7 @@
         linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
       background-size: 44px 44px;
-      opacity: 0.38;
+      opacity: 0.2;
     }
 
     .ambient::after {
@@ -80,14 +83,15 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(420px 420px at 50% 50%, rgba(244, 211, 111, 0.11), transparent 74%);
-      opacity: 0.55;
+        radial-gradient(460px 460px at 50% 50%, rgba(244, 211, 111, 0.06), transparent 75%);
+      opacity: 0.34;
     }
 
     .road {
       position: absolute;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      background: rgba(5, 9, 12, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--road-surface);
+      backdrop-filter: blur(1px);
     }
 
     .road-h {
@@ -108,7 +112,7 @@
 
     .flow {
       position: absolute;
-      opacity: 0.26;
+      opacity: 0.44;
     }
 
     .flow::before {
@@ -118,83 +122,146 @@
     }
 
     .flow-h {
-      left: -6%;
-      right: -6%;
+      left: -8%;
+      right: -8%;
       top: 50%;
-      height: 8px;
+      height: 3px;
       transform: translateY(-50%);
     }
 
     .flow-h::before {
       background: repeating-linear-gradient(
         90deg,
-        rgba(244, 211, 111, 0.95) 0 16px,
-        transparent 16px 34px
+        var(--road-marking) 0 20px,
+        transparent 20px 40px
       );
-      animation: laneTravelX 16s linear infinite;
-    }
-
-    .flow-h.alt::before {
-      animation-duration: 21s;
-      opacity: 0.6;
     }
 
     .flow-v {
-      top: -8%;
-      bottom: -8%;
+      top: -12%;
+      bottom: -12%;
       left: 50%;
-      width: 8px;
+      width: 3px;
       transform: translateX(-50%);
     }
 
     .flow-v::before {
       background: repeating-linear-gradient(
         180deg,
-        rgba(244, 211, 111, 0.95) 0 16px,
-        transparent 16px 34px
+        var(--road-marking) 0 20px,
+        transparent 20px 40px
       );
-      animation: laneTravelY 18s linear infinite;
     }
 
-    .flow-v.alt::before {
-      animation-duration: 24s;
-      opacity: 0.6;
-    }
-
-    .car {
+    .intersection-core {
       position: absolute;
-      width: 24px;
-      height: 11px;
-      border-radius: 4px;
-      background: rgba(223, 230, 238, 0.54);
-      box-shadow: 0 0 0 1px rgba(15, 23, 32, 0.52);
+      left: 50%;
+      top: 50%;
+      width: min(23vw, 230px);
+      height: min(21vw, 210px);
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.14));
+      z-index: 1;
     }
 
-    .car.a {
-      left: -40px;
-      top: calc(50% - 27px);
-      animation: carEast 18s linear infinite;
+    .traffic-layer {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 3;
     }
 
-    .car.b {
-      right: -40px;
-      top: calc(50% + 16px);
-      animation: carWest 20s linear infinite;
-      animation-delay: -4s;
+    .ambient-car {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 34px;
+      height: 16px;
+      border-radius: 5px;
+      background: var(--car-body, rgba(193, 203, 214, 0.75));
+      box-shadow: 0 0 0 1px rgba(7, 11, 16, 0.45), 0 4px 10px rgba(0, 0, 0, 0.2);
+      opacity: 0.6;
+      transform-origin: center;
     }
 
-    .car.c {
-      top: -35px;
-      left: calc(50% - 34px);
-      animation: carSouth 19s linear infinite;
-      animation-delay: -9s;
+    .ambient-car::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      top: 2px;
+      height: 7px;
+      border-radius: 3px;
+      background: linear-gradient(180deg, rgba(190, 212, 236, 0.68), rgba(168, 189, 212, 0.35));
     }
 
-    .car.d {
-      bottom: -35px;
+    .ambient-car::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 11px;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(6, 10, 14, 0.82);
+      box-shadow: 16px 0 0 rgba(6, 10, 14, 0.82);
+    }
+
+    .ambient-signal {
+      position: absolute;
+      width: 20px;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(7, 12, 17, 0.86);
+      display: grid;
+      gap: 3px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 4;
+    }
+
+    .sig-west {
+      left: calc(50% - (min(23vw, 230px) / 2) - 28px);
+      top: calc(50% - 58px);
+    }
+
+    .sig-east {
+      left: calc(50% + (min(23vw, 230px) / 2) + 8px);
+      top: calc(50% + 18px);
+    }
+
+    .sig-north {
+      top: calc(50% - (min(21vw, 210px) / 2) - 28px);
       left: calc(50% + 18px);
-      animation: carNorth 17s linear infinite;
-      animation-delay: -6s;
+    }
+
+    .sig-south {
+      top: calc(50% + (min(21vw, 210px) / 2) + 8px);
+      left: calc(50% - 58px);
+    }
+
+    .ambient-signal-light {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 999px;
+      background: rgba(214, 223, 235, 0.14);
+      transition: background 220ms ease, box-shadow 220ms ease;
+    }
+
+    .ambient-signal-light.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 10px rgba(255, 95, 83, 0.72);
+    }
+
+    .ambient-signal-light.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 10px rgba(255, 179, 71, 0.72);
+    }
+
+    .ambient-signal-light.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 10px rgba(49, 201, 138, 0.72);
     }
 
     .topbar {
@@ -220,10 +287,10 @@
     .brand strong {
       display: block;
       margin-top: 4px;
-      font-size: 1.2rem;
-      font-family: "Bodoni Moda", Georgia, serif;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-size: 1.18rem;
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.06em;
       text-transform: none;
       color: var(--ink-high);
     }
@@ -326,13 +393,13 @@
     .slide {
       position: absolute;
       inset: 0;
-      padding: clamp(82px, 10vh, 112px) clamp(20px, 5.5vw, 76px) clamp(124px, 16vh, 170px);
+      padding: clamp(74px, 8.6vh, 102px) clamp(14px, 3.8vw, 56px) clamp(102px, 12.8vh, 146px);
       display: grid;
       align-items: center;
       opacity: 0;
       pointer-events: none;
-      transform: translate3d(9vw, 0, 0) scale(0.988);
-      filter: blur(4px);
+      transform: translate3d(8vw, 0, 0) scale(0.99);
+      filter: blur(3px);
       transition:
         transform 760ms var(--ease-slide),
         opacity 460ms ease,
@@ -367,11 +434,16 @@
     }
 
     .frame {
-      width: min(1260px, 100%);
+      width: min(1420px, 97vw);
       margin: 0 auto;
+      padding: clamp(16px, 2vw, 28px);
+      border: 1px solid rgba(230, 237, 248, 0.2);
+      background: linear-gradient(160deg, rgba(7, 11, 16, 0.7), rgba(12, 18, 26, 0.55));
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+      backdrop-filter: blur(2px);
       display: grid;
       align-content: center;
-      gap: 30px;
+      gap: 34px;
     }
 
     .frame.split {
@@ -395,41 +467,42 @@
     h1,
     h2,
     h3 {
-      font-family: "Bodoni Moda", Georgia, serif;
-      font-weight: 700;
-      line-height: 1.03;
-      letter-spacing: 0.015em;
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: 0.005em;
       margin: 0;
       color: var(--ink-high);
+      text-shadow: 0 3px 18px rgba(4, 8, 13, 0.32);
     }
 
     h1 {
-      font-size: clamp(3.1rem, 8vw, 6.4rem);
+      font-size: clamp(3.25rem, 8.4vw, 6.8rem);
       margin-bottom: 14px;
     }
 
     h2 {
-      font-size: clamp(2rem, 5vw, 4rem);
+      font-size: clamp(2.1rem, 5.2vw, 4.2rem);
       margin-bottom: 16px;
     }
 
     h3 {
-      font-size: clamp(1.2rem, 2.2vw, 2rem);
+      font-size: clamp(1.24rem, 2.3vw, 2.05rem);
       margin-bottom: 10px;
     }
 
     p,
     li {
-      color: var(--ink-soft);
-      line-height: 1.65;
-      font-size: clamp(0.96rem, 1.22vw, 1.08rem);
+      color: var(--ink-mid);
+      line-height: 1.68;
+      font-size: clamp(1.01rem, 1.24vw, 1.14rem);
     }
 
     .lead {
-      max-width: 64ch;
-      font-size: clamp(1.13rem, 1.7vw, 1.4rem);
+      max-width: 66ch;
+      font-size: clamp(1.18rem, 1.78vw, 1.52rem);
       color: var(--ink-high);
-      line-height: 1.55;
+      line-height: 1.58;
     }
 
     .tag-row {
@@ -462,8 +535,8 @@
     .detail-panel {
       border: 1px solid var(--line);
       padding: clamp(16px, 2.4vw, 26px);
-      min-height: 270px;
-      background: linear-gradient(165deg, rgba(10, 16, 22, 0.8), rgba(16, 24, 34, 0.66));
+      min-height: 300px;
+      background: linear-gradient(165deg, rgba(10, 16, 22, 0.88), rgba(16, 24, 34, 0.78));
       position: relative;
       overflow: hidden;
     }
@@ -1135,54 +1208,6 @@
       animation: laneSweepBackward 620ms var(--ease-slide) forwards;
     }
 
-    @keyframes laneTravelX {
-      to {
-        transform: translateX(130px);
-      }
-    }
-
-    @keyframes laneTravelY {
-      to {
-        transform: translateY(130px);
-      }
-    }
-
-    @keyframes carEast {
-      from {
-        transform: translateX(0);
-      }
-      to {
-        transform: translateX(calc(100vw + 90px));
-      }
-    }
-
-    @keyframes carWest {
-      from {
-        transform: translateX(0);
-      }
-      to {
-        transform: translateX(calc(-100vw - 90px));
-      }
-    }
-
-    @keyframes carSouth {
-      from {
-        transform: translateY(0);
-      }
-      to {
-        transform: translateY(calc(100vh + 90px));
-      }
-    }
-
-    @keyframes carNorth {
-      from {
-        transform: translateY(0);
-      }
-      to {
-        transform: translateY(calc(-100vh - 90px));
-      }
-    }
-
     @keyframes laneSweepForward {
       0% {
         transform: translateY(-50%) translateX(0);
@@ -1264,7 +1289,7 @@
       }
 
       .slide {
-        padding: 96px 12px 164px;
+        padding: 88px 10px 150px;
       }
 
       .jump-nav {
@@ -1343,13 +1368,31 @@
       <span class="road road-h"></span>
       <span class="road road-v"></span>
       <span class="flow flow-h"></span>
-      <span class="flow flow-h alt"></span>
       <span class="flow flow-v"></span>
-      <span class="flow flow-v alt"></span>
-      <span class="car a"></span>
-      <span class="car b"></span>
-      <span class="car c"></span>
-      <span class="car d"></span>
+      <span class="intersection-core"></span>
+
+      <span class="ambient-signal sig-west" data-axis="ew">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-east" data-axis="ew">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-north" data-axis="ns">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-south" data-axis="ns">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+
+      <div class="traffic-layer" id="ambientTraffic"></div>
     </div>
 
     <header class="topbar">
@@ -2175,6 +2218,245 @@
       });
 
       updateCorridorModel();
+
+      const ambientTraffic = document.getElementById("ambientTraffic");
+      const ambientSignalHeads = Array.from(document.querySelectorAll(".ambient-signal"));
+      const ambientSignalProgram = [
+        { mode: "ew-green", duration: 7.4 },
+        { mode: "ew-amber", duration: 2.0 },
+        { mode: "ns-green", duration: 7.4 },
+        { mode: "ns-amber", duration: 2.0 }
+      ];
+
+      const ambientState = {
+        cars: [],
+        signalIndex: 0,
+        signalElapsed: 0,
+        lastFrame: 0
+      };
+
+      function getAmbientGeometry() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const hRoad = Math.min(width * 0.21, 210);
+        const vRoad = Math.min(width * 0.23, 230);
+
+        return {
+          width: width,
+          height: height,
+          centerX: centerX,
+          centerY: centerY,
+          hLaneOffset: Math.max(22, hRoad * 0.24),
+          vLaneOffset: Math.max(22, vRoad * 0.24),
+          stopEast: centerX - (vRoad / 2) - 20,
+          stopWest: centerX + (vRoad / 2) + 20,
+          stopSouth: centerY - (hRoad / 2) - 20,
+          stopNorth: centerY + (hRoad / 2) + 20
+        };
+      }
+
+      function ambientSignalForAxis(axis) {
+        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
+        if (mode === axis + "-green") {
+          return "green";
+        }
+        if (mode === axis + "-amber") {
+          return "amber";
+        }
+        return "red";
+      }
+
+      function setAmbientSignalHeads() {
+        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
+        ambientSignalHeads.forEach(function (head) {
+          const axis = head.dataset.axis;
+          const red = head.querySelector(".ambient-signal-light.red");
+          const amber = head.querySelector(".ambient-signal-light.amber");
+          const green = head.querySelector(".ambient-signal-light.green");
+
+          red.classList.remove("is-on");
+          amber.classList.remove("is-on");
+          green.classList.remove("is-on");
+
+          if (mode === axis + "-green") {
+            green.classList.add("is-on");
+          } else if (mode === axis + "-amber") {
+            amber.classList.add("is-on");
+          } else {
+            red.classList.add("is-on");
+          }
+        });
+      }
+
+      function buildAmbientCars() {
+        if (!ambientTraffic) {
+          return;
+        }
+
+        ambientTraffic.innerHTML = "";
+        ambientState.cars = [];
+
+        const palette = ["#9db3c8", "#c3d0dd", "#8ba3ba", "#b7c3d0", "#7d93a7", "#d1dae4"];
+        const laneTemplates = [
+          { direction: "east", axis: "ew", rotation: 0, count: 3 },
+          { direction: "west", axis: "ew", rotation: 180, count: 3 },
+          { direction: "south", axis: "ns", rotation: 90, count: 3 },
+          { direction: "north", axis: "ns", rotation: -90, count: 3 }
+        ];
+        const geo = getAmbientGeometry();
+
+        laneTemplates.forEach(function (lane, laneIndex) {
+          for (let i = 0; i < lane.count; i += 1) {
+            const carNode = document.createElement("span");
+            carNode.className = "ambient-car";
+            carNode.style.setProperty("--car-body", palette[(laneIndex * lane.count + i) % palette.length]);
+            ambientTraffic.appendChild(carNode);
+
+            let progress = 0;
+            if (lane.direction === "east") {
+              progress = ((geo.width / lane.count) * i) - 140 - (Math.random() * 36);
+            } else if (lane.direction === "west") {
+              progress = geo.width - ((geo.width / lane.count) * i) + 140 + (Math.random() * 36);
+            } else if (lane.direction === "south") {
+              progress = ((geo.height / lane.count) * i) - 140 - (Math.random() * 36);
+            } else {
+              progress = geo.height - ((geo.height / lane.count) * i) + 140 + (Math.random() * 36);
+            }
+
+            ambientState.cars.push({
+              el: carNode,
+              axis: lane.axis,
+              direction: lane.direction,
+              rotation: lane.rotation,
+              progress: progress,
+              speed: 0,
+              maxSpeed: 50 + (Math.random() * 20)
+            });
+          }
+        });
+      }
+
+      function ambientDirectionSign(direction) {
+        return direction === "east" || direction === "south" ? 1 : -1;
+      }
+
+      function ambientDistanceToStop(car, geo) {
+        if (car.direction === "east") {
+          return geo.stopEast - car.progress;
+        }
+        if (car.direction === "west") {
+          return car.progress - geo.stopWest;
+        }
+        if (car.direction === "south") {
+          return geo.stopSouth - car.progress;
+        }
+        return car.progress - geo.stopNorth;
+      }
+
+      function ambientPassedStop(car, geo) {
+        if (car.direction === "east") {
+          return car.progress >= geo.stopEast + 14;
+        }
+        if (car.direction === "west") {
+          return car.progress <= geo.stopWest - 14;
+        }
+        if (car.direction === "south") {
+          return car.progress >= geo.stopSouth + 14;
+        }
+        return car.progress <= geo.stopNorth - 14;
+      }
+
+      function placeAmbientCar(car, geo) {
+        let x = geo.centerX;
+        let y = geo.centerY;
+
+        if (car.direction === "east") {
+          x = car.progress;
+          y = geo.centerY - geo.hLaneOffset;
+        } else if (car.direction === "west") {
+          x = car.progress;
+          y = geo.centerY + geo.hLaneOffset;
+        } else if (car.direction === "south") {
+          x = geo.centerX - geo.vLaneOffset;
+          y = car.progress;
+        } else {
+          x = geo.centerX + geo.vLaneOffset;
+          y = car.progress;
+        }
+
+        car.el.style.left = x.toFixed(1) + "px";
+        car.el.style.top = y.toFixed(1) + "px";
+        car.el.style.transform = "translate(-50%, -50%) rotate(" + car.rotation + "deg)";
+      }
+
+      function updateAmbientCars(deltaSeconds) {
+        const geo = getAmbientGeometry();
+
+        ambientState.cars.forEach(function (car) {
+          const signal = ambientSignalForAxis(car.axis);
+          const distanceToStop = ambientDistanceToStop(car, geo);
+          const passedStop = ambientPassedStop(car, geo);
+
+          let targetSpeed = car.maxSpeed;
+          if (!passedStop && signal === "red" && distanceToStop < 120) {
+            targetSpeed = 0;
+          } else if (!passedStop && signal === "amber" && distanceToStop < 110) {
+            targetSpeed = car.maxSpeed * 0.28;
+          }
+
+          car.speed += (targetSpeed - car.speed) * Math.min(1, deltaSeconds * 3.6);
+          car.progress += ambientDirectionSign(car.direction) * car.speed * deltaSeconds;
+
+          if (car.direction === "east" && car.progress > geo.width + 110) {
+            car.progress = -110 - (Math.random() * 260);
+          } else if (car.direction === "west" && car.progress < -110) {
+            car.progress = geo.width + 110 + (Math.random() * 260);
+          } else if (car.direction === "south" && car.progress > geo.height + 110) {
+            car.progress = -110 - (Math.random() * 240);
+          } else if (car.direction === "north" && car.progress < -110) {
+            car.progress = geo.height + 110 + (Math.random() * 240);
+          }
+
+          placeAmbientCar(car, geo);
+        });
+      }
+
+      function runAmbientScene(timestamp) {
+        if (!ambientTraffic) {
+          return;
+        }
+
+        if (!ambientState.lastFrame) {
+          ambientState.lastFrame = timestamp;
+        }
+
+        const deltaSeconds = Math.min(0.05, (timestamp - ambientState.lastFrame) / 1000);
+        ambientState.lastFrame = timestamp;
+        ambientState.signalElapsed += deltaSeconds;
+
+        if (ambientState.signalElapsed >= ambientSignalProgram[ambientState.signalIndex].duration) {
+          ambientState.signalElapsed = 0;
+          ambientState.signalIndex = (ambientState.signalIndex + 1) % ambientSignalProgram.length;
+          setAmbientSignalHeads();
+        }
+
+        updateAmbientCars(deltaSeconds);
+        window.requestAnimationFrame(runAmbientScene);
+      }
+
+      buildAmbientCars();
+      setAmbientSignalHeads();
+      updateAmbientCars(0.016);
+
+      if (!reduceMotion) {
+        window.requestAnimationFrame(runAmbientScene);
+      } else {
+        window.addEventListener("resize", function () {
+          updateAmbientCars(0.016);
+        });
+      }
     })();
   </script>
 </body>
