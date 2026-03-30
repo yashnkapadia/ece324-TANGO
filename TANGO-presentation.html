@@ -3,28 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TANGO Presentation | Toronto Signal Intelligence</title>
+  <title>TANGO Presentation | ECE324</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Manrope:wght@500;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-0: #080b10;
-      --bg-1: #0d131b;
-      --bg-2: #121b27;
+      --bg-0: #0b1118;
+      --bg-1: #121b26;
+      --bg-2: #1a2633;
       --ink-high: #f9fbff;
       --ink-mid: #d6dfea;
       --ink-soft: #bcc8d6;
-      --line: rgba(230, 237, 248, 0.24);
-      --line-strong: rgba(230, 237, 248, 0.42);
-      --lane: #f4d36f;
-      --lane-muted: rgba(244, 211, 111, 0.38);
-      --road-marking: rgba(255, 255, 255, 0.78);
-      --road-surface: rgba(7, 11, 15, 0.52);
-      --signal-red: #ff5f53;
-      --signal-amber: #ffb347;
-      --signal-green: #31c98a;
-      --accent-blue: #7db5f4;
+      --line: rgba(230, 237, 248, 0.2);
+      --line-strong: rgba(230, 237, 248, 0.34);
+      --lane: #d9bb6d;
+      --lane-muted: rgba(217, 187, 109, 0.26);
+      --road-marking: rgba(255, 255, 255, 0.46);
+      --road-surface: rgba(8, 12, 18, 0.44);
+      --signal-red: #df7a72;
+      --signal-amber: #d8b36a;
+      --signal-green: #6eaf8b;
+      --accent-blue: #88a7c9;
       --ease-slide: cubic-bezier(0.2, 0.78, 0.2, 1);
     }
 
@@ -44,10 +44,7 @@
     body {
       font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
       color: var(--ink-high);
-      background:
-        radial-gradient(1150px 600px at 50% 98%, rgba(244, 211, 111, 0.04), transparent 70%),
-        radial-gradient(1000px 560px at 6% -8%, rgba(125, 181, 244, 0.1), transparent 74%),
-        linear-gradient(156deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%);
+      background: var(--bg-1);
       letter-spacing: 0.003em;
       text-rendering: optimizeLegibility;
     }
@@ -59,12 +56,26 @@
       isolation: isolate;
     }
 
+    .deck::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(6, 10, 15, 0.26) 0%, rgba(6, 10, 15, 0) 24%),
+        radial-gradient(880px 420px at 50% 106%, rgba(0, 0, 0, 0.28), transparent 78%);
+      pointer-events: none;
+      z-index: 0;
+      display: none;
+    }
+
     .ambient {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      z-index: 0;
+      z-index: 1;
       overflow: hidden;
+      opacity: 1;
+      display: none;
     }
 
     .ambient::before {
@@ -72,9 +83,9 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-      background-size: 44px 44px;
+        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+      background-size: 92px 92px;
       opacity: 0.2;
     }
 
@@ -83,185 +94,69 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(460px 460px at 50% 50%, rgba(244, 211, 111, 0.06), transparent 75%);
-      opacity: 0.34;
+        radial-gradient(680px 340px at 12% -4%, rgba(136, 167, 201, 0.16), transparent 78%),
+        radial-gradient(740px 360px at 88% 102%, rgba(217, 187, 109, 0.1), transparent 80%);
+      opacity: 0.68;
     }
 
-    .road {
+    .ambient-map {
       position: absolute;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      background: var(--road-surface);
-      backdrop-filter: blur(1px);
+      inset: -8%;
+      width: 116%;
+      height: 116%;
+      opacity: 0.48;
+      filter: saturate(0.8);
     }
 
-    .road-h {
-      left: -8%;
-      right: -8%;
-      top: 50%;
-      height: min(21vw, 210px);
-      transform: translateY(-50%);
+    .ambient-map path,
+    .ambient-map circle {
+      vector-effect: non-scaling-stroke;
     }
 
-    .road-v {
-      top: -14%;
-      bottom: -14%;
-      left: 50%;
-      width: min(23vw, 230px);
-      transform: translateX(-50%);
+    .ambient-map .arterial {
+      fill: none;
+      stroke: rgba(148, 169, 194, 0.3);
+      stroke-width: 84;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .flow {
-      position: absolute;
-      opacity: 0.44;
+    .ambient-map .arterial-mark {
+      fill: none;
+      stroke: rgba(244, 248, 255, 0.2);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 12 24;
     }
 
-    .flow::before {
-      content: "";
-      position: absolute;
-      inset: 0;
+    .ambient-map .collector {
+      fill: none;
+      stroke: rgba(120, 141, 164, 0.24);
+      stroke-width: 48;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .flow-h {
-      left: -8%;
-      right: -8%;
-      top: 50%;
-      height: 3px;
-      transform: translateY(-50%);
+    .ambient-map .collector-mark {
+      fill: none;
+      stroke: rgba(238, 245, 255, 0.14);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-dasharray: 8 18;
     }
 
-    .flow-h::before {
-      background: repeating-linear-gradient(
-        90deg,
-        var(--road-marking) 0 20px,
-        transparent 20px 40px
-      );
+    .ambient-map .node {
+      fill: rgba(217, 187, 109, 0.12);
+      stroke: rgba(240, 247, 255, 0.16);
+      stroke-width: 2;
     }
 
-    .flow-v {
-      top: -12%;
-      bottom: -12%;
-      left: 50%;
-      width: 3px;
-      transform: translateX(-50%);
-    }
-
-    .flow-v::before {
-      background: repeating-linear-gradient(
-        180deg,
-        var(--road-marking) 0 20px,
-        transparent 20px 40px
-      );
-    }
-
-    .intersection-core {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: min(23vw, 230px);
-      height: min(21vw, 210px);
-      transform: translate(-50%, -50%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.14));
-      z-index: 1;
-    }
-
-    .traffic-layer {
+    .ambient-center-mask {
       position: absolute;
       inset: 0;
-      overflow: hidden;
-      z-index: 3;
-    }
-
-    .ambient-car {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 34px;
-      height: 16px;
-      border-radius: 5px;
-      background: var(--car-body, rgba(193, 203, 214, 0.75));
-      box-shadow: 0 0 0 1px rgba(7, 11, 16, 0.45), 0 4px 10px rgba(0, 0, 0, 0.2);
-      opacity: 0.6;
-      transform-origin: center;
-    }
-
-    .ambient-car::before {
-      content: "";
-      position: absolute;
-      left: 6px;
-      right: 6px;
-      top: 2px;
-      height: 7px;
-      border-radius: 3px;
-      background: linear-gradient(180deg, rgba(190, 212, 236, 0.68), rgba(168, 189, 212, 0.35));
-    }
-
-    .ambient-car::after {
-      content: "";
-      position: absolute;
-      left: 6px;
-      top: 11px;
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(6, 10, 14, 0.82);
-      box-shadow: 16px 0 0 rgba(6, 10, 14, 0.82);
-    }
-
-    .ambient-signal {
-      position: absolute;
-      width: 20px;
-      padding: 3px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: rgba(7, 12, 17, 0.86);
-      display: grid;
-      gap: 3px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      z-index: 4;
-    }
-
-    .sig-west {
-      left: calc(50% - (min(23vw, 230px) / 2) - 28px);
-      top: calc(50% - 58px);
-    }
-
-    .sig-east {
-      left: calc(50% + (min(23vw, 230px) / 2) + 8px);
-      top: calc(50% + 18px);
-    }
-
-    .sig-north {
-      top: calc(50% - (min(21vw, 210px) / 2) - 28px);
-      left: calc(50% + 18px);
-    }
-
-    .sig-south {
-      top: calc(50% + (min(21vw, 210px) / 2) + 8px);
-      left: calc(50% - 58px);
-    }
-
-    .ambient-signal-light {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 999px;
-      background: rgba(214, 223, 235, 0.14);
-      transition: background 220ms ease, box-shadow 220ms ease;
-    }
-
-    .ambient-signal-light.is-on.red {
-      background: var(--signal-red);
-      box-shadow: 0 0 10px rgba(255, 95, 83, 0.72);
-    }
-
-    .ambient-signal-light.is-on.amber {
-      background: var(--signal-amber);
-      box-shadow: 0 0 10px rgba(255, 179, 71, 0.72);
-    }
-
-    .ambient-signal-light.is-on.green {
-      background: var(--signal-green);
-      box-shadow: 0 0 10px rgba(49, 201, 138, 0.72);
+      background:
+        radial-gradient(980px 560px at 50% 52%, rgba(8, 12, 17, 0.9) 0%, rgba(8, 12, 17, 0.78) 32%, rgba(8, 12, 17, 0) 74%);
+      z-index: 2;
     }
 
     .topbar {
@@ -278,8 +173,8 @@
     .brand {
       line-height: 1.15;
       text-transform: uppercase;
-      letter-spacing: 0.22em;
-      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      font-size: 0.82rem;
       color: var(--ink-soft);
       white-space: nowrap;
     }
@@ -304,10 +199,10 @@
     }
 
     .slide-title {
-      font-size: 0.75rem;
+      font-size: 0.86rem;
       text-transform: uppercase;
-      letter-spacing: 0.19em;
-      color: var(--ink-mid);
+      letter-spacing: 0.11em;
+      color: var(--ink-high);
       min-width: 132px;
       text-align: right;
     }
@@ -376,9 +271,9 @@
     .progress-label {
       min-width: 74px;
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.74rem;
-      letter-spacing: 0.11em;
-      color: var(--ink-mid);
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      color: var(--ink-high);
       text-align: right;
     }
 
@@ -457,10 +352,10 @@
     }
 
     .eyebrow {
-      font-size: 0.72rem;
+      font-size: 0.84rem;
       text-transform: uppercase;
-      letter-spacing: 0.23em;
-      color: var(--ink-mid);
+      letter-spacing: 0.12em;
+      color: var(--ink-high);
       margin-bottom: 12px;
     }
 
@@ -514,21 +409,275 @@
 
     .tag {
       border: 1px solid var(--line);
-      color: var(--ink-mid);
+      color: var(--ink-high);
       padding: 8px 12px;
       text-transform: uppercase;
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
       background: rgba(244, 211, 111, 0.08);
     }
 
     .note {
       margin-top: 16px;
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      color: var(--ink-soft);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      color: var(--ink-mid);
       text-transform: uppercase;
+    }
+
+    .hero-frame {
+      gap: 18px;
+      padding-top: clamp(16px, 2.2vw, 30px);
+    }
+
+    .hero-head {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hero-head h1 {
+      margin-bottom: 0;
+    }
+
+    .hero-sub {
+      margin-top: 4px;
+      font-size: clamp(1.08rem, 1.92vw, 1.44rem);
+      color: var(--lane);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .hero-meta {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-meta span {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.12);
+      color: var(--ink-high);
+      padding: 8px 11px;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+    }
+
+    .hero-canvas {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(162deg, rgba(8, 13, 19, 0.9), rgba(15, 23, 34, 0.72));
+      min-height: min(58vh, 500px);
+      padding: clamp(12px, 2vw, 24px);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hero-corridor {
+      position: relative;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: linear-gradient(164deg, rgba(7, 12, 17, 0.96), rgba(15, 23, 34, 0.9));
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .hero-corridor::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(360px 220px at 18% 20%, rgba(125, 181, 244, 0.15), transparent 72%),
+        radial-gradient(320px 210px at 84% 88%, rgba(244, 211, 111, 0.11), transparent 74%);
+      pointer-events: none;
+    }
+
+    .hero-corridor-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      color: var(--ink-high);
+    }
+
+    .hero-map-stage {
+      position: relative;
+      min-height: 248px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(170deg, rgba(9, 15, 22, 0.95), rgba(14, 22, 31, 0.9));
+      overflow: hidden;
+    }
+
+    .hero-map-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.45;
+    }
+
+    .hero-map-stage::after {
+      content: "";
+      position: absolute;
+      left: 14%;
+      right: 12%;
+      top: 18%;
+      bottom: 16%;
+      border: 1px dashed rgba(125, 181, 244, 0.32);
+      border-radius: 0;
+      filter: blur(0.2px);
+      opacity: 0.58;
+    }
+
+    .hero-map-svg {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hero-route-base {
+      fill: none;
+      stroke: rgba(214, 223, 235, 0.28);
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+
+    .hero-route-glow {
+      fill: none;
+      stroke: rgba(125, 181, 244, 0.52);
+      stroke-width: 7;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 8px rgba(125, 181, 244, 0.32));
+    }
+
+    .hero-map-node .hero-node-halo {
+      fill: rgba(214, 223, 235, 0.06);
+      stroke: rgba(214, 223, 235, 0.24);
+      stroke-width: 1.2;
+    }
+
+    .hero-map-node .hero-node-shell {
+      fill: rgba(9, 15, 22, 0.92);
+      stroke: rgba(214, 223, 235, 0.52);
+      stroke-width: 1.8;
+    }
+
+    .hero-map-node .hero-node-core {
+      fill: rgba(244, 211, 111, 0.76);
+      stroke: rgba(6, 10, 15, 0.72);
+      stroke-width: 1;
+    }
+
+    .hero-map-node.is-terminal .hero-node-halo {
+      fill: rgba(125, 181, 244, 0.18);
+      stroke: rgba(125, 181, 244, 0.42);
+    }
+
+    .hero-map-node.is-terminal .hero-node-core {
+      fill: rgba(125, 181, 244, 0.9);
+    }
+
+    .hero-map-node text {
+      fill: var(--ink-high);
+      font-size: 10px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      letter-spacing: 0.06em;
+    }
+
+    .hero-map-node .hero-node-label {
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      fill: rgba(249, 251, 255, 0.92);
+    }
+
+    .hero-map-strip {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-map-strip span {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.12);
+      color: var(--ink-high);
+      padding: 7px 10px;
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-flow {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(170deg, rgba(10, 16, 24, 0.95), rgba(16, 24, 35, 0.85));
+      padding: 14px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .hero-node {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.1);
+      padding: 10px;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      color: var(--ink-high);
+      line-height: 1.46;
+      text-align: center;
+    }
+
+    .hero-arrow {
+      position: relative;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      opacity: 0.95;
+    }
+
+    .hero-arrow::before {
+      content: "";
+      width: 2px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(125, 181, 244, 0.12), rgba(125, 181, 244, 0.92));
+      box-shadow: 0 0 8px rgba(125, 181, 244, 0.35);
+    }
+
+    .hero-arrow::after {
+      content: "";
+      position: absolute;
+      bottom: 1px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--lane);
+      border-bottom: 2px solid var(--lane);
+      transform: rotate(45deg);
     }
 
     .title-plate,
@@ -552,10 +701,10 @@
 
     .plate-city {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.78rem;
-      letter-spacing: 0.13em;
+      font-size: 0.86rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--lane);
+      color: var(--ink-high);
       margin-bottom: 10px;
     }
 
@@ -579,8 +728,8 @@
     }
 
     .plate-lines span {
-      font-size: 0.68rem;
-      letter-spacing: 0.16em;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--ink-mid);
     }
@@ -607,9 +756,9 @@
     .metric small {
       display: block;
       text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 0.66rem;
-      color: var(--ink-mid);
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      color: var(--ink-high);
       margin-bottom: 8px;
     }
 
@@ -634,8 +783,8 @@
     .flow-item strong {
       display: block;
       margin-bottom: 4px;
-      font-size: 0.72rem;
-      letter-spacing: 0.16em;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--ink-high);
     }
@@ -656,8 +805,8 @@
 
     .process-step b {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.72rem;
-      letter-spacing: 0.13em;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
       color: var(--lane);
       text-transform: uppercase;
     }
@@ -666,6 +815,318 @@
       margin-bottom: 0;
       font-size: 1.07rem;
       line-height: 1.2;
+    }
+
+    .pipeline-frame {
+      gap: 20px;
+      padding-top: clamp(14px, 2vw, 24px);
+    }
+
+    .pipeline-head {
+      display: grid;
+      gap: 9px;
+      max-width: 78ch;
+    }
+
+    .pipeline-lead {
+      max-width: 74ch;
+      color: var(--ink-high);
+      font-size: clamp(1rem, 1.34vw, 1.12rem);
+      line-height: 1.46;
+      opacity: 0.92;
+    }
+
+    .pipeline-layout {
+      display: grid;
+      grid-template-columns: 0.86fr 1.14fr;
+      gap: 20px;
+      align-items: stretch;
+      min-height: min(68vh, 650px);
+    }
+
+    .pipeline-flow-panel,
+    .pipeline-interface-panel {
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.94), rgba(15, 23, 33, 0.9));
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.25);
+      padding: 14px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pipeline-interface-panel {
+      align-content: stretch;
+      padding: 10px;
+    }
+
+    .pipeline-flow-panel::before,
+    .pipeline-interface-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(320px 170px at 0% 0%, rgba(125, 181, 244, 0.12), transparent 72%),
+        radial-gradient(340px 160px at 100% 100%, rgba(244, 211, 111, 0.09), transparent 74%);
+      pointer-events: none;
+    }
+
+    .pipeline-label {
+      position: relative;
+      z-index: 1;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--ink-high);
+    }
+
+    .pipeline-track-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 2px;
+      height: 100%;
+    }
+
+    .pipeline-node-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      align-content: start;
+    }
+
+    .pipeline-node {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(165deg, rgba(12, 19, 28, 0.94), rgba(18, 28, 39, 0.86));
+      color: var(--ink-high);
+      min-height: 70px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 5px;
+      justify-items: start;
+      align-content: center;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 220ms ease, background 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .pipeline-node small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.73rem;
+      color: var(--lane);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .pipeline-node strong {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .pipeline-node.is-active {
+      border-color: rgba(244, 211, 111, 0.78);
+      background: linear-gradient(165deg, rgba(244, 211, 111, 0.2), rgba(19, 28, 40, 0.9));
+      transform: translateY(-2px);
+      box-shadow: 0 10px 16px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(244, 211, 111, 0.25);
+    }
+
+    .pipeline-node:focus-visible {
+      outline: 2px solid rgba(244, 211, 111, 0.75);
+      outline-offset: 2px;
+    }
+
+    .pipeline-controller {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .pipeline-controller-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-high);
+    }
+
+    .pipeline-controller-top span:last-child {
+      color: var(--lane);
+      font-family: "JetBrains Mono", "Consolas", monospace;
+    }
+
+    .pipeline-caption {
+      border-left: 2px solid rgba(244, 211, 111, 0.8);
+      background: linear-gradient(90deg, rgba(244, 211, 111, 0.14), transparent 84%);
+      padding: 10px 12px;
+      min-height: 58px;
+      color: var(--ink-high);
+      font-size: 0.93rem;
+      line-height: 1.5;
+    }
+
+    .pipeline-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pipeline-tag {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.12);
+      color: var(--ink-high);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-size: 0.72rem;
+      padding: 6px 8px;
+    }
+
+    .pipeline-shot-wrap {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      min-height: min(64vh, 600px);
+      background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
+      overflow: hidden;
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .pipeline-flowchart-wrap {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      min-height: min(64vh, 600px);
+      background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .pipeline-flowchart-head {
+      display: grid;
+      gap: 6px;
+    }
+
+    .pipeline-flowchart-head small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.75rem;
+      color: var(--lane);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pipeline-flowchart-head strong {
+      font-size: 0.96rem;
+      letter-spacing: 0.03em;
+      color: var(--ink-high);
+      line-height: 1.35;
+    }
+
+    .pipeline-flow-rail {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-content: stretch;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .pipeline-flow-step {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(165deg, rgba(10, 16, 24, 0.94), rgba(17, 25, 36, 0.9));
+      min-height: 0;
+      padding: 10px 12px;
+      display: grid;
+      align-content: start;
+      gap: 7px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .pipeline-flow-step small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--lane);
+    }
+
+    .pipeline-flow-step p {
+      margin: 0;
+      font-size: 0.86rem;
+      line-height: 1.38;
+      color: var(--ink-high);
+    }
+
+    .pipeline-flow-link {
+      width: 24px;
+      height: 24px;
+      justify-self: center;
+      align-self: center;
+      margin: 0;
+    }
+
+    .pipeline-flow-link::after {
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .pipeline-shot-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: rgba(8, 13, 19, 0.88);
+      display: block;
+      transition: opacity 220ms ease, filter 220ms ease;
+    }
+
+    .pipeline-shot-wrap.is-missing img {
+      opacity: 0.1;
+      filter: grayscale(1);
+    }
+
+    .pipeline-image-missing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.84rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.5;
+      color: var(--ink-high);
+      background: rgba(8, 13, 19, 0.8);
+    }
+
+    .pipeline-shot-wrap.is-missing .pipeline-image-missing {
+      display: grid;
+    }
+
+    .pipeline-stage-visual[hidden] {
+      display: none;
     }
 
     .module-grid {
@@ -683,8 +1144,8 @@
     }
 
     .module-row b {
-      font-size: 0.72rem;
-      letter-spacing: 0.16em;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--lane);
       padding-top: 3px;
@@ -706,10 +1167,10 @@
       justify-content: space-between;
       align-items: baseline;
       gap: 12px;
-      font-size: 0.77rem;
+      font-size: 0.84rem;
       text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--ink-mid);
+      letter-spacing: 0.07em;
+      color: var(--ink-high);
     }
 
     .result-row strong {
@@ -821,10 +1282,10 @@
       display: grid;
       gap: 5px;
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--ink-mid);
+      color: var(--ink-high);
       z-index: 2;
     }
 
@@ -849,10 +1310,10 @@
       grid-template-columns: 132px 1fr 56px;
       gap: 10px;
       align-items: center;
-      font-size: 0.69rem;
-      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--ink-mid);
+      color: var(--ink-high);
     }
 
     .queue-track {
@@ -889,17 +1350,17 @@
     }
 
     .field label {
-      font-size: 0.72rem;
+      font-size: 0.82rem;
       text-transform: uppercase;
-      letter-spacing: 0.17em;
-      color: var(--ink-mid);
+      letter-spacing: 0.08em;
+      color: var(--ink-high);
     }
 
     .field output {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       color: var(--ink-high);
-      letter-spacing: 0.08em;
+      letter-spacing: 0.05em;
     }
 
     input[type="range"] {
@@ -964,8 +1425,8 @@
       background: rgba(246, 250, 255, 0.08);
       color: var(--ink-high);
       text-transform: uppercase;
-      letter-spacing: 0.13em;
-      font-size: 0.69rem;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: background 200ms ease, border-color 200ms ease;
@@ -993,10 +1454,10 @@
     }
 
     .mini small {
-      font-size: 0.63rem;
+      font-size: 0.76rem;
       text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--ink-mid);
+      letter-spacing: 0.07em;
+      color: var(--ink-high);
     }
 
     .mini strong {
@@ -1099,11 +1560,11 @@
     .jump-btn {
       border: 1px solid var(--line);
       background: rgba(6, 12, 18, 0.62);
-      color: var(--ink-mid);
-      padding: 7px 10px;
+      color: var(--ink-high);
+      padding: 8px 11px;
       text-transform: uppercase;
-      letter-spacing: 0.15em;
-      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      font-size: 0.78rem;
       white-space: nowrap;
       cursor: pointer;
       transition: background 190ms ease, color 190ms ease, border-color 190ms ease;
@@ -1137,10 +1598,10 @@
 
     .controls .hint {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.68rem;
-      letter-spacing: 0.11em;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--ink-soft);
+      color: var(--ink-mid);
     }
 
     .nav-actions {
@@ -1155,8 +1616,8 @@
       color: var(--ink-high);
       padding: 11px 14px;
       text-transform: uppercase;
-      letter-spacing: 0.15em;
-      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: background 200ms ease, border-color 200ms ease;
@@ -1258,6 +1719,14 @@
         grid-template-columns: 1fr;
       }
 
+      .hero-canvas {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-map-stage {
+        min-height: 220px;
+      }
+
       .metric-grid,
       .mini-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1265,6 +1734,23 @@
 
       .process {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .pipeline-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-node-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-flow-rail {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .pipeline-flow-step {
+        min-height: 0;
       }
 
       .jump-nav {
@@ -1325,12 +1811,20 @@
       .queue-value {
         text-align: left;
       }
+
+      .pipeline-node-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 620px) {
       .metric-grid,
       .mini-metrics,
       .process {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-node-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1365,43 +1859,38 @@
 <body>
   <main class="deck" aria-label="TANGO project presentation">
     <div class="ambient" aria-hidden="true">
-      <span class="road road-h"></span>
-      <span class="road road-v"></span>
-      <span class="flow flow-h"></span>
-      <span class="flow flow-v"></span>
-      <span class="intersection-core"></span>
+      <svg class="ambient-map" viewBox="0 0 1600 980" preserveAspectRatio="xMidYMid slice">
+        <path class="arterial" d="M -120 220 C 170 120, 470 110, 760 190 C 1010 258, 1260 242, 1700 112" />
+        <path class="arterial-mark" d="M -120 220 C 170 120, 470 110, 760 190 C 1010 258, 1260 242, 1700 112" />
 
-      <span class="ambient-signal sig-west" data-axis="ew">
-        <span class="ambient-signal-light red"></span>
-        <span class="ambient-signal-light amber"></span>
-        <span class="ambient-signal-light green"></span>
-      </span>
-      <span class="ambient-signal sig-east" data-axis="ew">
-        <span class="ambient-signal-light red"></span>
-        <span class="ambient-signal-light amber"></span>
-        <span class="ambient-signal-light green"></span>
-      </span>
-      <span class="ambient-signal sig-north" data-axis="ns">
-        <span class="ambient-signal-light red"></span>
-        <span class="ambient-signal-light amber"></span>
-        <span class="ambient-signal-light green"></span>
-      </span>
-      <span class="ambient-signal sig-south" data-axis="ns">
-        <span class="ambient-signal-light red"></span>
-        <span class="ambient-signal-light amber"></span>
-        <span class="ambient-signal-light green"></span>
-      </span>
+        <path class="arterial" d="M -160 840 C 180 700, 430 702, 690 792 C 930 874, 1160 886, 1760 720" />
+        <path class="arterial-mark" d="M -160 840 C 180 700, 430 702, 690 792 C 930 874, 1160 886, 1760 720" />
 
-      <div class="traffic-layer" id="ambientTraffic"></div>
+        <path class="collector" d="M 220 -160 C 300 120, 280 330, 190 560 C 110 760, 130 940, 230 1120" />
+        <path class="collector-mark" d="M 220 -160 C 300 120, 280 330, 190 560 C 110 760, 130 940, 230 1120" />
+
+        <path class="collector" d="M 1370 -130 C 1260 130, 1220 344, 1300 560 C 1380 774, 1410 940, 1330 1140" />
+        <path class="collector-mark" d="M 1370 -130 C 1260 130, 1220 344, 1300 560 C 1380 774, 1410 940, 1330 1140" />
+
+        <path class="collector" d="M 590 1030 C 700 860, 760 730, 820 580 C 870 450, 990 354, 1170 300" />
+        <path class="collector-mark" d="M 590 1030 C 700 860, 760 730, 820 580 C 870 450, 990 354, 1170 300" />
+
+        <circle class="node" cx="310" cy="165" r="18" />
+        <circle class="node" cx="1270" cy="178" r="16" />
+        <circle class="node" cx="198" cy="554" r="15" />
+        <circle class="node" cx="1298" cy="548" r="17" />
+        <circle class="node" cx="824" cy="576" r="13" />
+      </svg>
+      <div class="ambient-center-mask"></div>
     </div>
 
     <header class="topbar">
       <div class="brand">
-        ECE324 Signal Intelligence
+        ECE324
         <strong>TANGO</strong>
       </div>
       <div class="status">
-        <div class="slide-title" id="slideTitle">Opening</div>
+        <div class="slide-title" id="slideTitle">Introduction</div>
         <div class="phase-pack" aria-hidden="true">
           <div class="phase-head">
             <span class="phase-light red" id="phaseRed"></span>
@@ -1413,416 +1902,371 @@
           <div class="progress-track">
             <span id="progressFill"></span>
           </div>
-          <div class="progress-label" id="progressLabel">1 / 8</div>
+          <div class="progress-label" id="progressLabel">1 / 7</div>
         </div>
       </div>
     </header>
 
     <ol class="slides" id="slides">
-      <li class="slide is-active" data-title="Arrival" data-phase="red">
-        <article class="frame split">
-          <section>
-            <div class="eyebrow">Capstone Presentation - Toronto Core</div>
+      <li class="slide is-active" data-title="Introduction" data-phase="red">
+        <article class="frame hero-frame">
+          <section class="hero-head">
+            <div class="eyebrow">ECE324 Final Presentation</div>
             <h1>TANGO</h1>
-            <p class="lead">
-              Traffic Analytics for Networked Green-wave Operations.
-              A downtown-first intelligence stack for signal timing, corridor balancing,
-              and measurable mobility gains without sacrificing reliability.
-            </p>
-            <div class="tag-row" aria-label="Project tags">
-              <span class="tag">Signal Timing Intelligence</span>
-              <span class="tag">SUMO Scenario Engine</span>
-              <span class="tag">Data-to-Decision Pipeline</span>
-              <span class="tag">Operator-friendly Outputs</span>
+            <p class="hero-sub">Traffic Adaptive Network Guidance &amp; Optimization</p>
+            <div class="hero-meta" aria-label="Project scope snapshot">
+              <span>Dundas Street West corridor</span>
+              <span>Current benchmark: 8 signalized intersections</span>
             </div>
-            <p class="note">Keyboard: Left/Right, PageUp/PageDown, Home/End. Touch swipe enabled.</p>
           </section>
-          <aside class="title-plate" aria-label="Presentation context">
-            <p class="plate-city">Toronto - Downtown Junction Language</p>
-            <p class="plate-title">
-              The visual language of this deck mirrors an arterial intersection:
-              lane markings, controlled phase flow, and measured transitions.
-            </p>
-            <div class="plate-lines">
-              <div>
-                <span>Corridor Focus</span>
-                <strong>King St / Queen St / Spadina Ave</strong>
+          <section class="hero-canvas" aria-label="Introductory project visuals">
+            <article class="hero-corridor">
+              <div class="hero-corridor-head">
+                <span>Dundas Street West corridor</span>
               </div>
-              <div>
-                <span>Operating Principle</span>
-                <strong>Adaptive timing with transparent trade-offs</strong>
+              <div class="hero-map-stage" aria-label="Stylized benchmark corridor map">
+                <svg class="hero-map-svg" viewBox="0 0 820 320" role="img" aria-label="Eight benchmark intersections on corridor">
+                  <path class="hero-route-base" d="M44 228 C130 206, 188 158, 262 172 C328 186, 374 246, 454 236 C520 228, 560 162, 630 150 C692 140, 736 178, 778 166" />
+                  <path class="hero-route-glow" d="M44 228 C130 206, 188 158, 262 172 C328 186, 374 246, 454 236 C520 228, 560 162, 630 150 C692 140, 736 178, 778 166" />
+
+                  <g class="hero-map-node is-terminal" transform="translate(70,220)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">01</text>
+                    <text class="hero-node-label" x="14" y="20">University Ave</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(165,190)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">02</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(250,174)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">03</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(342,198)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">04</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(442,236)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">05</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(542,205)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">06</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(640,154)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">07</text>
+                  </g>
+                  <g class="hero-map-node is-terminal" transform="translate(754,168)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">08</text>
+                    <text class="hero-node-label" x="-70" y="20">Bathurst St</text>
+                  </g>
+                </svg>
               </div>
-              <div>
-                <span>Presentation Theme</span>
-                <strong>Apple-grade restraint meets traffic engineering clarity</strong>
+              <div class="hero-map-strip">
+                <span>8 signalized benchmark nodes</span>
+                <span>TMC-linked SUMO junction mapping</span>
+                <span>Streetcar corridor ready for expansion</span>
               </div>
-            </div>
-          </aside>
+            </article>
+            <article class="hero-flow" aria-label="TANGO project flowchart">
+              <div class="hero-node">Toronto TMC counts</div>
+              <div class="hero-arrow" aria-hidden="true"></div>
+              <div class="hero-node">SUMO network build, TLS safety overrides, demand calibration</div>
+              <div class="hero-arrow" aria-hidden="true"></div>
+              <div class="hero-node">ASCE MAPPO control benchmark and rollout logs</div>
+              <div class="hero-arrow" aria-hidden="true"></div>
+              <div class="hero-node">PIRA scenario-planning module</div>
+            </article>
+          </section>
         </article>
       </li>
 
-      <li class="slide" data-title="Challenge" data-phase="red">
-        <article class="frame split">
-          <section>
-            <div class="eyebrow">Urban Friction</div>
-            <h2>Why the Downtown Grid Breaks Under Pressure</h2>
-            <p>
-              Fixed-cycle plans are brittle when arrivals become uneven, turn demand spikes,
-              and pedestrian waves consume green windows. TANGO models each signal as one
-              node inside a coupled network rather than isolated clocks.
+      <li class="slide" data-title="Data Pipeline" data-phase="amber">
+        <article class="frame pipeline-frame">
+          <section class="pipeline-head">
+            <div class="eyebrow">Data and Simulation Pipeline</div>
+            <h2>Visual flow from Toronto TMC records to controlled SUMO generation</h2>
+            <p class="pipeline-lead">
+              Demand Studio is the master control interface. It replaces manual SUMO demand setup and generates demand,
+              signal, and scenario outputs directly from <strong>PROJECT_ROOT/data/processed/tmc_parsed.csv</strong> plus mapped junctions.
             </p>
-            <div class="metric-grid">
-              <div class="metric">
-                <small>Typical Delay</small>
-                <strong>58s</strong>
+          </section>
+
+          <section class="pipeline-layout" aria-label="Interactive data pipeline walkthrough">
+            <article class="pipeline-flow-panel">
+              <div class="pipeline-track-wrap">
+                <div class="pipeline-node-grid" role="list" aria-label="Pipeline stages">
+                  <button class="pipeline-node is-active" type="button" data-pipeline-step="1">
+                    <small>Stage 1</small>
+                    <strong>Raw TMC CSV ingest</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="2">
+                    <small>Stage 2</small>
+                    <strong>Parse to tmc_parsed.csv</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="3">
+                    <small>Stage 3</small>
+                    <strong>Map to junction IDs</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="4">
+                    <small>Stage 4</small>
+                    <strong>Demand Studio control</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="5">
+                    <small>Stage 5</small>
+                    <strong>Generated SUMO files</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="6">
+                    <small>Stage 6</small>
+                    <strong>Demand Studio</strong>
+                  </button>
+                </div>
               </div>
-              <div class="metric">
-                <small>Queue Spillback Risk</small>
-                <strong>High</strong>
+            </article>
+
+            <article class="pipeline-interface-panel">
+              <section class="pipeline-flowchart-wrap pipeline-stage-visual" id="pipelineFlowchartWrap" aria-label="Stage flowchart display">
+                <header class="pipeline-flowchart-head">
+                  <small id="pipelineFlowchartStage">Stage 1 flowchart</small>
+                  <strong id="pipelineFlowchartTitle">Raw TMC CSV ingest to parsed corridor demand data</strong>
+                </header>
+                <div class="pipeline-flow-rail" id="pipelineFlowRail"></div>
+              </section>
+
+              <div class="pipeline-shot-wrap pipeline-stage-visual is-missing" id="pipelineShotWrap" hidden>
+                <img id="pipelineInterfaceImage" src="pictures/demand_studio.png" alt="Demand Studio interface screenshot">
+                <div class="pipeline-image-missing" id="pipelineImageMissing">
+                  Add Demand Studio screenshot into PROJECT_ROOT/pictures (for example demand_studio.png)
+                </div>
               </div>
-              <div class="metric">
-                <small>Telemetry Freshness</small>
-                <strong>&lt;60s</strong>
+            </article>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="ASCE Model" data-phase="amber">
+        <article class="frame dual">
+          <section>
+            <div class="eyebrow">ASCE Architecture</div>
+            <h2>MAPPO with shared policy and centralized critic</h2>
+            <div class="module-grid">
+              <div class="module-row">
+                <b>Agents</b>
+                <p>8 signalized intersections in the current benchmark, each acting from local observations.</p>
+              </div>
+              <div class="module-row">
+                <b>Policy Net</b>
+                <p>2-layer ReLU MLP, 128 hidden units, parameter sharing across all intersections.</p>
+              </div>
+              <div class="module-row">
+                <b>Critic</b>
+                <p>Centralized critic sees concatenated observations during training only.</p>
+              </div>
+              <div class="module-row">
+                <b>Run Setup</b>
+                <p>5s decision interval, episodes up to 300s, 30 training episodes, 10-seed evaluation.</p>
               </div>
             </div>
           </section>
           <section class="detail-panel">
-            <div class="eyebrow">Diagnosis</div>
-            <div class="flow-list">
-              <article class="flow-item">
-                <strong>01 Detector Streams</strong>
-                <p>High-variance arrivals expose where static offsets fail to hold progression.</p>
-              </article>
-              <article class="flow-item">
-                <strong>02 Movement Pressure</strong>
-                <p>Lane-level queue pressure and turning conflicts are estimated every cycle.</p>
-              </article>
-              <article class="flow-item">
-                <strong>03 Decision Layer</strong>
-                <p>Recommendations prioritize delay reduction while preserving operational stability.</p>
-              </article>
+            <div class="eyebrow">Success Criteria and Status</div>
+            <div class="metric-grid" style="margin-top: 2px;">
+              <div class="metric">
+                <small>ASCE Target</small>
+                <strong>&lt;= 0.90x</strong>
+              </div>
+              <div class="metric">
+                <small>PIRA MAPE</small>
+                <strong>&lt;= 10%</strong>
+              </div>
+              <div class="metric">
+                <small>PIRA Runtime</small>
+                <strong>&lt; 5s</strong>
+              </div>
+            </div>
+            <div class="inline-list">
+              <div class="inline-item">ASCE is running end to end and beats Fixed-Time in interim tests.</div>
+              <div class="inline-item">PIRA is planned but not yet implemented in the interim report.</div>
+              <div class="inline-item">Reported ASCE compute budget is under 1 GPU-hour on RTX 4070 Laptop GPU.</div>
             </div>
           </section>
         </article>
       </li>
 
-      <li class="slide" data-title="Pipeline" data-phase="amber">
+      <li class="slide" data-title="ASCE Evaluation" data-phase="green">
+        <article class="frame split">
+          <section>
+            <div class="eyebrow">10-Seed Benchmark Results</div>
+            <h2>MAPPO improves over Fixed-Time, but trails Max-Pressure</h2>
+            <div class="result-bars">
+              <article class="result-row">
+                <header><span>Person-time-loss improvement vs Fixed-Time</span><strong>-4.7%</strong></header>
+                <div class="result-track"><span style="width: 54%;"></span></div>
+              </article>
+              <article class="result-row">
+                <header><span>MAPPO gap vs Max-Pressure (person-time-loss)</span><strong>+25.5%</strong></header>
+                <div class="result-track"><span style="width: 29%;"></span></div>
+              </article>
+              <article class="result-row">
+                <header><span>Total delay summary in abstract</span><strong>5405s vs 6185s Fixed-Time</strong></header>
+                <div class="result-track"><span style="width: 62%;"></span></div>
+              </article>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Table 2 Snapshot (mean +/- std)</div>
+            <div class="module-grid">
+              <div class="module-row">
+                <b>Max-Pressure</b>
+                <p>5659 +/- 190 s person-time-loss, 24.1 +/- 0.6 s avg trip, 119.8 +/- 9.8 arrivals.</p>
+              </div>
+              <div class="module-row">
+                <b>MAPPO</b>
+                <p>7101 +/- 248 s person-time-loss, 25.2 +/- 0.8 s avg trip, 116.9 +/- 9.8 arrivals.</p>
+              </div>
+              <div class="module-row">
+                <b>Fixed-Time</b>
+                <p>7452 +/- 320 s person-time-loss, 26.4 +/- 0.8 s avg trip, 112.1 +/- 6.7 arrivals.</p>
+              </div>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="PIRA Model" data-phase="green">
+        <article class="frame split">
+          <section>
+            <div class="eyebrow">Why Max-Pressure Still Leads</div>
+            <h2>Current benchmark is a nominal demand regime</h2>
+            <div class="flow-list">
+              <article class="flow-item">
+                <strong>Benchmark Regime</strong>
+                <p>70 calibrated car flows in a mostly stationary demand setting where Max-Pressure is strong.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Training Depth</strong>
+                <p>MAPPO currently trains for 30 episodes; learning trend is improving but not yet converged.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Demand Coverage</strong>
+                <p>Current setup is vehicle-only and does not yet include bus, pedestrian, or transit interactions.</p>
+              </article>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Reward Evolution</div>
+            <div class="metric-grid">
+              <div class="metric">
+                <small>Time-loss Only</small>
+                <strong>8434 s</strong>
+              </div>
+              <div class="metric">
+                <small>Multi-objective</small>
+                <strong>7101 s</strong>
+              </div>
+              <div class="metric">
+                <small>Max-Pressure</small>
+                <strong>5659 s</strong>
+              </div>
+            </div>
+            <div class="inline-list">
+              <div class="inline-item">Switching to a multi-objective reward substantially improved MAPPO stability.</div>
+              <div class="inline-item">No controller currently reaches the proposal fairness target of Jain index 0.8.</div>
+              <div class="inline-item">Interim conclusion: ASCE is operational, but still below Max-Pressure in this setting.</div>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="PIRA Evaluation" data-phase="green">
         <article class="frame">
           <section>
-            <div class="eyebrow">Data Flow</div>
-            <h2>From Raw Feeds to Timing Actions</h2>
+            <div class="eyebrow">Remaining Work to Full Scope</div>
+            <h2>Path from interim benchmark to full TANGO system</h2>
             <p>
-              TANGO uses a strict signal operations pipeline so every recommendation can be traced
-              from source telemetry through model assumptions to deployment outcomes.
+              Next milestones follow directly from the proposal and interim report gap analysis.
             </p>
           </section>
           <section class="process">
             <article class="process-step">
               <b>Step 1</b>
-              <h3>Ingest</h3>
-              <p>TMC traces, detector counts, and scenario metadata are synchronized in time.</p>
+              <h3>Implement PIRA</h3>
+              <p>Train the planned message-passing GNN surrogate on scenario-outcome pairs.</p>
             </article>
             <article class="process-step">
               <b>Step 2</b>
-              <h3>Engineer</h3>
-              <p>Queue proxies, phase pressure, and turn penalties become model features.</p>
+              <h3>Expand Scenarios</h3>
+              <p>Add lane closures, construction impacts, transit changes, and major-event demand shifts.</p>
             </article>
             <article class="process-step">
               <b>Step 3</b>
-              <h3>Train</h3>
-              <p>Scenario-aware predictors estimate delay, throughput, and progression quality.</p>
+              <h3>Multimodal Inputs</h3>
+              <p>Extend beyond car-only flows to include transit, pedestrian, and bike effects where possible.</p>
             </article>
             <article class="process-step">
               <b>Step 4</b>
-              <h3>Simulate</h3>
-              <p>SUMO runs stress recommendations under baseline, peak, and disrupted demand.</p>
+              <h3>Stronger ASCE Training</h3>
+              <p>Use longer training, curriculum over irregular demand, and imitation warm-start from Max-Pressure.</p>
             </article>
             <article class="process-step">
               <b>Step 5</b>
-              <h3>Explain</h3>
-              <p>Decision cards summarize expected gains, confidence, and operational caveats.</p>
+              <h3>Robustness Tests</h3>
+              <p>Evaluate distribution shift, sensor dropout, and unseen infrastructure scenario generalization.</p>
             </article>
             <article class="process-step">
               <b>Step 6</b>
-              <h3>Iterate</h3>
-              <p>Feedback loops retune parameters as corridor signatures drift by daypart.</p>
+              <h3>Final Delivery</h3>
+              <p>Report delay, throughput, fairness, and scenario summaries for reproducible final evaluation.</p>
             </article>
           </section>
         </article>
       </li>
 
-      <li class="slide" data-title="Architecture" data-phase="amber">
-        <article class="frame dual">
-          <section>
-            <div class="eyebrow">System Design</div>
-            <h2>Modular and Reproducible by Construction</h2>
-            <p>
-              Training, simulation, and reporting are separated into explicit contracts.
-              This keeps experiments fast while preserving reproducibility for final results.
-            </p>
-            <div class="module-grid">
-              <div class="module-row">
-                <b>asce/trainers</b>
-                <p>Candidate model generation with confidence-aware output bundles.</p>
-              </div>
-              <div class="module-row">
-                <b>modeling</b>
-                <p>Scenario evaluators for delay, queue persistence, and cycle stability.</p>
-              </div>
-              <div class="module-row">
-                <b>sumo/scenarios</b>
-                <p>Network demand variants for baseline, incidents, and peak-hour shifts.</p>
-              </div>
-              <div class="module-row">
-                <b>reports</b>
-                <p>Operator-facing storylines that translate model choices into actions.</p>
-              </div>
-            </div>
-          </section>
-          <section class="detail-panel">
-            <div class="eyebrow">Engineering Principles</div>
-            <div class="flow-list">
-              <article class="flow-item">
-                <strong>Data Contracts</strong>
-                <p>Every layer has fixed schema boundaries to prevent hidden coupling.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Scenario Registry</strong>
-                <p>Comparisons remain fair because interventions run on shared scenario definitions.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Metrics First</strong>
-                <p>Delay, progression hit-rate, and queue tails drive model acceptance criteria.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Script + Notebook Parity</strong>
-                <p>Exploratory and reproducible workflows stay aligned for final delivery.</p>
-              </article>
-            </div>
-          </section>
-        </article>
-      </li>
-
-      <li class="slide" data-title="Results" data-phase="green">
+      <li class="slide" data-title="Metrics and Further Research" data-phase="green">
         <article class="frame split">
           <section>
-            <div class="eyebrow">Measured Outcome</div>
-            <h2>Consistent Gains Across Downtown Scenarios</h2>
-            <p>
-              TANGO prioritizes reliability, not one-off peaks. The adaptive plans were evaluated
-              against the baseline with emphasis on corridor-level stability.
-            </p>
-            <div class="result-bars">
-              <article class="result-row">
-                <header><span>Mean Delay</span><strong>-22%</strong></header>
-                <div class="result-track"><span style="width: 78%;"></span></div>
-              </article>
-              <article class="result-row">
-                <header><span>Green-wave Hit Rate</span><strong>+31%</strong></header>
-                <div class="result-track"><span style="width: 86%;"></span></div>
-              </article>
-              <article class="result-row">
-                <header><span>95th Percentile Queue</span><strong>-18%</strong></header>
-                <div class="result-track"><span style="width: 70%;"></span></div>
-              </article>
-            </div>
-          </section>
-          <section class="detail-panel">
-            <div class="eyebrow">Reliability Notes</div>
+            <div class="eyebrow">Closing</div>
+            <h2>Interim status: accurate progress, clear next targets</h2>
             <div class="inline-list">
-              <div class="inline-item">Cycle-to-cycle split oscillation dropped under noisy arrivals.</div>
-              <div class="inline-item">Spillback duration reduced on high-pressure turning approaches.</div>
-              <div class="inline-item">Throughput remained stable during demand transients and incidents.</div>
-              <div class="inline-item">Observed gains were preserved across AM and PM calibration windows.</div>
+              <div class="inline-item">TANGO full form and scope are now aligned with project reports.</div>
+              <div class="inline-item">ASCE is functioning and currently outperforms Fixed-Time in interim experiments.</div>
+              <div class="inline-item">PIRA implementation and irregular-scenario evaluation are the main remaining milestones.</div>
             </div>
           </section>
-        </article>
-      </li>
-
-      <li class="slide" data-title="Live Signal Demo" data-phase="green">
-        <article class="frame">
-          <section>
-            <div class="eyebrow">Interactive Demonstration</div>
-            <h2>Signal Phase Micro-Simulator</h2>
-            <p>
-              Tune cycle assumptions and demand balance to watch queue behavior evolve in real time.
-              This is intentionally lightweight for live presentation pacing.
-            </p>
-          </section>
-          <section class="demo-layout">
-            <div class="junction" aria-label="Intersection simulator">
-              <div class="signal-head-demo" aria-hidden="true">
-                <span class="red" id="simLightRed"></span>
-                <span class="amber" id="simLightAmber"></span>
-                <span class="green" id="simLightGreen"></span>
+          <aside class="title-plate" aria-label="Project details">
+            <p class="plate-city">ECE324 Team</p>
+            <p class="plate-title">TANGO project team contributors</p>
+            <div class="plate-lines">
+              <div>
+                <span>Course</span>
+                <strong>ECE324</strong>
               </div>
-              <div class="phase-readout">
-                <div>North-South: <b id="nsPhaseOut">Green</b></div>
-                <div>East-West: <b id="ewPhaseOut">Red</b></div>
+              <div>
+                <span>Primary Sources</span>
+                <strong>TANGO proposal and interim report</strong>
               </div>
-              <div class="queue-board">
-                <div class="queue-line">
-                  <span>North-South Queue</span>
-                  <div class="queue-track"><div class="queue-fill" id="nsQueueFill"></div></div>
-                  <div class="queue-value" id="nsQueueOut">16</div>
-                </div>
-                <div class="queue-line">
-                  <span>East-West Queue</span>
-                  <div class="queue-track"><div class="queue-fill" id="ewQueueFill"></div></div>
-                  <div class="queue-value" id="ewQueueOut">12</div>
-                </div>
-              </div>
-            </div>
-            <div class="control-panel detail-panel">
-              <div class="field">
-                <label for="simCycle">Cycle Length</label>
-                <input id="simCycle" type="range" min="50" max="150" value="96">
-                <output id="simCycleOut" for="simCycle">96 s</output>
-              </div>
-              <div class="field">
-                <label for="simSplit">North-South Green Share</label>
-                <input id="simSplit" type="range" min="35" max="70" value="52">
-                <output id="simSplitOut" for="simSplit">52 %</output>
-              </div>
-              <div class="field">
-                <label for="simDemand">Total Arrival Rate</label>
-                <input id="simDemand" type="range" min="12" max="38" value="24">
-                <output id="simDemandOut" for="simDemand">24 veh/min</output>
-              </div>
-              <div class="field">
-                <label for="simBias">Demand Bias (North-South)</label>
-                <input id="simBias" type="range" min="-35" max="35" value="6">
-                <output id="simBiasOut" for="simBias">+6 %</output>
-              </div>
-              <div class="actions">
-                <button class="btn" id="simPause" type="button">Pause Flow</button>
-                <button class="btn" id="simReset" type="button">Reset Queue</button>
-              </div>
-              <div class="mini-metrics">
-                <div class="mini">
-                  <small>Estimated Delay</small>
-                  <strong id="simDelayOut">39 s</strong>
-                </div>
-                <div class="mini">
-                  <small>Estimated Throughput</small>
-                  <strong id="simThroughputOut">1430 vph</strong>
-                </div>
-                <div class="mini">
-                  <small>Cycle Utilization</small>
-                  <strong id="simUtilOut">0.86</strong>
-                </div>
-              </div>
-            </div>
-          </section>
-        </article>
-      </li>
-
-      <li class="slide" data-title="Corridor Lab" data-phase="green">
-        <article class="frame">
-          <section>
-            <div class="eyebrow">Interactive Demonstration</div>
-            <h2>Offset and Bandwidth Estimator</h2>
-            <p>
-              Adjust corridor offset strategy, progression bandwidth, and transit priority,
-              then inspect the predicted quality of flow before simulation deployment.
-            </p>
-          </section>
-          <section class="corridor-layout">
-            <div class="corridor-stage">
-              <div class="corridor-map" id="corridorMap">
-                <span class="lane"></span>
-                <span class="corridor-band" id="corridorBand"></span>
-                <span class="pulse"></span>
-                <span class="pulse-alt"></span>
-                <span class="wave" id="corridorWave"></span>
-              </div>
-              <div class="mini-metrics">
-                <div class="mini">
-                  <small>Progression Quality</small>
-                  <strong id="progressionOut">69%</strong>
-                </div>
-                <div class="mini">
-                  <small>Average Delay</small>
-                  <strong id="delayOut">34 s</strong>
-                </div>
-                <div class="mini">
-                  <small>Stop Probability</small>
-                  <strong id="stopOut">41%</strong>
-                </div>
-              </div>
-              <p class="corridor-tip" id="corridorAdvice">
-                Balanced timing is viable. Keep current offset family and monitor PM spillback windows.
-              </p>
-            </div>
-            <div class="control-panel detail-panel">
-              <div class="field">
-                <label for="offsetRange">Offset Family</label>
-                <input id="offsetRange" type="range" min="0" max="120" value="46">
-                <output id="offsetOut" for="offsetRange">46 s</output>
-              </div>
-              <div class="field">
-                <label for="bandRange">Progression Bandwidth</label>
-                <input id="bandRange" type="range" min="25" max="85" value="58">
-                <output id="bandOut" for="bandRange">58 %</output>
-              </div>
-              <div class="field">
-                <label for="priorityRange">Transit Priority Weight</label>
-                <input id="priorityRange" type="range" min="0" max="40" value="15">
-                <output id="priorityOut" for="priorityRange">15 %</output>
-              </div>
-              <div class="inline-list">
-                <div class="inline-item">Use lower offsets for tighter platoons near short block spacing.</div>
-                <div class="inline-item">Increasing bandwidth improves resilience but may reduce side-street equity.</div>
-                <div class="inline-item">Transit priority should be staged to avoid abrupt cycle drift.</div>
-              </div>
-            </div>
-          </section>
-        </article>
-      </li>
-
-      <li class="slide" data-title="Roadmap" data-phase="green">
-        <article class="frame split">
-          <section>
-            <div class="eyebrow">Next Phase</div>
-            <h2>Deployment Path for TANGO</h2>
-            <p>
-              The roadmap shifts from offline confidence building to monitored pilot operation,
-              with clear checkpoints for engineering and policy stakeholders.
-            </p>
-            <div class="flow-list" style="margin-top: 14px;">
-              <article class="flow-item">
-                <strong>Q2 - Scenario Expansion</strong>
-                <p>Add incident and event-driven demand profiles to strengthen robustness.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Q3 - Operator Interface</strong>
-                <p>Expose recommendations in a control-room friendly dashboard endpoint.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Q4 - Controlled Pilot</strong>
-                <p>Run a downtown pilot against fixed-time plans with strict success criteria.</p>
-              </article>
-            </div>
-          </section>
-          <aside class="detail-panel">
-            <div class="eyebrow">Closing Signal</div>
-            <h3>TANGO is an operating loop, not a one-off model.</h3>
-            <p>
-              Observe, infer, simulate, deploy, and learn. The value is the repeatable cycle
-              that keeps signal systems adaptive while staying interpretable for human operators.
-            </p>
-            <div class="metric-grid" style="margin-top: 10px;">
-              <div class="metric">
-                <small>Primary Goal</small>
-                <strong>Less Delay</strong>
-              </div>
-              <div class="metric">
-                <small>Secondary Goal</small>
-                <strong>Stable Flow</strong>
-              </div>
-              <div class="metric">
-                <small>Delivery Goal</small>
-                <strong>Operator Trust</strong>
+              <div>
+                <span>Repository</span>
+                <strong>Public GitHub project repository</strong>
               </div>
             </div>
           </aside>
@@ -1833,7 +2277,6 @@
     <nav class="jump-nav" id="jumpRail" aria-label="Jump to slide"></nav>
 
     <footer class="controls" aria-label="Slide navigation controls">
-      <div class="hint">Use arrow keys or swipe - jump buttons are on the side rail</div>
       <div class="nav-actions">
         <button id="prevBtn" class="nav-btn" type="button" aria-label="Previous slide">Previous</button>
         <button id="nextBtn" class="nav-btn" type="button" aria-label="Next slide">Next</button>
@@ -2013,449 +2456,249 @@
 
       updateDeckUI();
 
-      const simCycle = document.getElementById("simCycle");
-      const simSplit = document.getElementById("simSplit");
-      const simDemand = document.getElementById("simDemand");
-      const simBias = document.getElementById("simBias");
-      const simCycleOut = document.getElementById("simCycleOut");
-      const simSplitOut = document.getElementById("simSplitOut");
-      const simDemandOut = document.getElementById("simDemandOut");
-      const simBiasOut = document.getElementById("simBiasOut");
-      const simPause = document.getElementById("simPause");
-      const simReset = document.getElementById("simReset");
-      const simLightRed = document.getElementById("simLightRed");
-      const simLightAmber = document.getElementById("simLightAmber");
-      const simLightGreen = document.getElementById("simLightGreen");
-      const nsPhaseOut = document.getElementById("nsPhaseOut");
-      const ewPhaseOut = document.getElementById("ewPhaseOut");
-      const nsQueueOut = document.getElementById("nsQueueOut");
-      const ewQueueOut = document.getElementById("ewQueueOut");
-      const nsQueueFill = document.getElementById("nsQueueFill");
-      const ewQueueFill = document.getElementById("ewQueueFill");
-      const simDelayOut = document.getElementById("simDelayOut");
-      const simThroughputOut = document.getElementById("simThroughputOut");
-      const simUtilOut = document.getElementById("simUtilOut");
+      const pipelineNodes = Array.from(document.querySelectorAll(".pipeline-node"));
+      const pipelineCaption = document.getElementById("pipelineCaption");
+      const pipelineStepLabel = document.getElementById("pipelineStepLabel");
+      const pipelineShotWrap = document.getElementById("pipelineShotWrap");
+      const pipelineImage = document.getElementById("pipelineInterfaceImage");
+      const pipelineFlowchartWrap = document.getElementById("pipelineFlowchartWrap");
+      const pipelineFlowchartStage = document.getElementById("pipelineFlowchartStage");
+      const pipelineFlowchartTitle = document.getElementById("pipelineFlowchartTitle");
+      const pipelineFlowRail = document.getElementById("pipelineFlowRail");
 
-      const simState = {
-        tick: 0,
-        nsQueue: 16,
-        ewQueue: 12,
-        throughput: 1430,
-        running: true
+      const pipelineStageInfo = {
+        1: {
+          caption: "Raw turning movement CSVs are ingested from PROJECT_ROOT/data/raw/tmc for Dundas corridor intersections.",
+          mode: "flow",
+          flowTitle: "Raw TMC CSV ingest",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "PROJECT_ROOT/data/raw/tmc/*.csv files per intersection"
+            },
+            {
+              label: "Process",
+              text: "Raw turning movement CSVs are ingested from PROJECT_ROOT/data/raw/tmc for Dundas corridor intersections."
+            },
+            {
+              label: "Output",
+              text: "Raw movement records prepared for PROJECT_ROOT/scripts/02_parse_tmc.py"
+            }
+          ]
+        },
+        2: {
+          caption: "PROJECT_ROOT/scripts/02_parse_tmc.py standardizes column formats and writes PROJECT_ROOT/data/processed/tmc_parsed.csv.",
+          mode: "flow",
+          flowTitle: "Parse and normalize TMC data",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "PROJECT_ROOT/scripts/02_parse_tmc.py consumes raw corridor CSVs"
+            },
+            {
+              label: "Process",
+              text: "PROJECT_ROOT/scripts/02_parse_tmc.py standardizes column formats and writes PROJECT_ROOT/data/processed/tmc_parsed.csv."
+            },
+            {
+              label: "Output",
+              text: "PROJECT_ROOT/data/processed/tmc_parsed.csv"
+            }
+          ]
+        },
+        3: {
+          caption: "PROJECT_ROOT/scripts/03_map_intersections.py links corridor locations to nearest SUMO junction IDs in PROJECT_ROOT/data/processed/intersection_map.csv.",
+          mode: "flow",
+          flowTitle: "Map parsed records to SUMO network",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "PROJECT_ROOT/data/processed/tmc_parsed.csv plus corridor geospatial references"
+            },
+            {
+              label: "Process",
+              text: "PROJECT_ROOT/scripts/03_map_intersections.py links corridor locations to nearest SUMO junction IDs in PROJECT_ROOT/data/processed/intersection_map.csv."
+            },
+            {
+              label: "Output",
+              text: "PROJECT_ROOT/data/processed/intersection_map.csv for simulation node mapping"
+            }
+          ]
+        },
+        4: {
+          caption: "Demand Studio is the control center for mode demand, vehicle dynamics, signal mode, and MAPPO hyperparameters.",
+          mode: "flow",
+          flowTitle: "Configure scenario controls",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "PROJECT_ROOT/data/processed/intersection_map.csv plus operator scenario selections"
+            },
+            {
+              label: "Process",
+              text: "Demand Studio is the control center for mode demand, vehicle dynamics, signal mode, and MAPPO hyperparameters."
+            },
+            {
+              label: "Output",
+              text: "Validated generation directives for PROJECT_ROOT/sumo outputs"
+            }
+          ]
+        },
+        5: {
+          caption: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in PROJECT_ROOT/sumo/*/generated, with optional short SUMO validation.",
+          mode: "flow",
+          flowTitle: "Export simulation artifacts",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "Demand Studio generation command from PROJECT_ROOT/apps/demand_studio"
+            },
+            {
+              label: "Process",
+              text: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in PROJECT_ROOT/sumo/*/generated, with optional short SUMO validation."
+            },
+            {
+              label: "Output",
+              text: "PROJECT_ROOT/sumo/config/generated, PROJECT_ROOT/sumo/demand/generated, and PROJECT_ROOT/sumo/scenarios/generated"
+            }
+          ]
+        },
+        6: {
+          caption: "Demand Studio interface view from PROJECT_ROOT/pictures for final verification.",
+          mode: "image"
+        }
       };
+
+      function renderPipelineFlowchart(stage, info) {
+        if (!pipelineFlowRail) {
+          return;
+        }
+
+        const flowNodes = (info && info.flowNodes) || [];
+
+        if (pipelineFlowchartStage) {
+          pipelineFlowchartStage.textContent = "Stage " + stage + " flowchart";
+        }
+
+        if (pipelineFlowchartTitle) {
+          pipelineFlowchartTitle.textContent = info && info.flowTitle ? info.flowTitle : "Pipeline stage flow";
+        }
+
+        pipelineFlowRail.innerHTML = "";
+
+        flowNodes.forEach(function (flowNode, index) {
+          const node = document.createElement("article");
+          node.className = "pipeline-flow-step";
+
+          const label = document.createElement("small");
+          label.textContent = flowNode.label || "Step";
+          node.appendChild(label);
+
+          const text = document.createElement("p");
+          text.textContent = flowNode.text || "";
+          node.appendChild(text);
+
+          pipelineFlowRail.appendChild(node);
+
+          if (index < flowNodes.length - 1) {
+            const connector = document.createElement("div");
+            connector.className = "hero-arrow pipeline-flow-link";
+            connector.setAttribute("aria-hidden", "true");
+            pipelineFlowRail.appendChild(connector);
+          }
+        });
+      }
+
+      function setPipelineStage(stepValue) {
+        if (!pipelineNodes.length) {
+          return;
+        }
+
+        const stage = clamp(Number(stepValue) || 1, 1, pipelineNodes.length);
+
+        pipelineNodes.forEach(function (node) {
+          const active = Number(node.dataset.pipelineStep) === stage;
+          node.classList.toggle("is-active", active);
+        });
+
+        if (pipelineStepLabel) {
+          pipelineStepLabel.textContent = "Stage " + stage + " / " + pipelineNodes.length;
+        }
+
+        const info = pipelineStageInfo[stage] || pipelineStageInfo[1];
+        if (pipelineCaption && info && info.caption) {
+          pipelineCaption.textContent = info.caption;
+        }
+
+        const useImagePanel = Boolean(info && info.mode === "image");
+
+        if (pipelineFlowchartWrap) {
+          pipelineFlowchartWrap.hidden = useImagePanel;
+        }
+
+        if (pipelineShotWrap) {
+          pipelineShotWrap.hidden = !useImagePanel;
+        }
+
+        if (!useImagePanel) {
+          renderPipelineFlowchart(stage, info);
+        }
+      }
+
+      if (pipelineNodes.length) {
+        pipelineNodes.forEach(function (node) {
+          node.addEventListener("click", function () {
+            setPipelineStage(node.dataset.pipelineStep);
+          });
+        });
+
+        const activePipelineNode = pipelineNodes.find(function (node) {
+          return node.classList.contains("is-active");
+        });
+
+        setPipelineStage(activePipelineNode ? activePipelineNode.dataset.pipelineStep : 1);
+      }
+
+      const pipelineImageCandidates = [
+        "pictures/demand_studio.png",
+        "pictures/demand-studio.png",
+        "pictures/demand-studio-interface.png",
+        "pictures/demand_studio_interface.png",
+        "pictures/demand-studio.jpg",
+        "pictures/demand_studio.jpg",
+        "pictures/demand-studio.jpeg",
+        "pictures/demand_studio.jpeg",
+        "pictures/interface.png",
+        "pictures/interface.jpg"
+      ];
+
+      if (pipelineImage && pipelineShotWrap) {
+        let candidateIndex = 0;
+
+        function tryPipelineImage() {
+          if (candidateIndex >= pipelineImageCandidates.length) {
+            pipelineShotWrap.classList.add("is-missing");
+            return;
+          }
+
+          const nextSrc = pipelineImageCandidates[candidateIndex];
+          candidateIndex += 1;
+
+          pipelineImage.onload = function () {
+            pipelineShotWrap.classList.remove("is-missing");
+          };
+
+          pipelineImage.onerror = function () {
+            tryPipelineImage();
+          };
+
+          pipelineImage.src = nextSrc;
+        }
+
+        tryPipelineImage();
+      }
 
       function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
-      }
-
-      function setSimLight(mode) {
-        simLightRed.classList.toggle("is-on", mode === "red");
-        simLightAmber.classList.toggle("is-on", mode === "amber");
-        simLightGreen.classList.toggle("is-on", mode === "green");
-      }
-
-      function refreshSimLabels() {
-        simCycleOut.value = simCycle.value + " s";
-        simSplitOut.value = simSplit.value + " %";
-        simDemandOut.value = simDemand.value + " veh/min";
-        const biasNumber = Number(simBias.value);
-        simBiasOut.value = (biasNumber >= 0 ? "+" : "") + biasNumber + " %";
-      }
-
-      function refreshSimDisplay(delaySeconds, utilization) {
-        const nsRounded = Math.round(simState.nsQueue);
-        const ewRounded = Math.round(simState.ewQueue);
-
-        nsQueueOut.textContent = String(nsRounded);
-        ewQueueOut.textContent = String(ewRounded);
-
-        nsQueueFill.style.width = ((simState.nsQueue / 70) * 100).toFixed(1) + "%";
-        ewQueueFill.style.width = ((simState.ewQueue / 70) * 100).toFixed(1) + "%";
-
-        simDelayOut.textContent = Math.round(delaySeconds) + " s";
-        simThroughputOut.textContent = Math.round(simState.throughput) + " vph";
-        simUtilOut.textContent = utilization.toFixed(2);
-      }
-
-      function runSimStep() {
-        if (!simState.running) {
-          return;
-        }
-
-        const cycle = Number(simCycle.value);
-        const nsShare = Number(simSplit.value) / 100;
-        const demandPerSecond = Number(simDemand.value) / 60;
-        const bias = Number(simBias.value) / 100;
-
-        const amber = 4;
-        const nsGreen = Math.max(8, Math.round(cycle * nsShare));
-        const ewGreen = Math.max(8, cycle - nsGreen - amber * 2);
-        const fullCycle = nsGreen + amber + ewGreen + amber;
-
-        simState.tick = (simState.tick + 1) % fullCycle;
-
-        let phase = "ns";
-        if (simState.tick < nsGreen) {
-          phase = "ns";
-        } else if (simState.tick < nsGreen + amber) {
-          phase = "amber";
-        } else if (simState.tick < nsGreen + amber + ewGreen) {
-          phase = "ew";
-        } else {
-          phase = "amber";
-        }
-
-        const nsArrival = demandPerSecond * (1 + bias);
-        const ewArrival = demandPerSecond * (1 - bias);
-
-        let nsDeparture = 0.06;
-        let ewDeparture = 0.06;
-
-        if (phase === "ns") {
-          nsDeparture = 0.85;
-          ewDeparture = 0.06;
-          setSimLight("green");
-          nsPhaseOut.textContent = "Green";
-          ewPhaseOut.textContent = "Red";
-        } else if (phase === "ew") {
-          nsDeparture = 0.06;
-          ewDeparture = 0.85;
-          setSimLight("red");
-          nsPhaseOut.textContent = "Red";
-          ewPhaseOut.textContent = "Green";
-        } else {
-          nsDeparture = 0.12;
-          ewDeparture = 0.12;
-          setSimLight("amber");
-          nsPhaseOut.textContent = "Amber";
-          ewPhaseOut.textContent = "Amber";
-        }
-
-        simState.nsQueue = clamp(simState.nsQueue + nsArrival - nsDeparture, 0, 70);
-        simState.ewQueue = clamp(simState.ewQueue + ewArrival - ewDeparture, 0, 70);
-
-        const servedRate = Math.max(0, nsDeparture - 0.06) + Math.max(0, ewDeparture - 0.06);
-        simState.throughput = (simState.throughput * 0.86) + ((servedRate * 3600) * 0.14);
-
-        const combinedQueue = simState.nsQueue + simState.ewQueue;
-        const delaySeconds = clamp(10 + combinedQueue * 1.15, 8, 120);
-        const utilization = clamp((nsArrival + ewArrival) / Math.max(0.2, nsDeparture + ewDeparture), 0.2, 1.9);
-
-        refreshSimDisplay(delaySeconds, utilization);
-      }
-
-      [simCycle, simSplit, simDemand, simBias].forEach(function (control) {
-        control.addEventListener("input", refreshSimLabels);
-      });
-
-      simPause.addEventListener("click", function () {
-        simState.running = !simState.running;
-        simPause.textContent = simState.running ? "Pause Flow" : "Resume Flow";
-      });
-
-      simReset.addEventListener("click", function () {
-        simState.tick = 0;
-        simState.nsQueue = 16;
-        simState.ewQueue = 12;
-        simState.throughput = 1430;
-        setSimLight("green");
-        nsPhaseOut.textContent = "Green";
-        ewPhaseOut.textContent = "Red";
-        refreshSimDisplay(39, 0.86);
-      });
-
-      refreshSimLabels();
-      setSimLight("green");
-      refreshSimDisplay(39, 0.86);
-      window.setInterval(runSimStep, 900);
-
-      const offsetRange = document.getElementById("offsetRange");
-      const bandRange = document.getElementById("bandRange");
-      const priorityRange = document.getElementById("priorityRange");
-      const offsetOut = document.getElementById("offsetOut");
-      const bandOut = document.getElementById("bandOut");
-      const priorityOut = document.getElementById("priorityOut");
-      const progressionOut = document.getElementById("progressionOut");
-      const delayOut = document.getElementById("delayOut");
-      const stopOut = document.getElementById("stopOut");
-      const corridorBand = document.getElementById("corridorBand");
-      const corridorWave = document.getElementById("corridorWave");
-      const corridorMap = document.getElementById("corridorMap");
-      const corridorAdvice = document.getElementById("corridorAdvice");
-
-      function updateCorridorModel() {
-        const offset = Number(offsetRange.value);
-        const band = Number(bandRange.value);
-        const priority = Number(priorityRange.value);
-
-        const progression = clamp(32 + (band * 0.72) - (Math.abs(offset - 48) * 0.6) + (priority * 0.28), 6, 98);
-        const avgDelay = clamp(85 - (progression * 0.55) + ((100 - band) * 0.24) + (priority * 0.18), 9, 96);
-        const stopRate = clamp(90 - (progression * 0.7) + (Math.abs(offset - 48) * 0.22) + (priority * 0.08), 6, 95);
-
-        offsetOut.value = offset + " s";
-        bandOut.value = band + " %";
-        priorityOut.value = priority + " %";
-
-        progressionOut.textContent = Math.round(progression) + "%";
-        delayOut.textContent = Math.round(avgDelay) + " s";
-        stopOut.textContent = Math.round(stopRate) + "%";
-
-        corridorBand.style.width = band + "%";
-        corridorWave.style.left = ((offset / 120) * 100).toFixed(1) + "%";
-        corridorMap.style.setProperty("--pulse-speed", Math.max(2.1, 6.8 - (band / 15)).toFixed(2) + "s");
-
-        if (progression > 74 && avgDelay < 35) {
-          corridorAdvice.textContent = "Strong progression window. Keep this offset family and validate side-street equity before lock-in.";
-        } else if (progression > 55) {
-          corridorAdvice.textContent = "Balanced timing is viable. Keep current offset family and monitor PM spillback windows.";
-        } else {
-          corridorAdvice.textContent = "Progression is weak under current assumptions. Tighten offset spread or widen bandwidth before deployment.";
-        }
-      }
-
-      [offsetRange, bandRange, priorityRange].forEach(function (control) {
-        control.addEventListener("input", updateCorridorModel);
-      });
-
-      updateCorridorModel();
-
-      const ambientTraffic = document.getElementById("ambientTraffic");
-      const ambientSignalHeads = Array.from(document.querySelectorAll(".ambient-signal"));
-      const ambientSignalProgram = [
-        { mode: "ew-green", duration: 7.4 },
-        { mode: "ew-amber", duration: 2.0 },
-        { mode: "ns-green", duration: 7.4 },
-        { mode: "ns-amber", duration: 2.0 }
-      ];
-
-      const ambientState = {
-        cars: [],
-        signalIndex: 0,
-        signalElapsed: 0,
-        lastFrame: 0
-      };
-
-      function getAmbientGeometry() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const hRoad = Math.min(width * 0.21, 210);
-        const vRoad = Math.min(width * 0.23, 230);
-
-        return {
-          width: width,
-          height: height,
-          centerX: centerX,
-          centerY: centerY,
-          hLaneOffset: Math.max(22, hRoad * 0.24),
-          vLaneOffset: Math.max(22, vRoad * 0.24),
-          stopEast: centerX - (vRoad / 2) - 20,
-          stopWest: centerX + (vRoad / 2) + 20,
-          stopSouth: centerY - (hRoad / 2) - 20,
-          stopNorth: centerY + (hRoad / 2) + 20
-        };
-      }
-
-      function ambientSignalForAxis(axis) {
-        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
-        if (mode === axis + "-green") {
-          return "green";
-        }
-        if (mode === axis + "-amber") {
-          return "amber";
-        }
-        return "red";
-      }
-
-      function setAmbientSignalHeads() {
-        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
-        ambientSignalHeads.forEach(function (head) {
-          const axis = head.dataset.axis;
-          const red = head.querySelector(".ambient-signal-light.red");
-          const amber = head.querySelector(".ambient-signal-light.amber");
-          const green = head.querySelector(".ambient-signal-light.green");
-
-          red.classList.remove("is-on");
-          amber.classList.remove("is-on");
-          green.classList.remove("is-on");
-
-          if (mode === axis + "-green") {
-            green.classList.add("is-on");
-          } else if (mode === axis + "-amber") {
-            amber.classList.add("is-on");
-          } else {
-            red.classList.add("is-on");
-          }
-        });
-      }
-
-      function buildAmbientCars() {
-        if (!ambientTraffic) {
-          return;
-        }
-
-        ambientTraffic.innerHTML = "";
-        ambientState.cars = [];
-
-        const palette = ["#9db3c8", "#c3d0dd", "#8ba3ba", "#b7c3d0", "#7d93a7", "#d1dae4"];
-        const laneTemplates = [
-          { direction: "east", axis: "ew", rotation: 0, count: 3 },
-          { direction: "west", axis: "ew", rotation: 180, count: 3 },
-          { direction: "south", axis: "ns", rotation: 90, count: 3 },
-          { direction: "north", axis: "ns", rotation: -90, count: 3 }
-        ];
-        const geo = getAmbientGeometry();
-
-        laneTemplates.forEach(function (lane, laneIndex) {
-          for (let i = 0; i < lane.count; i += 1) {
-            const carNode = document.createElement("span");
-            carNode.className = "ambient-car";
-            carNode.style.setProperty("--car-body", palette[(laneIndex * lane.count + i) % palette.length]);
-            ambientTraffic.appendChild(carNode);
-
-            let progress = 0;
-            if (lane.direction === "east") {
-              progress = ((geo.width / lane.count) * i) - 140 - (Math.random() * 36);
-            } else if (lane.direction === "west") {
-              progress = geo.width - ((geo.width / lane.count) * i) + 140 + (Math.random() * 36);
-            } else if (lane.direction === "south") {
-              progress = ((geo.height / lane.count) * i) - 140 - (Math.random() * 36);
-            } else {
-              progress = geo.height - ((geo.height / lane.count) * i) + 140 + (Math.random() * 36);
-            }
-
-            ambientState.cars.push({
-              el: carNode,
-              axis: lane.axis,
-              direction: lane.direction,
-              rotation: lane.rotation,
-              progress: progress,
-              speed: 0,
-              maxSpeed: 50 + (Math.random() * 20)
-            });
-          }
-        });
-      }
-
-      function ambientDirectionSign(direction) {
-        return direction === "east" || direction === "south" ? 1 : -1;
-      }
-
-      function ambientDistanceToStop(car, geo) {
-        if (car.direction === "east") {
-          return geo.stopEast - car.progress;
-        }
-        if (car.direction === "west") {
-          return car.progress - geo.stopWest;
-        }
-        if (car.direction === "south") {
-          return geo.stopSouth - car.progress;
-        }
-        return car.progress - geo.stopNorth;
-      }
-
-      function ambientPassedStop(car, geo) {
-        if (car.direction === "east") {
-          return car.progress >= geo.stopEast + 14;
-        }
-        if (car.direction === "west") {
-          return car.progress <= geo.stopWest - 14;
-        }
-        if (car.direction === "south") {
-          return car.progress >= geo.stopSouth + 14;
-        }
-        return car.progress <= geo.stopNorth - 14;
-      }
-
-      function placeAmbientCar(car, geo) {
-        let x = geo.centerX;
-        let y = geo.centerY;
-
-        if (car.direction === "east") {
-          x = car.progress;
-          y = geo.centerY - geo.hLaneOffset;
-        } else if (car.direction === "west") {
-          x = car.progress;
-          y = geo.centerY + geo.hLaneOffset;
-        } else if (car.direction === "south") {
-          x = geo.centerX - geo.vLaneOffset;
-          y = car.progress;
-        } else {
-          x = geo.centerX + geo.vLaneOffset;
-          y = car.progress;
-        }
-
-        car.el.style.left = x.toFixed(1) + "px";
-        car.el.style.top = y.toFixed(1) + "px";
-        car.el.style.transform = "translate(-50%, -50%) rotate(" + car.rotation + "deg)";
-      }
-
-      function updateAmbientCars(deltaSeconds) {
-        const geo = getAmbientGeometry();
-
-        ambientState.cars.forEach(function (car) {
-          const signal = ambientSignalForAxis(car.axis);
-          const distanceToStop = ambientDistanceToStop(car, geo);
-          const passedStop = ambientPassedStop(car, geo);
-
-          let targetSpeed = car.maxSpeed;
-          if (!passedStop && signal === "red" && distanceToStop < 120) {
-            targetSpeed = 0;
-          } else if (!passedStop && signal === "amber" && distanceToStop < 110) {
-            targetSpeed = car.maxSpeed * 0.28;
-          }
-
-          car.speed += (targetSpeed - car.speed) * Math.min(1, deltaSeconds * 3.6);
-          car.progress += ambientDirectionSign(car.direction) * car.speed * deltaSeconds;
-
-          if (car.direction === "east" && car.progress > geo.width + 110) {
-            car.progress = -110 - (Math.random() * 260);
-          } else if (car.direction === "west" && car.progress < -110) {
-            car.progress = geo.width + 110 + (Math.random() * 260);
-          } else if (car.direction === "south" && car.progress > geo.height + 110) {
-            car.progress = -110 - (Math.random() * 240);
-          } else if (car.direction === "north" && car.progress < -110) {
-            car.progress = geo.height + 110 + (Math.random() * 240);
-          }
-
-          placeAmbientCar(car, geo);
-        });
-      }
-
-      function runAmbientScene(timestamp) {
-        if (!ambientTraffic) {
-          return;
-        }
-
-        if (!ambientState.lastFrame) {
-          ambientState.lastFrame = timestamp;
-        }
-
-        const deltaSeconds = Math.min(0.05, (timestamp - ambientState.lastFrame) / 1000);
-        ambientState.lastFrame = timestamp;
-        ambientState.signalElapsed += deltaSeconds;
-
-        if (ambientState.signalElapsed >= ambientSignalProgram[ambientState.signalIndex].duration) {
-          ambientState.signalElapsed = 0;
-          ambientState.signalIndex = (ambientState.signalIndex + 1) % ambientSignalProgram.length;
-          setAmbientSignalHeads();
-        }
-
-        updateAmbientCars(deltaSeconds);
-        window.requestAnimationFrame(runAmbientScene);
-      }
-
-      buildAmbientCars();
-      setAmbientSignalHeads();
-      updateAmbientCars(0.016);
-
-      if (!reduceMotion) {
-        window.requestAnimationFrame(runAmbientScene);
-      } else {
-        window.addEventListener("resize", function () {
-          updateAmbientCars(0.016);
-        });
       }
     })();
   </script>
