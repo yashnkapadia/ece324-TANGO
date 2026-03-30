@@ -43,7 +43,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The PPO update applies zero gradient to the phase head for gate=0 transitions (verifiable via unit test)
   4. The gate can be warm-started to bias toward follow-MP behavior in early training
   5. Setting `residual_mode="none"` produces identical behavior to the pre-Phase-2 baseline (backward compatibility)
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — TDD: joint logp and gradient isolation tests (failing red tests first)
+- [ ] 02-02-PLAN.md — GatedActor class, Transition extension, augment_obs_with_mp helper
+- [ ] 02-03-PLAN.md — ResidualMAPPOTrainer with act_batch_residual, joint logp PPO update, TrainConfig residual_mode
+- [ ] 02-04-PLAN.md — Backend wiring, gate_fraction logging, CLI --residual-mode flag
 
 ### Phase 3: Simulation Alignment + Headless Demand CLI
 **Goal**: Simulation runs cleanly for all scenario durations and the demand CLI produces the exact .rou.xml files specified in Phase 1's scenario design
@@ -104,7 +110,7 @@ Phase 2 (Action-Gate MAPPO) ─┘                                  │
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Curriculum Scenario Design | 0/? | Not started | - |
-| 2. Action-Gate Residual MAPPO | 0/? | Not started | - |
+| 2. Action-Gate Residual MAPPO | 0/4 | Planned | - |
 | 3. Simulation Alignment + Headless Demand CLI | 0/? | Not started | - |
 | 4. Baseline Convergence Validation | 0/? | Not started | - |
 | 5. Curriculum Training Integration | 0/? | Not started | - |

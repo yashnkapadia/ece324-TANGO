@@ -26,10 +26,15 @@ pytorch-gpu = "*"
 cuda-version = "12.8.*"
 openmpi = ">=5.0.8,<6"
 ruff = ">=0.15.4,<0.16"
+pyarrow = ">=20.0.0,<21"
 
 [pypi-dependencies]
 python-dotenv = "*"
 sumo-rl = ">=1.4.5, <2"
+dash = "*"
+plotly = "*"
+lxml = "*"
+pyproj = "*"
 
 [system-requirements]
 cuda = "12"
