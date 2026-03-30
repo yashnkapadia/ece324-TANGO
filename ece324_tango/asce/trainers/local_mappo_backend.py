@@ -51,6 +51,8 @@ class LocalMappoBackend(AsceTrainerBackend):
         cfg.rollout_csv.parent.mkdir(parents=True, exist_ok=True)
         cfg.episode_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
 
+        import time as _time
+
         env = create_parallel_env(
             net_file=cfg.net_file,
             route_file=cfg.route_file,
@@ -61,6 +63,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             quiet_sumo=not cfg.backend_verbose,
         )
         try:
+            logger.info("Initial env.reset() ...")
             obs = extract_reset_obs(env.reset(seed=cfg.seed))
             if not obs:
                 raise RuntimeError("No observations received from SUMO environment.")
@@ -117,7 +120,13 @@ class LocalMappoBackend(AsceTrainerBackend):
             )
 
             for ep in range(cfg.episodes):
+                ep_t0 = _time.time()
+                logger.info(f"Episode {ep}: resetting env ...")
                 obs = extract_reset_obs(env.reset(seed=cfg.seed + ep))
+                logger.info(
+                    f"Episode {ep}: reset done in {_time.time() - ep_t0:.1f}s, "
+                    f"agents={len(obs) if obs else 0}"
+                )
                 if not obs:
                     continue
 
@@ -131,6 +140,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 bootstrap_obs = None
                 ep_reward = 0.0
                 ep_steps = 0
+                step_t0 = _time.time()
 
                 while not done:
                     active_agents = sorted(obs.keys())
@@ -148,13 +158,18 @@ class LocalMappoBackend(AsceTrainerBackend):
                     mp_actions = max_pressure.actions(obs, env=env)
                     mp_actions_list = [mp_actions.get(a, 0) for a in active_agents]
 
-                    # Update normalizer stats before acting:
-                    # For action_gate, obs_norm expects augmented obs (obs_dim + n_actions)
-                    if cfg.residual_mode == "action_gate" and trainer.obs_norm is not None:
+                    # For action_gate, augment obs with MP one-hot (obs_dim + n_actions).
+                    # This augmented version is what obs_norm, the actor, and transitions use.
+                    aug_obs_list = None
+                    if cfg.residual_mode == "action_gate":
                         aug_arr = augment_obs_with_mp(
                             np.stack(padded_obs_list), mp_actions_list, n_actions
                         )
-                        for aug_obs in aug_arr:
+                        aug_obs_list = [aug_arr[i] for i in range(len(active_agents))]
+
+                    # Update normalizer stats before acting
+                    if cfg.residual_mode == "action_gate" and trainer.obs_norm is not None:
+                        for aug_obs in aug_obs_list:
                             trainer.obs_norm.update(aug_obs)
                     elif trainer.obs_norm is not None:
                         for padded_obs in padded_obs_list:
@@ -204,11 +219,11 @@ class LocalMappoBackend(AsceTrainerBackend):
                         truncated = True
                         next_obs = {}
                         rewards = {a: 0.0 for a in active_agents}
-                        # Build bootstrap observations from the last available obs
-                        # since SUMO can no longer provide next_obs.
+                        # Use raw obs (not padded) so flatten_obs_by_agent produces
+                        # the same global_obs_dim that gobs_norm was initialized with.
                         bootstrap_obs = {
-                            a: padded_obs_list[i]
-                            for i, a in enumerate(active_agents)
+                            a: np.asarray(obs[a], dtype=np.float32)
+                            for a in active_agents
                         }
                     if done and truncated and next_obs:
                         bootstrap_obs = {
@@ -250,8 +265,17 @@ class LocalMappoBackend(AsceTrainerBackend):
                     ep_reward += global_reward
                     ep_steps += 1
 
+                    if ep_steps % 20 == 0:
+                        elapsed = _time.time() - step_t0
+                        logger.debug(
+                            f"  ep {ep} step {ep_steps}/{max_steps} "
+                            f"({elapsed:.1f}s, {elapsed/ep_steps:.2f}s/step)"
+                        )
+
                     for i, agent in enumerate(active_agents):
-                        a_obs = padded_obs_list[i]
+                        # Store augmented obs for action_gate so PPO update
+                        # sees the same shape that obs_norm and GatedActor expect.
+                        a_obs = aug_obs_list[i] if aug_obs_list is not None else padded_obs_list[i]
                         if metrics_by_agent:
                             all_rows.append(metrics_by_agent[agent].to_row())
                         agent_reward = float(rewards.get(agent, global_reward))
@@ -275,18 +299,33 @@ class LocalMappoBackend(AsceTrainerBackend):
                 # Bootstrap value for truncated (non-terminal) episodes
                 last_values: Dict[str, float] = {}
                 if episode_truncated and not episode_terminated and bootstrap_obs:
-                    final_agents = sorted(bootstrap_obs.keys())
-                    final_gobs = flatten_obs_by_agent(bootstrap_obs, final_agents)
-                    for agent in final_agents:
-                        padded = pad_observation(
-                            np.asarray(bootstrap_obs[agent], dtype=np.float32),
-                            target_dim=obs_dim,
-                        )
-                        v = trainer.act(
-                            padded, final_gobs, n_valid_actions=action_dims[agent]
-                        )
-                        last_values[agent] = v["value"]
+                    import torch
 
+                    final_agents = sorted(bootstrap_obs.keys())
+                    final_gobs = pad_observation(
+                        flatten_obs_by_agent(bootstrap_obs, final_agents),
+                        target_dim=global_obs_dim,
+                    )
+                    # Bootstrap only needs the critic value (V(s)), not actor outputs.
+                    # Calling trainer.act() would fail for GatedActor (returns tuple).
+                    gobs_n = (
+                        trainer.gobs_norm.normalize(final_gobs)
+                        if trainer.gobs_norm is not None
+                        else np.asarray(final_gobs, dtype=np.float32)
+                    )
+                    with torch.no_grad():
+                        gobs_t = torch.tensor(
+                            gobs_n, dtype=torch.float32, device=trainer.device
+                        ).unsqueeze(0)
+                        bootstrap_value = float(trainer.critic(gobs_t).item())
+                    for agent in final_agents:
+                        last_values[agent] = bootstrap_value
+
+                sim_elapsed = _time.time() - ep_t0
+                logger.info(
+                    f"Episode {ep}: sim done ({ep_steps} steps in {sim_elapsed:.1f}s), "
+                    f"updating PPO ..."
+                )
                 batch = trainer.build_batch(trajectories, last_values=last_values)
                 losses = trainer.update(
                     batch=batch,

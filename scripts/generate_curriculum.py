@@ -365,7 +365,7 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
         time_window_duration=spec.time_window_duration,
         simulation_begin=0,
         simulation_end=spec.simulation_seconds + FLOW_END_BUFFER_S,
-        strict_route_check=False,
+        strict_route_check=True,
         min_count_threshold=1,
         global_demand_scale=spec.global_demand_scale,
         included_modes=spec.included_modes - {"streetcars"},  # handle streetcars separately

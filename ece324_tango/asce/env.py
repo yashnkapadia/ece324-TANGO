@@ -10,7 +10,7 @@ DEFAULT_SAMPLE_ROOT = "RESCO/grid4x4"
 
 def get_default_sumo_files() -> Tuple[str, str]:
     """Return sample SUMO net/route files from sumo-rl package data."""
-    import sumo_rl
+    import ece324_tango.sumo_rl as sumo_rl
 
     root = Path(sumo_rl.__file__).resolve().parent / "nets" / DEFAULT_SAMPLE_ROOT
     net_file = root / "grid4x4.net.xml"
@@ -33,7 +33,7 @@ def create_parallel_env(
     quiet_sumo: bool = False,
 ):
     """Create a sumo-rl multi-agent environment."""
-    from sumo_rl.environment.env import SumoEnvironment
+    from ece324_tango.sumo_rl.environment.env import SumoEnvironment
 
     env = SumoEnvironment(
         net_file=net_file,
@@ -44,7 +44,9 @@ def create_parallel_env(
         sumo_seed=seed,
         single_agent=False,
         sumo_warnings=not quiet_sumo,
-        additional_sumo_cmd="--no-step-log true" if quiet_sumo else None,
+        additional_sumo_cmd=(
+            "--no-step-log true --ignore-route-errors" if quiet_sumo else "--ignore-route-errors"
+        ),
     )
     return env
 

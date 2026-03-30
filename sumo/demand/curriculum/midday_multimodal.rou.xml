@@ -34,18 +34,6 @@
   <flow id="buses_28" type="bus" begin="0" end="1500" number="1" from="222151621" to="222151618#1" departLane="best" departSpeed="max"/>
   <flow id="buses_29" type="bus" begin="0" end="1500" number="7" from="-222151622#1" to="222151618#1" departLane="best" departSpeed="max"/>
   <flow id="buses_30" type="bus" begin="0" end="1500" number="4" from="-222151622#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_0" begin="0" end="1500" number="1242">
-    <walk from=":cluster_29696843_393551252_393552059_394512440_#1more_c3" to="1466927754#1"/>
-  </personFlow>
-  <personFlow id="ped_1" begin="0" end="1500" number="2067">
-    <walk from=":cluster_29696843_393551252_393552059_394512440_#1more_c1" to=":cluster_29696843_393551252_393552059_394512440_#1more_w3"/>
-  </personFlow>
-  <personFlow id="ped_2" begin="0" end="1500" number="550">
-    <walk from=":cluster_29696843_393551252_393552059_394512440_#1more_c2" to="681166976#1"/>
-  </personFlow>
-  <personFlow id="ped_3" begin="0" end="1500" number="949">
-    <walk from=":cluster_29696843_393551252_393552059_394512440_#1more_c0" to=":cluster_29696843_393551252_393552059_394512440_#1more_w1"/>
-  </personFlow>
   <flow id="cars_31" type="car" begin="0" end="1500" number="249" from="-445865882#0" to="-493830471#6" departLane="best" departSpeed="max"/>
   <flow id="cars_32" type="car" begin="0" end="1500" number="746" from="-445865882#0" to="-1096900277#2" departLane="best" departSpeed="max"/>
   <flow id="cars_33" type="car" begin="0" end="1500" number="15" from="-445865882#0" to="493830469#1" departLane="best" departSpeed="max"/>
@@ -77,17 +65,17 @@
   <flow id="buses_59" type="bus" begin="0" end="1500" number="2" from="493830471#5" to="851809955#1" departLane="best" departSpeed="max"/>
   <flow id="buses_60" type="bus" begin="0" end="1500" number="2" from="-493830469#2" to="-493830471#6" departLane="best" departSpeed="max"/>
   <flow id="buses_61" type="bus" begin="0" end="1500" number="1" from="-493830469#2" to="-1096900277#2" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_4" begin="0" end="1500" number="844">
-    <walk from=":cluster_21631723_393551231_393552095_401526123_#1more_c3" to="544576271#3"/>
+  <personFlow id="ped_0" begin="0" end="1500" number="844">
+    <walk from="544576271#0" to="544576271#3"/>
   </personFlow>
-  <personFlow id="ped_5" begin="0" end="1500" number="583">
-    <walk from=":cluster_21631723_393551231_393552095_401526123_#1more_c1" to="544576268#4"/>
+  <personFlow id="ped_1" begin="0" end="1500" number="583">
+    <walk from="544576268#0" to="544576268#4"/>
   </personFlow>
-  <personFlow id="ped_6" begin="0" end="1500" number="617">
-    <walk from=":cluster_21631723_393551231_393552095_401526123_#1more_c2" to="544576269#3"/>
+  <personFlow id="ped_2" begin="0" end="1500" number="617">
+    <walk from="1076227859" to="544576269#3"/>
   </personFlow>
-  <personFlow id="ped_7" begin="0" end="1500" number="656">
-    <walk from=":cluster_21631723_393551231_393552095_401526123_#1more_c0" to="544576266#3"/>
+  <personFlow id="ped_3" begin="0" end="1500" number="656">
+    <walk from="1076227862" to="544576266#3"/>
   </personFlow>
   <flow id="cars_62" type="car" begin="0" end="1500" number="144" from="-4651746#1" to="28823583#1" departLane="best" departSpeed="max"/>
   <flow id="cars_63" type="car" begin="0" end="1500" number="830" from="-4651746#1" to="-5686834#2" departLane="best" departSpeed="max"/>
@@ -120,17 +108,8 @@
   <flow id="buses_90" type="bus" begin="0" end="1500" number="7" from="445862068#4" to="28823582#1" departLane="best" departSpeed="max"/>
   <flow id="buses_91" type="bus" begin="0" end="1500" number="1" from="30759232#0" to="4651746#1" departLane="best" departSpeed="max"/>
   <flow id="buses_92" type="bus" begin="0" end="1500" number="6" from="30759232#0" to="28823583#1" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_8" begin="0" end="1500" number="1928">
-    <walk from=":cluster_25629241_25629242_393547020_393547032_#4more_c4" to="1466927746#1"/>
-  </personFlow>
-  <personFlow id="ped_9" begin="0" end="1500" number="2253">
-    <walk from=":cluster_25629241_25629242_393547020_393547032_#4more_c1" to=":cluster_25629241_25629242_393547020_393547032_#4more_c2"/>
-  </personFlow>
-  <personFlow id="ped_10" begin="0" end="1500" number="2586">
-    <walk from=":cluster_25629241_25629242_393547020_393547032_#4more_c3" to="1466927747#1"/>
-  </personFlow>
-  <personFlow id="ped_11" begin="0" end="1500" number="2513">
-    <walk from=":cluster_25629241_25629242_393547020_393547032_#4more_c0" to="1466927748#1"/>
+  <personFlow id="ped_4" begin="0" end="1500" number="2253">
+    <walk from="680230375#0" to="680230375#1"/>
   </personFlow>
   <flow id="cars_93" type="car" begin="0" end="1500" number="54" from="-547861653#3" to="-547861653#0" departLane="best" departSpeed="max"/>
   <flow id="cars_94" type="car" begin="0" end="1500" number="53" from="-547861653#3" to="541564301#1" departLane="best" departSpeed="max"/>
@@ -150,18 +129,6 @@
   <flow id="buses_108" type="bus" begin="0" end="1500" number="1" from="547861653#0" to="541564301#1" departLane="best" departSpeed="max"/>
   <flow id="buses_109" type="bus" begin="0" end="1500" number="10" from="541564302#2" to="541564301#1" departLane="best" departSpeed="max"/>
   <flow id="buses_110" type="bus" begin="0" end="1500" number="3" from="-541564301#1" to="547861653#3" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_12" begin="0" end="1500" number="379">
-    <walk from=":cluster_29604657_3240419088_3240419089_393551241_#1more_c2" to=":cluster_29604657_3240419088_3240419089_393551241_#1more_w6"/>
-  </personFlow>
-  <personFlow id="ped_13" begin="0" end="1500" number="464">
-    <walk from=":cluster_29604657_3240419088_3240419089_393551241_#1more_c0" to=":cluster_29604657_3240419088_3240419089_393551241_#1more_w2"/>
-  </personFlow>
-  <personFlow id="ped_14" begin="0" end="1500" number="165">
-    <walk from=":cluster_29604657_3240419088_3240419089_393551241_#1more_c1" to=":cluster_29604657_3240419088_3240419089_393551241_#1more_w4"/>
-  </personFlow>
-  <personFlow id="ped_15" begin="0" end="1500" number="363">
-    <walk from=":cluster_29604657_3240419088_3240419089_393551241_#1more_c3" to="544590056#1"/>
-  </personFlow>
   <flow id="cars_111" type="car" begin="0" end="1500" number="63" from="-222151618#4" to="-222151618#1" departLane="best" departSpeed="max"/>
   <flow id="cars_112" type="car" begin="0" end="1500" number="51" from="-222151618#4" to="-4652040#1" departLane="best" departSpeed="max"/>
   <flow id="cars_113" type="car" begin="0" end="1500" number="138" from="222151618#1" to="-4652040#1" departLane="best" departSpeed="max"/>
@@ -177,26 +144,8 @@
   <flow id="trucks_123" type="truck" begin="0" end="1500" number="6" from="4652040#1" to="222151618#4" departLane="best" departSpeed="max"/>
   <flow id="buses_124" type="bus" begin="0" end="1500" number="2" from="-222151618#4" to="-4652040#1" departLane="best" departSpeed="max"/>
   <flow id="buses_125" type="bus" begin="0" end="1500" number="9" from="5686881#0" to="-4652040#1" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_16" begin="0" end="1500" number="1422">
-    <walk from=":cluster_11149179983_29604800_393551254_393552055_#1more_c3" to="695649193#1"/>
-  </personFlow>
-  <personFlow id="ped_17" begin="0" end="1500" number="3863">
-    <walk from=":cluster_11149179983_29604800_393551254_393552055_#1more_c1" to=":cluster_11149179983_29604800_393551254_393552055_#1more_w0"/>
-  </personFlow>
-  <personFlow id="ped_18" begin="0" end="1500" number="602">
-    <walk from=":cluster_11149179983_29604800_393551254_393552055_#1more_c2" to="1202658352#1"/>
-  </personFlow>
-  <personFlow id="ped_19" begin="0" end="1500" number="757">
-    <walk from=":cluster_11149179983_29604800_393551254_393552055_#1more_c0" to=":cluster_11149179983_29604800_393551254_393552055_#1more_w4"/>
-  </personFlow>
-  <personFlow id="ped_20" begin="0" end="1500" number="711">
-    <walk from=":cluster_1369085152_1369085197_29604707_393551250_#1more_c2" to="1466927739#1"/>
-  </personFlow>
-  <personFlow id="ped_21" begin="0" end="1500" number="281">
-    <walk from=":cluster_1369085152_1369085197_29604707_393551250_#1more_c1" to="680812201#2"/>
-  </personFlow>
-  <personFlow id="ped_22" begin="0" end="1500" number="354">
-    <walk from=":cluster_1369085152_1369085197_29604707_393551250_#1more_c3" to=":cluster_1369085152_1369085197_29604707_393551250_#1more_w1"/>
+  <personFlow id="ped_5" begin="0" end="1500" number="602">
+    <walk from="1202658351#0" to="1202658351#1"/>
   </personFlow>
   <flow id="cars_126" type="car" begin="0" end="1500" number="103" from="-222151619#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
   <flow id="cars_127" type="car" begin="0" end="1500" number="485" from="-222151619#1" to="-285248539#6" departLane="best" departSpeed="max"/>
@@ -230,18 +179,6 @@
   <flow id="buses_155" type="bus" begin="0" end="1500" number="1" from="-1263683889#1" to="222151619#1" departLane="best" departSpeed="max"/>
   <flow id="buses_156" type="bus" begin="0" end="1500" number="10" from="-1263683889#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
   <flow id="buses_157" type="bus" begin="0" end="1500" number="3" from="-1263683889#1" to="-285248539#6" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_23" begin="0" end="1500" number="1090">
-    <walk from=":cluster_29604747_393551251_393552061_394502530_#1more_c2" to=":cluster_29604747_393551251_393552061_394502530_#1more_w6"/>
-  </personFlow>
-  <personFlow id="ped_24" begin="0" end="1500" number="1594">
-    <walk from=":cluster_29604747_393551251_393552061_394502530_#1more_c0" to="1466927749#1"/>
-  </personFlow>
-  <personFlow id="ped_25" begin="0" end="1500" number="663">
-    <walk from=":cluster_29604747_393551251_393552061_394502530_#1more_c1" to="680812207#1"/>
-  </personFlow>
-  <personFlow id="ped_26" begin="0" end="1500" number="558">
-    <walk from=":cluster_29604747_393551251_393552061_394502530_#1more_c3" to=":cluster_29604747_393551251_393552061_394502530_#1more_w1"/>
-  </personFlow>
   <flow id="cars_158" type="car" begin="0" end="1500" number="7" from="-5686883#2" to="5686885#1" departLane="best" departSpeed="max"/>
   <flow id="cars_159" type="car" begin="0" end="1500" number="39" from="-5686883#2" to="-222151618#5" departLane="best" departSpeed="max"/>
   <flow id="cars_160" type="car" begin="0" end="1500" number="429" from="222151618#5" to="5080129#1" departLane="best" departSpeed="max"/>
@@ -261,16 +198,10 @@
   <flow id="trucks_174" type="truck" begin="0" end="1500" number="9" from="223420013#1" to="5686885#1" departLane="best" departSpeed="max"/>
   <flow id="buses_175" type="bus" begin="0" end="1500" number="17" from="61760482#0" to="5080129#1" departLane="best" departSpeed="max"/>
   <flow id="buses_176" type="bus" begin="0" end="1500" number="17" from="223420013#1" to="5686885#1" departLane="best" departSpeed="max"/>
-  <personFlow id="ped_27" begin="0" end="1500" number="432">
-    <walk from=":cluster_34600564_391169142_391175820_393546103_#5more_c3" to=":cluster_34600564_391169142_391175820_393546103_#5more_c4"/>
+  <personFlow id="ped_6" begin="0" end="1500" number="432">
+    <walk from="1192161996#0" to="1192161996#1"/>
   </personFlow>
-  <personFlow id="ped_28" begin="0" end="1500" number="1027">
-    <walk from=":cluster_34600564_391169142_391175820_393546103_#5more_c0" to=":cluster_34600564_391169142_391175820_393546103_#5more_c1"/>
-  </personFlow>
-  <personFlow id="ped_29" begin="0" end="1500" number="551">
-    <walk from=":cluster_34600564_391169142_391175820_393546103_#5more_c2" to=":cluster_34600564_391169142_391175820_393546103_#5more_w8"/>
-  </personFlow>
-  <personFlow id="ped_30" begin="0" end="1500" number="447">
-    <walk from=":cluster_34600564_391169142_391175820_393546103_#5more_c5" to="1192162000#1"/>
+  <personFlow id="ped_7" begin="0" end="1500" number="551">
+    <walk from="680230369#0" to="680230369#1"/>
   </personFlow>
 <vType id="streetcar" accel="1" decel="2.5" sigma="0.4" length="30" maxSpeed="16" vClass="tram" guiShape="rail"/><flow id="streetcar_eastbound_0" type="streetcar" begin="0" end="1500" number="4" departLane="best" departSpeed="max" from="1447612547#1" to="179167371"/><flow id="streetcar_westbound_1" type="streetcar" begin="0" end="1500" number="4" departLane="best" departSpeed="max" from="680230366#3" to="4652002#0"/></routes>

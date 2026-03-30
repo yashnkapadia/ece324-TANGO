@@ -325,8 +325,6 @@ def classify_approach(heading: float, heading_ranges: dict[str, tuple[float, flo
 def verify_route(net, from_edge, to_edge, mode_class: str) -> bool:
     try:
         route = net.getShortestPath(from_edge, to_edge, vClass=mode_class)
-    except TypeError:
-        route = net.getShortestPath(from_edge, to_edge)
     except Exception:
         return False
     return route[0] is not None
@@ -336,7 +334,7 @@ def get_incoming_edges_by_approach(node, mode_class: str, heading_ranges: dict[s
     best: dict[str, Any] = {}
 
     for edge in node.getIncoming():
-        if mode_class != "pedestrian" and edge.isSpecial():
+        if edge.isSpecial():
             continue
         if not edge.allows(mode_class):
             continue
@@ -364,7 +362,7 @@ def get_outgoing_edges_by_turn(net, node, incoming_edge, mode_class: str):
 
     outgoing_edges = []
     for edge in node.getOutgoing():
-        if mode_class != "pedestrian" and edge.isSpecial():
+        if edge.isSpecial():
             continue
         if not edge.allows(mode_class):
             continue
