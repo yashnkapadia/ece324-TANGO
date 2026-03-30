@@ -15,7 +15,7 @@
   "workflow": {
     "research": true,
     "plan_check": true,
-    "verifier": false,
+    "verifier": true,
     "nyquist_validation": true,
     "auto_advance": false,
     "node_repair": true,
