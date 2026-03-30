@@ -390,13 +390,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                     )
                     global_obs_dim = int(flatten_obs_by_agent(obs, ordered_agents).size)
                     n_actions = max(action_dims.values())
-                    trainer = MAPPOTrainer(
-                        obs_dim=obs_dim,
-                        global_obs_dim=global_obs_dim,
-                        n_actions=n_actions,
-                        device=resolved_device,
-                        use_obs_norm=cfg.use_obs_norm,
-                    )
+                    if cfg.residual_mode == "action_gate":
+                        trainer = ResidualMAPPOTrainer(
+                            obs_dim=obs_dim,
+                            global_obs_dim=global_obs_dim,
+                            n_actions=n_actions,
+                            residual_mode="action_gate",
+                            device=resolved_device,
+                            use_obs_norm=cfg.use_obs_norm,
+                        )
+                    else:
+                        trainer = MAPPOTrainer(
+                            obs_dim=obs_dim,
+                            global_obs_dim=global_obs_dim,
+                            n_actions=n_actions,
+                            device=resolved_device,
+                            use_obs_norm=cfg.use_obs_norm,
+                        )
                     trainer.load(str(cfg.model_path))
 
                 for ep in range(cfg.episodes):
@@ -414,6 +424,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                     }
                     steps = 0
                     kpi = KPITracker()
+                    ep_gate_total = 0
+                    ep_gate_steps = 0
 
                     while not done:
                         active_agents = sorted(obs.keys())
@@ -422,6 +434,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                             for a in active_agents
                         }
                         skip_kpi_update = False
+
+                        # Compute MP actions BEFORE env.step (Pitfall C5)
+                        mp_actions = max_pressure.actions(obs, env=env)
 
                         if controller_name == "mappo":
                             gobs = flatten_obs_by_agent(obs, active_agents)
@@ -433,9 +448,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 for a in active_agents
                             ]
                             n_valid_list = [action_dims[a] for a in active_agents]
-                            batch_out = trainer.act_batch(
-                                padded_obs_list, gobs, n_valid_list
-                            )
+                            if cfg.residual_mode == "action_gate":
+                                mp_actions_list = [
+                                    mp_actions.get(a, 0) for a in active_agents
+                                ]
+                                batch_out = trainer.act_batch_residual(
+                                    padded_obs_list, gobs, n_valid_list, mp_actions_list
+                                )
+                                gate_vals = [
+                                    int(batch_out[i].get("gate", 0))
+                                    for i in range(len(active_agents))
+                                ]
+                                ep_gate_total += sum(gate_vals)
+                                ep_gate_steps += len(gate_vals)
+                            else:
+                                batch_out = trainer.act_batch(
+                                    padded_obs_list, gobs, n_valid_list
+                                )
                             actions = {
                                 a: int(batch_out[i]["action"])
                                 for i, a in enumerate(active_agents)
@@ -444,7 +473,6 @@ class LocalMappoBackend(AsceTrainerBackend):
                             actions = fixed.actions(obs)
                         else:
                             actions = max_pressure.actions(obs, env=env)
-                        mp_actions = max_pressure.actions(obs, env=env)
 
                         try:
                             obs, rewards, done, _infos = extract_step(env.step(actions))
@@ -552,6 +580,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "avg_trip_time_s": k.avg_trip_time_s,
                             "arrived_vehicles": k.arrived_vehicles,
                             "vehicle_delay_jain": k.vehicle_delay_jain,
+                            "gate_fraction": float(ep_gate_total / max(1, ep_gate_steps))
+                            if cfg.residual_mode == "action_gate"
+                            else 0.0,
                         }
                     )
             finally:

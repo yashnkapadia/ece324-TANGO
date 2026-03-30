@@ -11,6 +11,7 @@ from ece324_tango.config import MODELS_DIR, RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
 _VALID_REWARD_MODES = {"objective", "sumo", "time_loss", "residual_mp"}
+_VALID_RESIDUAL_MODES = {"none", "action_gate"}
 
 
 @app.command()
@@ -39,6 +40,10 @@ def main(
         "--use-obs-norm/--no-use-obs-norm",
         help="Enable running observation normalization (Welford per-feature)",
     ),
+    residual_mode: str = typer.Option(
+        "none",
+        help="Residual mode: none | action_gate",
+    ),
 ):
     """Evaluate the local ASCE MAPPO controller vs baselines."""
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -50,6 +55,12 @@ def main(
         raise typer.BadParameter(
             f"Unsupported reward mode: {reward_mode!r}. "
             f"Expected one of: {', '.join(sorted(_VALID_REWARD_MODES))}."
+        )
+    residual_mode = str(residual_mode).strip().lower()
+    if residual_mode not in _VALID_RESIDUAL_MODES:
+        raise typer.BadParameter(
+            f"Unsupported residual mode: {residual_mode!r}. "
+            f"Expected one of: {', '.join(sorted(_VALID_RESIDUAL_MODES))}."
         )
 
     backend = LocalMappoBackend()
@@ -71,6 +82,7 @@ def main(
         reward_fairness_weight=reward_fairness_weight,
         reward_residual_weight=reward_residual_weight,
         use_obs_norm=use_obs_norm,
+        residual_mode=residual_mode,
     )
     backend.evaluate(cfg)
 
