@@ -1,43 +1,43 @@
-================================================================================
-TANGO Curriculum Scenario: AM Peak
-Generated: 2026-03-30
-Source: scripts/generate_curriculum.py (headless, not demand studio UI)
-================================================================================
+TANGO Curriculum Scenario Settings
+scenario: am_peak
+generated_by: scripts/generate_curriculum.py
 
-── Rationale ──────────────────────────────────────────────────────────────────
-MP's home turf — near-stationary, car-dominated. Includes real AM pedestrians
-+ 505 streetcar at 6-min headway. Control scenario: MP should perform well here.
+[Rationale]
+MP's home turf — near-stationary, car-dominated. Includes real AM pedestrians + 505 streetcar at 6-min headway.
 
-── Layer 1: Demand Studio Parameters ──────────────────────────────────────────
-network_file                = sumo/network/osm.net.xml
-tmc_source                  = data/processed/tmc_parsed.csv
-date_policy                 = latest
-time_window_start           = 420 (07:00)
-time_window_duration_min    = 120
-simulation_begin            = 0
-simulation_end              = 1200 (900s sim + 300s buffer)
-simulation_seconds          = 900
-global_demand_scale         = 1.0
-strict_route_check          = True
-min_count_threshold         = 1
-streetcar_share_from_bus    = 0.0 (streetcars handled by Layer 2)
+[Layer 1 — Demand Studio Parameters]
+network_file: sumo/network/osm.net.xml
+tmc_source: data/processed/tmc_parsed.csv
+date_policy: latest
+time_window_start: 420
+time_window_duration_min: 120
+simulation_seconds: 900
+simulation_end: 1200
+global_demand_scale: 1.0
+strict_route_check: True
+min_count_threshold: 1
+streetcar_share_from_bus: 0.0
+included_modes: buses, cars, pedestrians, streetcars, trucks
 
-── Included Modes ─────────────────────────────────────────────────────────────
-cars                        = True  (scale 1.0)
-trucks                      = True  (scale 1.0)
-buses                       = True  (scale 1.0)
-pedestrians                 = True  (scale 1.0)
-streetcars                  = True  (via Layer 2 injection)
+[Mode Scales]
+buses: 1.0
+cars: 1.0
+pedestrians: 1.0
+trucks: 1.0
 
-── Layer 2: SUMO-Native Modifications ─────────────────────────────────────────
-streetcar_injection:
-  headway_seconds           = 360 (6-min, TTC 505 Dundas 2026 plan)
-  directions                = eastbound, westbound
-  status                    = SKIPPED (network lacks tram-allowed edges)
+[Vehicle Types]
+car: accel=2.6, decel=4.5, length=4.5, maxSpeed=11.11, sigma=0.5
+truck: accel=1.2, decel=3.5, length=10.5, maxSpeed=11.11, sigma=0.5
+bus: accel=1.3, decel=4.0, length=12.0, maxSpeed=11.11, sigma=0.5
+streetcar: accel=1.0, decel=2.5, length=30.0, maxSpeed=11.11, sigma=0.4
 
-surge_config                = None
+[Approach Heading Ranges]
+n: 160.0 – 230.0
+s: 340.0 – 40.0
+e: 250.0 – 310.0
+w: 70.0 – 130.0
 
-── Corridor Intersections (8 TMC locations) ───────────────────────────────────
+[Corridor Intersections]
 1. University Ave / Dundas St W
 2. Dundas St W / St Patrick St
 3. Dundas St W / McCaul St
@@ -47,28 +47,15 @@ surge_config                = None
 7. Dundas St W / Denison Ave
 8. Bathurst St / Dundas St W
 
-── Heading Ranges (approach classification) ───────────────────────────────────
-north                       = 160.0° – 230.0°
-south                       = 340.0° – 40.0°
-east                        = 250.0° – 310.0°
-west                        = 70.0° – 130.0°
+[Layer 2 — SUMO-Native Modifications]
+streetcar_injection.headway_seconds: 360
+streetcar_injection.directions: eastbound, westbound
+surge: None
 
-── Vehicle Type Defaults ──────────────────────────────────────────────────────
-car:        length=4.5m, minGap=2.5m, maxSpeed=50km/h, accel=2.6, decel=4.5
-truck:      length=12.0m, minGap=3.0m, maxSpeed=40km/h, accel=1.5, decel=4.0
-bus:        length=12.0m, minGap=3.0m, maxSpeed=40km/h, accel=1.2, decel=4.0
-streetcar:  length=30.0m, vClass=tram, guiShape=rail
-
-── Output Summary ─────────────────────────────────────────────────────────────
-output_file                 = sumo/demand/curriculum/am_peak.rou.xml
-vehicle_flows               = 174
-pedestrian_flows            = 8
-total_cars                  = 13,144
-total_trucks                = 388
-total_buses                 = 168
-total_streetcars            = 0 (skipped — no tram edges)
-total_pedestrians           = 2,096
-
-── MP Failure Mode Target ─────────────────────────────────────────────────────
-None expected. This is MP's optimal operating regime (near-stationary,
-car-dominated). Serves as the control/baseline scenario.
+[Output Summary]
+vehicle_flows: 174
+pedestrian_flows: 8
+total_buses: 168
+total_cars: 13144
+total_trucks: 388
+total_pedestrians: 2096

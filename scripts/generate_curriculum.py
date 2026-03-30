@@ -85,6 +85,19 @@ class ScenarioSpec:
     surge: SurgeConfig | None = None
     streetcar_injection: StreetcarInjection | None = None
 
+    # Optional overrides (None = use studio defaults)
+    vtype_overrides: dict[str, dict[str, float]] | None = None
+    heading_ranges: dict[str, tuple[float, float]] | None = None
+
+
+# Toronto Dundas corridor vType defaults — 40 km/h speed limit
+TORONTO_VTYPES: dict[str, dict[str, float]] = {
+    "car": {"accel": 2.6, "decel": 4.5, "sigma": 0.5, "length": 4.5, "maxSpeed": 11.11},
+    "truck": {"accel": 1.2, "decel": 3.5, "sigma": 0.5, "length": 10.5, "maxSpeed": 11.11},
+    "bus": {"accel": 1.3, "decel": 4.0, "sigma": 0.5, "length": 12.0, "maxSpeed": 11.11},
+    "streetcar": {"accel": 1.0, "decel": 2.5, "sigma": 0.4, "length": 30.0, "maxSpeed": 11.11},
+}
+
 
 def _get_dundas_edges(net: Any) -> dict[str, list[str]]:
     """Find eastbound and westbound through-edges on Dundas corridor.
@@ -337,6 +350,104 @@ def _audit_scenario(rou_path: Path, spec: ScenarioSpec) -> dict[str, Any]:
     return audit
 
 
+def _resolve_vtypes(spec: ScenarioSpec) -> dict[str, dict[str, float]]:
+    """Merge Toronto corridor defaults with any per-scenario overrides."""
+    base = {k: dict(v) for k, v in TORONTO_VTYPES.items()}
+    if spec.vtype_overrides:
+        for mode, overrides in spec.vtype_overrides.items():
+            if mode in base:
+                base[mode].update(overrides)
+    return base
+
+
+def export_settings(spec: ScenarioSpec, audit: dict[str, Any] | None = None) -> str:
+    """Export scenario settings as a structured text file.
+
+    Produces both UI-compatible fields (Layer 1) and extended fields (Layer 2)
+    in a single file. The [Layer 2] section is clearly marked as not
+    representable in the demand studio UI.
+    """
+    vtypes = _resolve_vtypes(spec)
+    headings = spec.heading_ranges or studio.APPROACH_HEADING_RANGES_DEFAULT
+
+    lines = [
+        "TANGO Curriculum Scenario Settings",
+        f"scenario: {spec.name}",
+        f"generated_by: scripts/generate_curriculum.py",
+        "",
+        "[Rationale]",
+        spec.rationale,
+        "",
+        "[Layer 1 — Demand Studio Parameters]",
+        f"network_file: {NETWORK_PATH.relative_to(REPO_ROOT)}",
+        f"tmc_source: {TMC_PATH.relative_to(REPO_ROOT)}",
+        f"date_policy: latest",
+        f"time_window_start: {spec.time_window_start}",
+        f"time_window_duration_min: {spec.time_window_duration}",
+        f"simulation_seconds: {spec.simulation_seconds}",
+        f"simulation_end: {spec.simulation_seconds + FLOW_END_BUFFER_S}",
+        f"global_demand_scale: {spec.global_demand_scale}",
+        f"strict_route_check: True",
+        f"min_count_threshold: 1",
+        f"streetcar_share_from_bus: {spec.streetcar_share_from_bus}",
+        f"included_modes: {', '.join(sorted(spec.included_modes))}",
+    ]
+
+    lines.append("")
+    lines.append("[Mode Scales]")
+    for mode in sorted(spec.mode_scales):
+        lines.append(f"{mode}: {spec.mode_scales[mode]}")
+
+    lines.append("")
+    lines.append("[Vehicle Types]")
+    for vtype_name in ["car", "truck", "bus", "streetcar"]:
+        vt = vtypes.get(vtype_name, {})
+        params = ", ".join(f"{k}={v}" for k, v in sorted(vt.items()))
+        lines.append(f"{vtype_name}: {params}")
+
+    lines.append("")
+    lines.append("[Approach Heading Ranges]")
+    for direction in ["n", "s", "e", "w"]:
+        lo, hi = headings.get(direction, (0, 0))
+        lines.append(f"{direction}: {lo:.1f} – {hi:.1f}")
+
+    lines.append("")
+    lines.append("[Corridor Intersections]")
+    for i, loc in enumerate(CORRIDOR_LOCATIONS, 1):
+        lines.append(f"{i}. {loc}")
+
+    lines.append("")
+    lines.append("[Layer 2 — SUMO-Native Modifications]")
+    if spec.streetcar_injection:
+        inj = spec.streetcar_injection
+        lines.append(f"streetcar_injection.headway_seconds: {inj.headway_seconds}")
+        lines.append(f"streetcar_injection.directions: {', '.join(inj.directions)}")
+    else:
+        lines.append("streetcar_injection: None")
+
+    if spec.surge:
+        s = spec.surge
+        lines.append(f"surge.direction: {s.direction}")
+        lines.append(f"surge.multiplier: {s.multiplier}")
+        lines.append(f"surge.begin_s: {s.begin_s}")
+        lines.append(f"surge.end_s: {s.end_s}")
+    else:
+        lines.append("surge: None")
+
+    if audit:
+        lines.append("")
+        lines.append("[Output Summary]")
+        lines.append(f"vehicle_flows: {audit.get('total_flows', '?')}")
+        lines.append(f"pedestrian_flows: {audit.get('person_flow_count', '?')}")
+        type_plurals = {"bus": "buses", "car": "cars", "truck": "trucks", "streetcar": "streetcars"}
+        for vtype_name, count in sorted(audit.get("by_type", {}).items()):
+            plural = type_plurals.get(vtype_name, f"{vtype_name}s")
+            lines.append(f"total_{plural}: {count}")
+        lines.append(f"total_pedestrians: {audit.get('total_pedestrians', '?')}")
+
+    return "\n".join(lines) + "\n"
+
+
 def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
     """Generate a single scenario .rou.xml from a ScenarioSpec."""
     print(f"\n{'='*60}")
@@ -372,8 +483,8 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
         fixed_signal=studio.DEFAULT_FIXED_SIGNAL,
         max_pressure_signal=studio.DEFAULT_MAX_PRESSURE_SIGNAL,
         mappo_hyperparams=studio.DEFAULT_MAPPO,
-        heading_ranges=studio.APPROACH_HEADING_RANGES_DEFAULT,
-        vtype_settings=studio.DEFAULT_VTYPE,
+        heading_ranges=spec.heading_ranges or studio.APPROACH_HEADING_RANGES_DEFAULT,
+        vtype_settings=_resolve_vtypes(spec),
         run_validation=False,
     )
 
@@ -413,6 +524,11 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
           f"{audit['person_flow_count']} ped flows ({audit['total_pedestrians']} peds)")
     print(f"  By type: {audit['by_type']}")
     print(f"  Output: {dst}")
+
+    # Export settings file alongside .rou.xml
+    settings_path = dst.with_suffix(".settings.txt")
+    settings_path.write_text(export_settings(spec, audit), encoding="utf-8")
+    print(f"  Settings: {settings_path}")
 
     return dst
 
@@ -516,6 +632,8 @@ def main() -> None:
     parser.add_argument("--scenarios", nargs="*", default=None,
                         help="Scenario names to generate (default: all initial 4)")
     parser.add_argument("--list", action="store_true", help="List available scenarios and exit")
+    parser.add_argument("--export-settings", action="store_true",
+                        help="Export settings files without regenerating .rou.xml")
     args = parser.parse_args()
 
     if args.list:
@@ -523,6 +641,20 @@ def main() -> None:
         for name, spec in SCENARIOS.items():
             initial = " [initial]" if name in INITIAL_4 else ""
             print(f"  {name:25s} — {spec.rationale[:60]}{initial}")
+        return
+
+    if args.export_settings:
+        targets = args.scenarios if args.scenarios else INITIAL_4
+        for name in targets:
+            if name not in SCENARIOS:
+                print(f"Unknown scenario: {name}")
+                continue
+            spec = SCENARIOS[name]
+            rou_path = OUTPUT_DIR / f"{spec.name}.rou.xml"
+            audit = _audit_scenario(rou_path, spec) if rou_path.exists() else None
+            settings_path = OUTPUT_DIR / f"{spec.name}.settings.txt"
+            settings_path.write_text(export_settings(spec, audit), encoding="utf-8")
+            print(f"  {name} -> {settings_path}")
         return
 
     # Init demand studio

@@ -1,60 +1,64 @@
-================================================================================
-TANGO Curriculum Scenario: Demand Surge (Event Dispersal)
-Generated: 2026-03-30
-Source: scripts/generate_curriculum.py (headless, not demand studio UI)
-================================================================================
+TANGO Curriculum Scenario Settings
+scenario: demand_surge
+generated_by: scripts/generate_curriculum.py
 
-── Rationale ──────────────────────────────────────────────────────────────────
-Event dispersal — 2x eastbound surge on PM base demand (300-600s window).
-Simulates concert/Raptors game dispersal. MP over-allocates green to surge,
-starves cross-streets, causes downstream spillback.
+[Rationale]
+Event dispersal — 2x eastbound surge on PM base. MP over-allocates to surge, starves cross-streets.
 
-── Layer 1: Demand Studio Parameters ──────────────────────────────────────────
-network_file                = sumo/network/osm.net.xml
-tmc_source                  = data/processed/tmc_parsed.csv
-date_policy                 = latest
-time_window_start           = 960 (16:00, PM peak base)
-time_window_duration_min    = 120
-simulation_begin            = 0
-simulation_end              = 1500 (1200s sim + 300s buffer)
-simulation_seconds          = 1200
-global_demand_scale         = 1.0
-strict_route_check          = True
-min_count_threshold         = 1
-streetcar_share_from_bus    = 0.0
+[Layer 1 — Demand Studio Parameters]
+network_file: sumo/network/osm.net.xml
+tmc_source: data/processed/tmc_parsed.csv
+date_policy: latest
+time_window_start: 960
+time_window_duration_min: 120
+simulation_seconds: 1200
+simulation_end: 1500
+global_demand_scale: 1.0
+strict_route_check: True
+min_count_threshold: 1
+streetcar_share_from_bus: 0.0
+included_modes: buses, cars, pedestrians, streetcars, trucks
 
-── Included Modes ─────────────────────────────────────────────────────────────
-cars                        = True  (scale 1.0)
-trucks                      = True  (scale 1.0)
-buses                       = True  (scale 1.0)
-pedestrians                 = True  (scale 1.0)
-streetcars                  = True  (via Layer 2 injection)
+[Mode Scales]
+buses: 1.0
+cars: 1.0
+pedestrians: 1.0
+trucks: 1.0
 
-── Layer 2: SUMO-Native Modifications ─────────────────────────────────────────
-streetcar_injection:
-  headway_seconds           = 360 (6-min, TTC 505 Dundas)
-  directions                = eastbound, westbound
-  status                    = SKIPPED (network lacks tram-allowed edges)
+[Vehicle Types]
+car: accel=2.6, decel=4.5, length=4.5, maxSpeed=11.11, sigma=0.5
+truck: accel=1.2, decel=3.5, length=10.5, maxSpeed=11.11, sigma=0.5
+bus: accel=1.3, decel=4.0, length=12.0, maxSpeed=11.11, sigma=0.5
+streetcar: accel=1.0, decel=2.5, length=30.0, maxSpeed=11.11, sigma=0.4
 
-surge_config:
-  direction                 = eastbound
-  multiplier                = 2.0
-  begin_s                   = 300
-  end_s                     = 600
-  overlay_flows             = ~37 (directionally filtered from base)
-  overlay_vehicles          = ~844
+[Approach Heading Ranges]
+n: 160.0 – 230.0
+s: 340.0 – 40.0
+e: 250.0 – 310.0
+w: 70.0 – 130.0
 
-── Output Summary ─────────────────────────────────────────────────────────────
-output_file                 = sumo/demand/curriculum/demand_surge.rou.xml
-vehicle_flows               = 192
-pedestrian_flows            = 8
-total_cars                  = ~19,630 (includes surge overlay)
-total_trucks                = 252
-total_buses                 = 124
-total_streetcars            = 0
-total_pedestrians           = 5,347
+[Corridor Intersections]
+1. University Ave / Dundas St W
+2. Dundas St W / St Patrick St
+3. Dundas St W / McCaul St
+4. Dundas St W / Beverley St
+5. Dundas St W / Huron St
+6. Spadina Ave / Dundas St W
+7. Dundas St W / Denison Ave
+8. Bathurst St / Dundas St W
 
-── MP Failure Mode Target ─────────────────────────────────────────────────────
-Non-stationary + surge — MP over-reacts to surge queue imbalance, can't
-anticipate surge end, starves cross-streets during the 5-minute burst.
-Compounds directional asymmetry with temporal non-stationarity.
+[Layer 2 — SUMO-Native Modifications]
+streetcar_injection.headway_seconds: 360
+streetcar_injection.directions: eastbound, westbound
+surge.direction: eastbound
+surge.multiplier: 2.0
+surge.begin_s: 300
+surge.end_s: 600
+
+[Output Summary]
+vehicle_flows: 192
+pedestrian_flows: 8
+total_buses: 124
+total_cars: 19630
+total_trucks: 252
+total_pedestrians: 5347
