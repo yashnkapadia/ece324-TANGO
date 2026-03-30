@@ -438,3 +438,336 @@ class MAPPOTrainer:
             self.obs_norm.load_state_dict(payload["obs_norm"])
         if self.gobs_norm is not None and payload.get("gobs_norm") is not None:
             self.gobs_norm.load_state_dict(payload["gobs_norm"])
+
+
+class ResidualMAPPOTrainer(MAPPOTrainer):
+    """MAPPO with optional action-gate residual over Max-Pressure.
+
+    When residual_mode="action_gate", the actor is a GatedActor whose binary gate
+    decides whether to follow MP (gate=0) or override with the phase head (gate=1).
+    Joint log-probability:
+        gate=0: logp = log P(gate=0)
+        gate=1: logp = log P(gate=1) + log P(phase_action)
+
+    When residual_mode="none", behaves identically to MAPPOTrainer (plain Actor).
+    """
+
+    def __init__(
+        self,
+        obs_dim: int,
+        global_obs_dim: int,
+        n_actions: int,
+        device: str = "cpu",
+        gamma: float = 0.99,
+        gae_lambda: float = 0.95,
+        clip_eps: float = 0.2,
+        actor_lr: float = 3e-4,
+        critic_lr: float = 1e-3,
+        entropy_coef: float = 0.01,
+        value_coef: float = 0.5,
+        use_obs_norm: bool = False,
+        residual_mode: str = "none",
+        gate_init_bias: float = -2.0,
+    ):
+        # Store before super().__init__ so we can override self.actor afterward
+        self.residual_mode = residual_mode
+        self.n_actions = n_actions
+        self._obs_dim = obs_dim
+
+        # Initialize base MAPPOTrainer (creates plain Actor, Critic, optimizers)
+        super().__init__(
+            obs_dim=obs_dim,
+            global_obs_dim=global_obs_dim,
+            n_actions=n_actions,
+            device=device,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+            clip_eps=clip_eps,
+            actor_lr=actor_lr,
+            critic_lr=critic_lr,
+            entropy_coef=entropy_coef,
+            value_coef=value_coef,
+            use_obs_norm=use_obs_norm,
+        )
+
+        if residual_mode == "action_gate":
+            # Replace plain Actor with GatedActor; input includes MP one-hot
+            augmented_dim = obs_dim + n_actions
+            self.actor = GatedActor(
+                augmented_dim, n_actions, gate_init_bias=gate_init_bias
+            ).to(self.device)
+            # Recreate actor optimizer for the new parameters
+            self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=actor_lr)
+
+            # Rebuild obs normalizer for augmented dimension if enabled
+            if use_obs_norm:
+                self.obs_norm = ObsRunningNorm(augmented_dim)
+
+    @torch.no_grad()
+    def act_batch_residual(
+        self,
+        obs_list: list,
+        global_obs: np.ndarray,
+        n_valid_actions_list: list,
+        mp_actions_list: list[int],
+    ) -> list:
+        """Batched action selection with gate + phase head for action_gate mode."""
+        N = len(obs_list)
+
+        # Augment observations with MP one-hot
+        obs_arr = np.stack(
+            [np.asarray(o, dtype=np.float32) for o in obs_list]
+        )
+        augmented = augment_obs_with_mp(obs_arr, mp_actions_list, self.n_actions)
+
+        # Normalize augmented obs if normalizer is active
+        if self.obs_norm is not None:
+            augmented = np.stack(
+                [self.obs_norm.normalize(a) for a in augmented]
+            )
+
+        gobs_n = (
+            self.gobs_norm.normalize(global_obs)
+            if self.gobs_norm is not None
+            else np.asarray(global_obs, dtype=np.float32)
+        )
+
+        obs_t = torch.tensor(augmented, dtype=torch.float32, device=self.device)
+        gobs_t = (
+            torch.tensor(gobs_n, dtype=torch.float32, device=self.device)
+            .unsqueeze(0)
+            .expand(N, -1)
+        )
+
+        # Forward through GatedActor
+        gate_logits, phase_logits = self.actor(obs_t)
+
+        # Mask invalid phase actions
+        for i, n_valid in enumerate(n_valid_actions_list):
+            if n_valid < phase_logits.shape[-1]:
+                phase_logits[i, n_valid:] = float("-inf")
+
+        # Sample gate: Categorical index 0 = override (gate=1), index 1 = follow MP (gate=0)
+        gate_dist = Categorical(logits=gate_logits)
+        gate_samples = gate_dist.sample()  # 0=override, 1=follow-MP
+        gate_logp = gate_dist.log_prob(gate_samples)
+
+        # Map Categorical indices to semantic gate values
+        # index 0 -> gate=1 (override), index 1 -> gate=0 (follow MP)
+        gates = 1 - gate_samples  # semantic gate values
+
+        # Sample phase actions
+        phase_dist = Categorical(logits=phase_logits)
+        phase_actions = phase_dist.sample()
+        phase_logp = phase_dist.log_prob(phase_actions)
+
+        # Joint logp: gate_logp + gate_mask * phase_logp
+        gate_mask = (gates == 1).float()
+        joint_logp = gate_logp + gate_mask * phase_logp
+
+        # Critic values
+        values = self.critic(gobs_t)
+
+        # Dispatch final actions
+        results = []
+        for i in range(N):
+            if gates[i].item() == 0:
+                final_action = mp_actions_list[i]
+            else:
+                final_action = int(phase_actions[i].item())
+            results.append(
+                {
+                    "action": final_action,
+                    "logp": float(joint_logp[i].item()),
+                    "value": float(values[i].item()),
+                    "gate": int(gates[i].item()),
+                    "mp_action": mp_actions_list[i],
+                }
+            )
+        return results
+
+    def build_batch(
+        self,
+        trajectories: Dict[str, List[Transition]],
+        last_values: Dict[str, float] | None = None,
+    ):
+        batch = super().build_batch(trajectories, last_values)
+
+        if self.residual_mode == "action_gate":
+            # Collect gate and mp_action arrays from transitions
+            gate_list: List[int] = []
+            mp_action_list: List[int] = []
+            for _agent_id, traj in trajectories.items():
+                for transition in traj:
+                    gate_list.append(int(transition.gate))
+                    mp_action_list.append(int(transition.mp_action))
+            batch["gate_decisions"] = np.asarray(gate_list, dtype=np.int64)
+            batch["mp_action"] = np.asarray(mp_action_list, dtype=np.int64)
+
+        return batch
+
+    def update(
+        self,
+        batch: Dict[str, np.ndarray],
+        ppo_epochs: int = 5,
+        minibatch_size: int = 512,
+    ):
+        if self.residual_mode != "action_gate":
+            return super().update(batch, ppo_epochs, minibatch_size)
+
+        # --- Action-gate PPO update with joint logp ---
+        obs = torch.tensor(batch["obs"], dtype=torch.float32, device=self.device)
+        gobs = torch.tensor(
+            batch["global_obs"], dtype=torch.float32, device=self.device
+        )
+        actions = torch.tensor(batch["actions"], dtype=torch.long, device=self.device)
+        old_logp = torch.tensor(batch["logp"], dtype=torch.float32, device=self.device)
+        returns = torch.tensor(
+            batch["returns"], dtype=torch.float32, device=self.device
+        )
+        adv = torch.tensor(batch["advantages"], dtype=torch.float32, device=self.device)
+        gates = torch.tensor(
+            batch["gate_decisions"], dtype=torch.long, device=self.device
+        )
+        n_actions_total = self.n_actions
+        n_valid_actions = torch.tensor(
+            batch.get(
+                "n_valid_actions",
+                np.full((actions.shape[0],), n_actions_total, dtype=np.int64),
+            ),
+            dtype=torch.long,
+            device=self.device,
+        )
+
+        adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+
+        if self.obs_norm is not None:
+            obs_np = batch["obs"]
+            gobs_np = batch["global_obs"]
+            obs = torch.tensor(
+                np.stack([self.obs_norm.normalize(o) for o in obs_np]),
+                dtype=torch.float32,
+                device=self.device,
+            )
+            gobs = torch.tensor(
+                np.stack([self.gobs_norm.normalize(g) for g in gobs_np]),
+                dtype=torch.float32,
+                device=self.device,
+            )
+
+        n = obs.shape[0]
+        idx = np.arange(n)
+
+        # Convert semantic gate values (0=follow, 1=override) to Categorical indices
+        # Categorical index 0 = override (gate=1), index 1 = follow (gate=0)
+        gate_cat_indices = 1 - gates  # gate=0 -> cat_idx=1, gate=1 -> cat_idx=0
+
+        last_losses = {"actor_loss": 0.0, "critic_loss": 0.0, "entropy": 0.0}
+        for _ in range(ppo_epochs):
+            np.random.shuffle(idx)
+            for start in range(0, n, minibatch_size):
+                mb = idx[start : start + minibatch_size]
+
+                # GatedActor forward: returns (gate_logits, phase_logits)
+                gate_logits_mb, phase_logits_mb = self.actor(obs[mb])
+
+                # Gate distribution and log prob
+                gate_dist = Categorical(logits=gate_logits_mb)
+                gate_logp_mb = gate_dist.log_prob(gate_cat_indices[mb])
+
+                # Mask invalid phase actions
+                mb_valid = torch.clamp(
+                    n_valid_actions[mb], min=1, max=phase_logits_mb.shape[-1]
+                )
+                if torch.any(mb_valid < phase_logits_mb.shape[-1]):
+                    action_ids = torch.arange(
+                        phase_logits_mb.shape[-1], device=self.device
+                    ).unsqueeze(0)
+                    invalid_mask = action_ids >= mb_valid.unsqueeze(1)
+                    phase_logits_mb = phase_logits_mb.masked_fill(
+                        invalid_mask, float("-inf")
+                    )
+
+                phase_dist = Categorical(logits=phase_logits_mb)
+                # phase_logp for all rows; gate_mask zeros out gate=0 rows
+                phase_logp_mb = phase_dist.log_prob(actions[mb])
+                gate_mask_mb = (gates[mb] == 1).float()
+                new_logp = gate_logp_mb + gate_mask_mb * phase_logp_mb
+
+                # Gate entropy + weighted phase entropy
+                entropy = gate_dist.entropy().mean() + (
+                    gate_mask_mb * phase_dist.entropy()
+                ).mean()
+
+                ratio = torch.exp(new_logp - old_logp[mb])
+                surr1 = ratio * adv[mb]
+                surr2 = (
+                    torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps)
+                    * adv[mb]
+                )
+                actor_loss = (
+                    -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
+                )
+
+                values = self.critic(gobs[mb])
+                critic_loss = nn.functional.mse_loss(values, returns[mb])
+
+                self.actor_opt.zero_grad()
+                actor_loss.backward()
+                nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5)
+                self.actor_opt.step()
+
+                self.critic_opt.zero_grad()
+                (self.value_coef * critic_loss).backward()
+                nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5)
+                self.critic_opt.step()
+
+                last_losses = {
+                    "actor_loss": float(actor_loss.item()),
+                    "critic_loss": float(critic_loss.item()),
+                    "entropy": float(entropy.item()),
+                }
+
+        return last_losses
+
+    def save(self, out_path: str):
+        payload = {
+            "actor": self.actor.state_dict(),
+            "critic": self.critic.state_dict(),
+            "obs_norm": self.obs_norm.state_dict()
+            if self.obs_norm is not None
+            else None,
+            "gobs_norm": self.gobs_norm.state_dict()
+            if self.gobs_norm is not None
+            else None,
+            "use_obs_norm": bool(self.use_obs_norm),
+            "residual_mode": self.residual_mode,
+        }
+        torch.save(payload, out_path)
+
+    def load(self, in_path: str):
+        payload = torch.load(in_path, map_location=self.device, weights_only=False)
+        ckpt_mode = payload.get("residual_mode", "none")
+        if ckpt_mode != self.residual_mode:
+            raise RuntimeError(
+                f"Checkpoint residual_mode={ckpt_mode!r} but trainer configured with "
+                f"residual_mode={self.residual_mode!r}. Align flags and retry."
+            )
+        ckpt_use_obs_norm = bool(
+            payload.get(
+                "use_obs_norm",
+                payload.get("obs_norm") is not None
+                or payload.get("gobs_norm") is not None,
+            )
+        )
+        if ckpt_use_obs_norm != bool(self.use_obs_norm):
+            raise RuntimeError(
+                f"Checkpoint use_obs_norm={ckpt_use_obs_norm} but trainer configured with "
+                f"use_obs_norm={self.use_obs_norm}. Align flags and retry."
+            )
+        self.actor.load_state_dict(payload["actor"])
+        self.critic.load_state_dict(payload["critic"])
+        if self.obs_norm is not None and payload.get("obs_norm") is not None:
+            self.obs_norm.load_state_dict(payload["obs_norm"])
+        if self.gobs_norm is not None and payload.get("gobs_norm") is not None:
+            self.gobs_norm.load_state_dict(payload["gobs_norm"])

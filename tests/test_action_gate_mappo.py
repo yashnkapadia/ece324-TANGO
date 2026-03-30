@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from ece324_tango.asce.mappo import GatedActor, ResidualMAPPOTrainer
+from ece324_tango.asce.mappo import GatedActor, ResidualMAPPOTrainer, augment_obs_with_mp
 
 
 def test_joint_logp_gate0_equals_gate_logp() -> None:
@@ -27,9 +27,10 @@ def test_joint_logp_gate0_equals_gate_logp() -> None:
     )
 
     # gate=0 chosen, so logp should be log P(gate=0) only
-    gate_logits = trainer.actor.gate_head(
-        torch.zeros(1, 4, dtype=torch.float32)
-    )
+    # Must use augmented obs through full actor forward to get correct gate logits
+    aug_obs = augment_obs_with_mp(np.zeros((1, 4), dtype=np.float32), [1], 3)
+    aug_t = torch.tensor(aug_obs, dtype=torch.float32)
+    gate_logits, _ = trainer.actor(aug_t)
     expected_logp = torch.log_softmax(gate_logits, dim=-1)[0, 1].item()
     assert abs(outs[0]["logp"] - expected_logp) < 1e-5
 
@@ -46,7 +47,6 @@ def test_joint_logp_gate1_equals_sum() -> None:
     with torch.no_grad():
         trainer.actor.gate_head.bias.copy_(torch.tensor([100.0, -100.0]))
 
-    obs_t = torch.zeros(1, 4, dtype=torch.float32)
     outs = trainer.act_batch_residual(
         obs_list=[np.zeros(4, dtype=np.float32)],
         global_obs=np.zeros(4, dtype=np.float32),
@@ -55,10 +55,12 @@ def test_joint_logp_gate1_equals_sum() -> None:
     )
 
     # Compute expected: log P(gate=1) + log P(phase action)
-    gate_logits = trainer.actor.gate_head(obs_t)
+    # Must use augmented obs through full actor forward
+    aug_obs = augment_obs_with_mp(np.zeros((1, 4), dtype=np.float32), [1], 3)
+    aug_t = torch.tensor(aug_obs, dtype=torch.float32)
+    gate_logits, phase_logits = trainer.actor(aug_t)
     gate_logp = torch.log_softmax(gate_logits, dim=-1)[0, 0].item()
 
-    phase_logits = trainer.actor.forward(obs_t)
     phase_logits_masked = phase_logits.clone()
     phase_logits_masked[0, 3:] = float("-inf")  # mask invalid actions
     phase_logp = torch.log_softmax(phase_logits_masked, dim=-1)[
@@ -79,8 +81,9 @@ def test_gate0_phase_head_zero_gradient() -> None:
     )
 
     # Build a batch where all transitions have gate=0
+    # Obs must be augmented (obs_dim + n_actions = 7) as act_batch_residual would produce
     batch = {
-        "obs": np.zeros((4, 4), dtype=np.float32),
+        "obs": np.zeros((4, 7), dtype=np.float32),
         "global_obs": np.zeros((4, 4), dtype=np.float32),
         "actions": np.array([1, 2, 0, 1], dtype=np.int64),
         "logp": np.full(4, -0.5, dtype=np.float32),
@@ -132,7 +135,7 @@ def test_gate1_dispatches_phase_action() -> None:
         # Force phase head to always pick action 0
         for p in trainer.actor.phase_head.parameters():
             p.zero_()
-        trainer.actor.phase_head[-1].bias.copy_(
+        trainer.actor.phase_head.bias.copy_(
             torch.tensor([100.0, -100.0, -100.0])
         )
 
@@ -151,7 +154,7 @@ def test_gate_warm_start_biases_toward_zero() -> None:
     actor = GatedActor(obs_dim=4, n_actions=3, hidden_dim=64, gate_init_bias=-3.0)
 
     obs = torch.randn(200, 4)
-    gate_logits = actor.gate_head(obs)
+    gate_logits = actor.forward_gate(obs)
     gate_probs = torch.softmax(gate_logits, dim=-1)
     # Index 1 = gate=0 (follow MP); should be > 0.85 on average
     gate0_frac = (gate_probs[:, 1] > gate_probs[:, 0]).float().mean().item()
