@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** MAPPO must match or beat Max-Pressure on person-time-loss under nominal conditions and generalize better under irregular demand
-**Current focus:** Phase 1 — Curriculum Scenario Design
+**Current focus:** Phase 1 complete — verifying; Phase 2 planned (4 plans)
 
 ## Current Position
 
-Phase: 1 of 6 (Curriculum Scenario Design)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-03-29 — Roadmap restructured: design first, build second
+Phase: 1 of 6 (Curriculum Scenario Design) — AWAITING VERIFICATION
+Plan: complete
+Status: Verifying deliverables
+Last activity: 2026-03-29 — 4 multimodal scenarios generated from TMC/TTC data, all pass SUMO validation
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] ~10%
 
 ## Performance Metrics
 
