@@ -50,7 +50,7 @@ Plans:
 - [x] 02-01-PLAN.md — TDD: joint logp and gradient isolation tests (failing red tests first)
 - [x] 02-02-PLAN.md — GatedActor class, Transition extension, augment_obs_with_mp helper
 - [x] 02-03-PLAN.md — ResidualMAPPOTrainer with act_batch_residual, joint logp PPO update, TrainConfig residual_mode
-- [ ] 02-04-PLAN.md — Backend wiring, gate_fraction logging, CLI --residual-mode flag
+- [x] 02-04-PLAN.md — Backend wiring, gate_fraction logging, CLI --residual-mode flag
 
 ### Phase 3: Simulation Alignment + Headless Demand CLI
 **Goal**: Simulation runs cleanly for all scenario durations and the demand CLI produces the exact .rou.xml files specified in Phase 1's scenario design
