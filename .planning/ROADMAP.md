@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — TDD: joint logp and gradient isolation tests (failing red tests first)
+- [x] 02-01-PLAN.md — TDD: joint logp and gradient isolation tests (failing red tests first)
 - [ ] 02-02-PLAN.md — GatedActor class, Transition extension, augment_obs_with_mp helper
 - [ ] 02-03-PLAN.md — ResidualMAPPOTrainer with act_batch_residual, joint logp PPO update, TrainConfig residual_mode
 - [ ] 02-04-PLAN.md — Backend wiring, gate_fraction logging, CLI --residual-mode flag
