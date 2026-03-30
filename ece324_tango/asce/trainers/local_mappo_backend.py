@@ -14,7 +14,12 @@ from ece324_tango.asce.env import (
     pad_observation,
 )
 from ece324_tango.asce.kpi import KPITracker
-from ece324_tango.asce.mappo import MAPPOTrainer, Transition
+from ece324_tango.asce.mappo import (
+    MAPPOTrainer,
+    ResidualMAPPOTrainer,
+    Transition,
+    augment_obs_with_mp,
+)
 from ece324_tango.asce.runtime import (
     extract_reset_obs,
     extract_step,
@@ -73,16 +78,37 @@ class LocalMappoBackend(AsceTrainerBackend):
             resolved_device = self._resolve_device(cfg.device)
             logger.info(f"Training device: {resolved_device}")
 
-            trainer = MAPPOTrainer(
-                obs_dim=obs_dim,
-                global_obs_dim=global_obs_dim,
-                n_actions=n_actions,
-                device=resolved_device,
-                use_obs_norm=cfg.use_obs_norm,
-            )
+            if cfg.residual_mode == "action_gate":
+                trainer = ResidualMAPPOTrainer(
+                    obs_dim=obs_dim,
+                    global_obs_dim=global_obs_dim,
+                    n_actions=n_actions,
+                    residual_mode="action_gate",
+                    device=resolved_device,
+                    use_obs_norm=cfg.use_obs_norm,
+                )
+            else:
+                trainer = MAPPOTrainer(
+                    obs_dim=obs_dim,
+                    global_obs_dim=global_obs_dim,
+                    n_actions=n_actions,
+                    device=resolved_device,
+                    use_obs_norm=cfg.use_obs_norm,
+                )
 
             all_rows: List[dict] = []
             ep_metrics: List[dict] = []
+
+            # Resolve effective reward mode: action_gate supersedes residual_mp
+            if cfg.residual_mode == "action_gate" and cfg.reward_mode == "residual_mp":
+                logger.warning(
+                    "residual_mode=action_gate supersedes residual_mp reward mode. "
+                    "Switching to 'objective' reward for this run."
+                )
+                effective_reward_mode = "objective"
+            else:
+                effective_reward_mode = cfg.reward_mode
+
             reward_weights = RewardWeights(
                 delay=cfg.reward_delay_weight,
                 throughput=cfg.reward_throughput_weight,
@@ -117,19 +143,37 @@ class LocalMappoBackend(AsceTrainerBackend):
                         for a in active_agents
                     ]
                     n_valid_list = [action_dims[a] for a in active_agents]
+
+                    # Compute MP actions BEFORE env.step (Pitfall C5)
+                    mp_actions = max_pressure.actions(obs, env=env)
+                    mp_actions_list = [mp_actions.get(a, 0) for a in active_agents]
+
                     # Update normalizer stats before acting:
-                    # obs_norm gets one sample per agent; gobs_norm gets one per step
-                    if trainer.obs_norm is not None:
+                    # For action_gate, obs_norm expects augmented obs (obs_dim + n_actions)
+                    if cfg.residual_mode == "action_gate" and trainer.obs_norm is not None:
+                        aug_arr = augment_obs_with_mp(
+                            np.stack(padded_obs_list), mp_actions_list, n_actions
+                        )
+                        for aug_obs in aug_arr:
+                            trainer.obs_norm.update(aug_obs)
+                    elif trainer.obs_norm is not None:
                         for padded_obs in padded_obs_list:
                             trainer.obs_norm.update(padded_obs)
                     if trainer.gobs_norm is not None:
                         trainer.gobs_norm.update(gobs)
-                    batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
+
+                    if cfg.residual_mode == "action_gate":
+                        batch_out = trainer.act_batch_residual(
+                            padded_obs_list, gobs, n_valid_list, mp_actions_list
+                        )
+                    else:
+                        batch_out = trainer.act_batch(
+                            padded_obs_list, gobs, n_valid_list
+                        )
                     actions = {
                         a: int(batch_out[i]["action"])
                         for i, a in enumerate(active_agents)
                     }
-                    mp_actions = max_pressure.actions(obs, env=env)
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
                     terminated = False
@@ -186,13 +230,13 @@ class LocalMappoBackend(AsceTrainerBackend):
                         )
                         shaped_rewards = rewards_from_metrics(
                             metrics_by_agent=metrics_by_agent,
-                            mode=cfg.reward_mode,
+                            mode=effective_reward_mode,
                             weights=reward_weights,
                             mp_deviation_by_agent={
                                 a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
                                 for a in active_agents
                             }
-                            if cfg.reward_mode == "residual_mp"
+                            if effective_reward_mode == "residual_mp"
                             else None,
                         )
                         if shaped_rewards:
@@ -221,6 +265,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 done=bool(terminated),
                                 value=float(action_meta[agent]["value"]),
                                 n_valid_actions=int(action_dims[agent]),
+                                mp_action=int(action_meta[agent].get("mp_action", 0)),
+                                gate=int(action_meta[agent].get("gate", 0)),
                             )
                         )
 
@@ -248,6 +294,15 @@ class LocalMappoBackend(AsceTrainerBackend):
                     minibatch_size=cfg.minibatch_size,
                 )
 
+                gate_fraction = 0.0
+                if cfg.residual_mode == "action_gate":
+                    all_gates = [
+                        t.gate
+                        for traj in trajectories.values()
+                        for t in traj
+                    ]
+                    gate_fraction = float(np.mean(all_gates)) if all_gates else 0.0
+
                 ep_metrics.append(
                     {
                         "episode": ep,
@@ -258,6 +313,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         "actor_loss": losses["actor_loss"],
                         "critic_loss": losses["critic_loss"],
                         "entropy": losses["entropy"],
+                        "gate_fraction": gate_fraction,
                     }
                 )
                 logger.info(
