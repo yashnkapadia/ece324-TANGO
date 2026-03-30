@@ -223,17 +223,13 @@ def _inject_streetcars(rou_path: Path, injection: StreetcarInjection, net: Any,
                 edge_positions.append((mid_x, eid))
 
         if len(edge_positions) < 2:
-            # Fallback: use any edges that allow the streetcar vClass
-            # If none allow tram, use passenger edges (streetcar will use road)
-            for eid in edges:
-                edge = net.getEdge(eid)
-                if edge:
-                    shape = edge.getShape()
-                    mid_x = (shape[0][0] + shape[-1][0]) / 2
-                    edge_positions.append((mid_x, eid))
-
-        if len(edge_positions) < 2:
-            print(f"  WARNING: Not enough edges for {direction} streetcar route")
+            # No tram-allowed edges found in this direction.
+            # Do NOT fall back to passenger edges — tram vClass can't depart there.
+            print(
+                f"  WARNING: No tram-allowed {direction} edges found; "
+                f"skipping streetcar injection for this direction. "
+                f"Network may need rail lanes on Dundas corridor."
+            )
             continue
 
         edge_positions.sort()

@@ -8,24 +8,44 @@ import numpy as np
 
 @dataclass
 class FixedTimeController:
-    """Cycle phases uniformly with a fixed green duration bucket."""
+    """Cycle phases with equal green splits per phase, advancing on a timer.
+
+    Each phase gets ``phase_duration_s`` seconds of green before the controller
+    advances to the next phase.  With ``delta_time`` (the RL step interval),
+    the controller holds each phase for ``phase_duration_s // delta_time`` steps
+    (minimum 1).  This represents a reasonable default fixed-time plan without
+    tuning to specific demand data — the kind of plan an engineer would deploy
+    before counts are available.
+
+    For the truest real-world FT baseline on the Toronto corridor, use
+    ``fixed_ts=True`` in sumo-rl instead (runs the native NEMA program).
+    """
 
     action_size_by_agent: Dict[str, int]
-    green_duration_s: int
+    green_duration_s: int  # RL step interval (delta_time), used for timing
+    phase_duration_s: int = 30  # green time per phase before cycling
     cursor: Dict[str, int] = field(default_factory=dict)
+    _step_counter: Dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.cursor:
             self.cursor = {k: 0 for k in self.action_size_by_agent}
+        if not self._step_counter:
+            self._step_counter = {k: 0 for k in self.action_size_by_agent}
+        self._steps_per_phase = max(1, self.phase_duration_s // max(1, self.green_duration_s))
 
     def reset(self) -> None:
         self.cursor = {k: 0 for k in self.action_size_by_agent}
+        self._step_counter = {k: 0 for k in self.action_size_by_agent}
 
     def actions(self, observations: Dict[str, np.ndarray]) -> Dict[str, int]:
         out: Dict[str, int] = {}
         for agent, n_actions in self.action_size_by_agent.items():
             out[agent] = self.cursor[agent] % n_actions
-            self.cursor[agent] = (self.cursor[agent] + 1) % n_actions
+            self._step_counter[agent] += 1
+            if self._step_counter[agent] >= self._steps_per_phase:
+                self._step_counter[agent] = 0
+                self.cursor[agent] = (self.cursor[agent] + 1) % n_actions
         return out
 
 

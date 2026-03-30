@@ -28,6 +28,9 @@ class TrainConfig:
     reward_residual_weight: float
     use_obs_norm: bool = False
     residual_mode: str = "none"
+    checkpoint_every: int = 0  # save checkpoint every N episodes (0 = end only)
+    eval_every: int = 0  # run baseline eval every N episodes (0 = disabled)
+    resume: bool = False  # resume from model_path if it exists
 
 
 @dataclass

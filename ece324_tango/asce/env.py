@@ -44,9 +44,7 @@ def create_parallel_env(
         sumo_seed=seed,
         single_agent=False,
         sumo_warnings=not quiet_sumo,
-        additional_sumo_cmd=(
-            "--no-step-log true --ignore-route-errors" if quiet_sumo else "--ignore-route-errors"
-        ),
+        additional_sumo_cmd="--no-step-log true" if quiet_sumo else None,
     )
     return env
 

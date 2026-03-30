@@ -49,6 +49,19 @@ def main(
         "none",
         help="Residual mode: none | action_gate",
     ),
+    checkpoint_every: int = typer.Option(
+        0,
+        help="Save checkpoint every N episodes (0 = end only)",
+    ),
+    eval_every: int = typer.Option(
+        0,
+        help="Run baseline eval every N episodes during training (0 = disabled)",
+    ),
+    resume: bool = typer.Option(
+        False,
+        "--resume/--no-resume",
+        help="Resume training from existing model_path checkpoint",
+    ),
 ):
     """Train the local ASCE MAPPO controller."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,6 +109,9 @@ def main(
         reward_residual_weight=reward_residual_weight,
         use_obs_norm=use_obs_norm,
         residual_mode=residual_mode,
+        checkpoint_every=checkpoint_every,
+        eval_every=eval_every,
+        resume=resume,
     )
     backend.train(cfg)
 

@@ -99,6 +99,20 @@ class LocalMappoBackend(AsceTrainerBackend):
                     use_obs_norm=cfg.use_obs_norm,
                 )
 
+            # Resume from checkpoint if requested
+            start_episode = 0
+            if cfg.resume and cfg.model_path.exists():
+                trainer.load(str(cfg.model_path))
+                # Infer start_episode from existing metrics CSV
+                if cfg.episode_metrics_csv.exists():
+                    existing_metrics = pd.read_csv(cfg.episode_metrics_csv)
+                    start_episode = int(existing_metrics["episode"].max()) + 1
+                    logger.info(
+                        f"Resumed from {cfg.model_path} at episode {start_episode}"
+                    )
+                else:
+                    logger.info(f"Resumed model from {cfg.model_path}, starting at episode 0")
+
             all_rows: List[dict] = []
             ep_metrics: List[dict] = []
 
@@ -119,7 +133,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 residual=cfg.reward_residual_weight,
             )
 
-            for ep in range(cfg.episodes):
+            for ep in range(start_episode, cfg.episodes):
                 ep_t0 = _time.time()
                 logger.info(f"Episode {ep}: resetting env ...")
                 obs = extract_reset_obs(env.reset(seed=cfg.seed + ep))
@@ -357,8 +371,22 @@ class LocalMappoBackend(AsceTrainerBackend):
                 )
                 logger.info(
                     f"Episode {ep}: reward={ep_reward / max(1, ep_steps):.4f}, "
-                    f"actor_loss={losses['actor_loss']:.4f}, critic_loss={losses['critic_loss']:.4f}"
+                    f"actor_loss={losses['actor_loss']:.4f}, critic_loss={losses['critic_loss']:.4f}, "
+                    f"gate_fraction={gate_fraction:.3f}"
                 )
+
+                # Periodic checkpoint
+                if cfg.checkpoint_every > 0 and (ep + 1) % cfg.checkpoint_every == 0:
+                    trainer.save(str(cfg.model_path))
+                    pd.DataFrame(ep_metrics).to_csv(cfg.episode_metrics_csv, index=False)
+                    logger.info(f"  Checkpoint saved at episode {ep}")
+
+                # Periodic baseline evaluation
+                if cfg.eval_every > 0 and (ep + 1) % cfg.eval_every == 0:
+                    self._run_inline_eval(
+                        cfg, env, trainer, obs_dim, global_obs_dim, action_dims,
+                        n_actions, ordered_agents, ep,
+                    )
 
             trainer.save(str(cfg.model_path))
             logger.success(f"Saved MAPPO model: {cfg.model_path}")
@@ -373,6 +401,86 @@ class LocalMappoBackend(AsceTrainerBackend):
             logger.success(f"Saved episode metrics: {cfg.episode_metrics_csv}")
         finally:
             env.close()
+
+    def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,
+                         action_dims, n_actions, ordered_agents, train_ep):
+        """Run one-episode eval for MAPPO, MaxPressure, and FixedTime on the training scenario."""
+        import torch
+
+        results = {}
+        for controller_name in ["mappo", "max_pressure", "fixed_time"]:
+            eval_env = create_parallel_env(
+                net_file=cfg.net_file,
+                route_file=cfg.route_file,
+                seed=cfg.seed,
+                use_gui=False,
+                seconds=cfg.seconds,
+                delta_time=cfg.delta_time,
+                quiet_sumo=True,
+            )
+            try:
+                obs = extract_reset_obs(eval_env.reset(seed=cfg.seed))
+                if not obs:
+                    continue
+                agents = sorted(obs.keys())
+                a_dims = {a: int(eval_env.action_spaces(a).n) for a in agents}
+                mp = MaxPressureController(action_size_by_agent=a_dims)
+                ft = FixedTimeController(
+                    action_size_by_agent=a_dims, green_duration_s=cfg.delta_time
+                )
+                kpi = KPITracker()
+                done = False
+
+                while not done:
+                    active = sorted(obs.keys())
+                    if controller_name == "mappo":
+                        gobs = flatten_obs_by_agent(obs, active)
+                        padded = [
+                            pad_observation(
+                                np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim
+                            )
+                            for a in active
+                        ]
+                        n_valid = [a_dims[a] for a in active]
+                        if cfg.residual_mode == "action_gate":
+                            mp_acts = mp.actions(obs, env=eval_env)
+                            mp_list = [mp_acts.get(a, 0) for a in active]
+                            batch_out = trainer.act_batch_residual(
+                                padded, gobs, n_valid, mp_list
+                            )
+                        else:
+                            batch_out = trainer.act_batch(padded, gobs, n_valid)
+                        actions = {
+                            a: int(batch_out[i]["action"])
+                            for i, a in enumerate(active)
+                        }
+                    elif controller_name == "max_pressure":
+                        actions = mp.actions(obs, env=eval_env)
+                    else:
+                        actions = ft.actions(obs)
+
+                    try:
+                        obs, _, done, _ = eval_env.step(actions)
+                        done = done.get("__all__", False) if isinstance(done, dict) else done
+                    except FatalTraCIError:
+                        done = True
+                    kpi.update(eval_env)
+
+                k = kpi.summary()
+                results[controller_name] = k.person_time_loss_s
+            finally:
+                eval_env.close()
+
+        mappo_ptl = results.get("mappo", 0.0)
+        mp_ptl = results.get("max_pressure", 1.0)
+        ft_ptl = results.get("fixed_time", 1.0)
+        ratio_mp = mappo_ptl / max(mp_ptl, 1.0)
+        ratio_ft = mappo_ptl / max(ft_ptl, 1.0)
+        logger.info(
+            f"  EVAL ep {train_ep}: person-time-loss → "
+            f"MAPPO={mappo_ptl:.0f}s, MP={mp_ptl:.0f}s, FT={ft_ptl:.0f}s | "
+            f"MAPPO/MP={ratio_mp:.3f}, MAPPO/FT={ratio_ft:.3f}"
+        )
 
     def evaluate(self, cfg: EvalConfig) -> None:
         cfg.out_csv.parent.mkdir(parents=True, exist_ok=True)
