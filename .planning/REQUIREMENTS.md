@@ -68,19 +68,19 @@
 
 | Requirement | Phase | Phase Name | Status |
 |-------------|-------|------------|--------|
-| FIX-01 | Phase 1 | Simulation Alignment + Headless Demand CLI | Pending |
-| FIX-02 | Phase 1 | Simulation Alignment + Headless Demand CLI | Pending |
-| FIX-03 | Phase 4 | Baseline Convergence Validation | Pending |
+| DEM-03 | Phase 1 | Curriculum Scenario Design | Pending |
+| DEM-04 | Phase 1 | Curriculum Scenario Design | Pending |
 | RES-01 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-02 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-03 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-04 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-05 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-06 | Phase 2 | Action-Gate Residual MAPPO | Pending |
-| DEM-01 | Phase 1 | Simulation Alignment + Headless Demand CLI | Pending |
-| DEM-02 | Phase 1 | Simulation Alignment + Headless Demand CLI | Pending |
-| DEM-03 | Phase 3 | Curriculum Scenario Design | Pending |
-| DEM-04 | Phase 3 | Curriculum Scenario Design | Pending |
+| FIX-01 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
+| FIX-02 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
+| DEM-01 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
+| DEM-02 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
+| FIX-03 | Phase 4 | Baseline Convergence Validation | Pending |
 | CUR-01 | Phase 5 | Curriculum Training Integration | Pending |
 | CUR-02 | Phase 5 | Curriculum Training Integration | Pending |
 | CUR-03 | Phase 5 | Curriculum Training Integration | Pending |

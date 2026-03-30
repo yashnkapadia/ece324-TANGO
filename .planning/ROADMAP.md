@@ -2,7 +2,7 @@
 
 ## Overview
 
-ASCE must close a 25% performance gap to Max-Pressure on person-time-loss. The path runs through six phases: align simulation config and build the headless demand CLI (Phase 1), implement action-gate residual MAPPO architecture (Phase 2), research and design the curriculum training scenarios with domain understanding (Phase 3), validate policy convergence on fixed demand before curriculum (Phase 4), train on curriculum scenarios to exploit Max-Pressure's failure modes (Phase 5), and finalize evaluation with Parquet dataset logging for PIRA (Phase 6). Phases 1 and 2 can be worked in parallel; Phase 3 is a research/discussion phase that depends on Phase 1's headless CLI being ready.
+ASCE must close a 25% performance gap to Max-Pressure on person-time-loss. The intellectual core — what scenarios to train on and why — must come first, because it drives every downstream decision: how long flows run, what modes to include, what the CLI needs to produce, and how curriculum training is structured. In parallel with scenario design, the action-gate residual MAPPO architecture can be built since it has no dependency on demand specifics. Once both are ready, we validate convergence, run curriculum training, and finalize dataset logging for PIRA.
 
 ## Phases
 
@@ -12,24 +12,25 @@ ASCE must close a 25% performance gap to Max-Pressure on person-time-loss. The p
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Simulation Alignment + Headless Demand CLI** - Extend demand duration, fix truncation handling, install deps, build headless CLI wrapper around demand studio
+- [ ] **Phase 1: Curriculum Scenario Design** - Research TMC data, understand MP failure modes, design scenario portfolio with domain rationale, define what the demand CLI must produce
 - [ ] **Phase 2: Action-Gate Residual MAPPO** - Two-head actor (gate + phase) with MP one-hot observation input and joint log-probability PPO update
-- [ ] **Phase 3: Curriculum Scenario Design** - Research TMC data patterns, understand MP failure modes, design scenario portfolio with domain rationale
+- [ ] **Phase 3: Simulation Alignment + Headless Demand CLI** - Extend flow durations per scenario specs, fix truncation handling, build headless CLI guided by Phase 1 design
 - [ ] **Phase 4: Baseline Convergence Validation** - 200+ episode training run confirming action-gate policy converges on fixed demand before curriculum
 - [ ] **Phase 5: Curriculum Training Integration** - CurriculumManager with scenario sampling, per-episode env rebuild, proposal KPI target
 - [ ] **Phase 6: Eval Loop + Dataset Logging** - Streaming Parquet writer for all 3 controllers across all scenarios, PIRA-compatible schema
 
 ## Phase Details
 
-### Phase 1: Simulation Alignment + Headless Demand CLI
-**Goal**: Simulation runs cleanly to completion and the demand studio can be invoked programmatically to generate scenario files
-**Depends on**: Nothing (first phase)
-**Requirements**: FIX-01, FIX-02, DEM-01, DEM-02
+### Phase 1: Curriculum Scenario Design
+**Goal**: A well-reasoned portfolio of demand scenarios exists with clear rationale for each, and the spec for what the demand CLI must produce is locked
+**Depends on**: Nothing (frontloaded research phase)
+**Requirements**: DEM-03, DEM-04
 **Success Criteria** (what must be TRUE):
-  1. Demand route file flow durations extend past simulation end time; training runs complete all steps without FatalTraCIError from demand exhaustion
-  2. If FatalTraCIError occurs mid-episode for other reasons, it is treated as truncation (bootstrap from critic) not terminal (value=0)
-  3. Demand studio dependencies (dash, plotly, lxml, pyproj) are installable via pixi
-  4. A headless Python CLI can call generate_scenario() and produce a valid .rou.xml that SUMO accepts without launching the Dash UI
+  1. TMC data has been explored to identify meaningful demand variation (time-of-day patterns, volume ranges, directional imbalances, mode splits)
+  2. Max-Pressure's theoretical failure modes are documented (non-stationary demand, multimodal conflicts, demand surges, asymmetric loads)
+  3. Each scenario has documented rationale explaining what MP assumption it violates or what generalization capability it tests
+  4. Scenario specs define: time window, duration, demand scale, mode mix, and any capacity modifications — these specs drive Phase 3's CLI and flow durations
+  5. At least 4 distinct demand regimes identified, with multimodal demand (cars, trucks, buses) where TMC data supports it
 **Plans**: TBD
 
 ### Phase 2: Action-Gate Residual MAPPO
@@ -44,21 +45,21 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Setting `residual_mode="none"` produces identical behavior to the pre-Phase-2 baseline (backward compatibility)
 **Plans**: TBD
 
-### Phase 3: Curriculum Scenario Design
-**Goal**: A well-reasoned portfolio of 4-8 demand scenarios exists, each with a clear rationale for why it challenges Max-Pressure or tests MAPPO generalization
-**Depends on**: Phase 1 (headless CLI ready to generate files)
-**Requirements**: DEM-03, DEM-04
+### Phase 3: Simulation Alignment + Headless Demand CLI
+**Goal**: Simulation runs cleanly for all scenario durations and the demand CLI produces the exact .rou.xml files specified in Phase 1's scenario design
+**Depends on**: Phase 1 (scenario specs drive CLI requirements and flow durations)
+**Requirements**: FIX-01, FIX-02, DEM-01, DEM-02
 **Success Criteria** (what must be TRUE):
-  1. TMC data has been explored to identify meaningful demand variation (time-of-day patterns, volume ranges, directional imbalances)
-  2. Each scenario has documented rationale explaining what MP assumption it violates or what generalization capability it tests
-  3. At least 4 scenario .rou.xml files generated covering distinct demand regimes (e.g., AM peak, PM peak, off-peak, demand surge/incident)
-  4. Multimodal demand (cars, trucks, buses) is present where TMC data supports it
-  5. Scenarios validated in SUMO — each runs without errors and produces meaningfully different traffic patterns
+  1. Flow durations in route files extend past simulation end time for each scenario; no FatalTraCIError from demand exhaustion
+  2. If FatalTraCIError occurs mid-episode for other reasons, it is treated as truncation (bootstrap from critic) not terminal (value=0)
+  3. Demand studio dependencies (dash, plotly, lxml, pyproj) installable via pixi
+  4. Headless CLI produces valid .rou.xml files matching each scenario spec from Phase 1 — SUMO accepts them without errors
+  5. Generated scenarios produce meaningfully different traffic patterns when simulated
 **Plans**: TBD
 
 ### Phase 4: Baseline Convergence Validation
 **Goal**: The action-gate policy demonstrates stable learning at 200+ episodes on a single fixed scenario before curriculum begins
-**Depends on**: Phase 1 (aligned demand file), Phase 2 (action-gate architecture)
+**Depends on**: Phase 2 (action-gate architecture), Phase 3 (aligned demand files)
 **Requirements**: FIX-03
 **Success Criteria** (what must be TRUE):
   1. A training run of at least 200 episodes completes without crashing on the fixed demand file
@@ -68,7 +69,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 5: Curriculum Training Integration
 **Goal**: MAPPO trains across varied demand scenarios and achieves the proposal's person-time-loss target on at least one evaluation scenario
-**Depends on**: Phase 3 (scenario portfolio), Phase 4 (converged base policy)
+**Depends on**: Phase 1 (scenario portfolio), Phase 4 (converged base policy)
 **Requirements**: CUR-01, CUR-02, CUR-03
 **Success Criteria** (what must be TRUE):
   1. TrainConfig accepts a list of route files and the training loop cycles through them across episodes
@@ -91,19 +92,20 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Progress
 
 **Execution Order:**
-Phases 1 and 2 can be worked in parallel. Phase 3 depends on Phase 1. Phase 4 depends on Phases 1+2. Phase 5 depends on Phases 3+4. Phase 6 depends on Phase 5.
+Phases 1 and 2 can be worked in parallel. Phase 3 depends on Phase 1. Phase 4 depends on Phases 2+3. Phase 5 depends on Phases 1+4. Phase 6 depends on Phase 5.
 
 ```
-Phase 1 (Sim Alignment + CLI) ──┬──→ Phase 3 (Scenario Design) ──┐
-                                 │                                  ├──→ Phase 5 (Curriculum) ──→ Phase 6 (Parquet)
-Phase 2 (Action-Gate MAPPO) ────┴──→ Phase 4 (Convergence) ───────┘
+Phase 1 (Scenario Design) ──┬──→ Phase 3 (CLI + Alignment) ──┐
+                              │                                  ├──→ Phase 4 (Convergence) ──→ Phase 5 (Curriculum) ──→ Phase 6 (Parquet)
+Phase 2 (Action-Gate MAPPO) ─┘                                  │
+                              └─────────────────────────────────┘
 ```
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Simulation Alignment + Headless Demand CLI | 0/? | Not started | - |
+| 1. Curriculum Scenario Design | 0/? | Not started | - |
 | 2. Action-Gate Residual MAPPO | 0/? | Not started | - |
-| 3. Curriculum Scenario Design | 0/? | Not started | - |
+| 3. Simulation Alignment + Headless Demand CLI | 0/? | Not started | - |
 | 4. Baseline Convergence Validation | 0/? | Not started | - |
 | 5. Curriculum Training Integration | 0/? | Not started | - |
 | 6. Eval Loop + Dataset Logging | 0/? | Not started | - |
