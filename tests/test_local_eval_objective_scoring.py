@@ -131,7 +131,7 @@ def test_local_eval_records_objective_score_for_all_controllers(
         lambda **kwargs: {"a0": object()},
     )
 
-    def _rewards_from_metrics(metrics_by_agent, mode, weights):
+    def _rewards_from_metrics(metrics_by_agent, mode, weights, **kwargs):
         if mode == "time_loss":
             return {"a0": 1.5}
         if mode == "objective":

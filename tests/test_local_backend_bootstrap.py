@@ -10,10 +10,34 @@ class _DummyActionSpace:
     n = 2
 
 
+class _DummyGreenPhase:
+    state = "GGrr"
+
+
+class _DummyTrafficSignal:
+    green_phases = [_DummyGreenPhase(), _DummyGreenPhase()]
+
+
+class _DummySumo:
+    """Minimal TraCI mock for MaxPressureController."""
+
+    class trafficlight:
+        @staticmethod
+        def getControlledLinks(ts_id):
+            return []
+
+    class lane:
+        @staticmethod
+        def getLastStepHaltingNumber(lane_id):
+            return 0.0
+
+
 class _DummyEnv:
     def __init__(self, step_output):
         self._step_output = step_output
         self._stepped = False
+        self.traffic_signals = {"a0": _DummyTrafficSignal()}
+        self.sumo = _DummySumo()
 
     def reset(self, seed=None):
         self._stepped = False

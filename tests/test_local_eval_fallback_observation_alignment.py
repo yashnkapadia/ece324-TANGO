@@ -138,7 +138,7 @@ def test_eval_metrics_fallback_uses_pre_step_observation(monkeypatch, tmp_path: 
     )
     monkeypatch.setattr(
         "ece324_tango.asce.trainers.local_mappo_backend.rewards_from_metrics",
-        lambda metrics_by_agent, mode, weights: {},
+        lambda metrics_by_agent, mode, weights, **kwargs: {},
     )
 
     LocalMappoBackend().evaluate(cfg)
