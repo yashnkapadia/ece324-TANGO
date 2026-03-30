@@ -404,22 +404,45 @@ class LocalMappoBackend(AsceTrainerBackend):
 
     def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,
                          action_dims, n_actions, ordered_agents, train_ep):
-        """Run one-episode eval for MAPPO, MaxPressure, and FixedTime on the training scenario."""
+        """Run one-episode eval for MAPPO vs baselines on the training scenario.
+
+        Baselines:
+        - max_pressure: queue-differential greedy (sumo-rl TLS override)
+        - fixed_time: uniform 30s phase cycling (sumo-rl TLS override)
+        - nema: native NEMA program from osm.net.xml (real Toronto timing)
+        """
         import torch
+        from ece324_tango.sumo_rl.environment.env import SumoEnvironment
 
         results = {}
-        for controller_name in ["mappo", "max_pressure", "fixed_time"]:
-            eval_env = create_parallel_env(
-                net_file=cfg.net_file,
-                route_file=cfg.route_file,
-                seed=cfg.seed,
-                use_gui=False,
-                seconds=cfg.seconds,
-                delta_time=cfg.delta_time,
-                quiet_sumo=True,
-            )
+        for controller_name in ["mappo", "max_pressure", "fixed_time", "nema"]:
+            if controller_name == "nema":
+                # Native NEMA: use fixed_ts=True so sumo-rl doesn't override TLS
+                eval_env = SumoEnvironment(
+                    net_file=cfg.net_file,
+                    route_file=cfg.route_file,
+                    use_gui=False,
+                    num_seconds=cfg.seconds,
+                    delta_time=cfg.delta_time,
+                    sumo_seed=cfg.seed,
+                    single_agent=False,
+                    sumo_warnings=False,
+                    fixed_ts=True,
+                    additional_sumo_cmd="--no-step-log true",
+                )
+            else:
+                eval_env = create_parallel_env(
+                    net_file=cfg.net_file,
+                    route_file=cfg.route_file,
+                    seed=cfg.seed,
+                    use_gui=False,
+                    seconds=cfg.seconds,
+                    delta_time=cfg.delta_time,
+                    quiet_sumo=True,
+                )
             try:
-                obs = extract_reset_obs(eval_env.reset(seed=cfg.seed))
+                obs_raw = eval_env.reset(seed=cfg.seed)
+                obs = extract_reset_obs(obs_raw)
                 if not obs:
                     continue
                 agents = sorted(obs.keys())
@@ -456,12 +479,21 @@ class LocalMappoBackend(AsceTrainerBackend):
                         }
                     elif controller_name == "max_pressure":
                         actions = mp.actions(obs, env=eval_env)
-                    else:
+                    elif controller_name == "fixed_time":
                         actions = ft.actions(obs)
+                    else:
+                        # NEMA: no actions needed, env steps with native program
+                        actions = {}
 
                     try:
-                        obs, _, done, _ = eval_env.step(actions)
-                        done = done.get("__all__", False) if isinstance(done, dict) else done
+                        result = eval_env.step(actions)
+                        if controller_name == "nema":
+                            # fixed_ts returns (obs, rew, dones, info) directly
+                            obs, _, dones, _ = result
+                            done = dones.get("__all__", False) if isinstance(dones, dict) else dones
+                        else:
+                            obs, _, done, _ = result
+                            done = done.get("__all__", False) if isinstance(done, dict) else done
                     except FatalTraCIError:
                         done = True
                     kpi.update(eval_env)
@@ -474,12 +506,12 @@ class LocalMappoBackend(AsceTrainerBackend):
         mappo_ptl = results.get("mappo", 0.0)
         mp_ptl = results.get("max_pressure", 1.0)
         ft_ptl = results.get("fixed_time", 1.0)
-        ratio_mp = mappo_ptl / max(mp_ptl, 1.0)
-        ratio_ft = mappo_ptl / max(ft_ptl, 1.0)
+        nema_ptl = results.get("nema", 1.0)
         logger.info(
             f"  EVAL ep {train_ep}: person-time-loss → "
-            f"MAPPO={mappo_ptl:.0f}s, MP={mp_ptl:.0f}s, FT={ft_ptl:.0f}s | "
-            f"MAPPO/MP={ratio_mp:.3f}, MAPPO/FT={ratio_ft:.3f}"
+            f"MAPPO={mappo_ptl:.0f}s, MP={mp_ptl:.0f}s, FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
+            f"MAPPO/MP={mappo_ptl / max(mp_ptl, 1.0):.3f}, "
+            f"MAPPO/NEMA={mappo_ptl / max(nema_ptl, 1.0):.3f}"
         )
 
     def evaluate(self, cfg: EvalConfig) -> None:
