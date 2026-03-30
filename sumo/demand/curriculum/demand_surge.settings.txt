@@ -1,0 +1,60 @@
+================================================================================
+TANGO Curriculum Scenario: Demand Surge (Event Dispersal)
+Generated: 2026-03-30
+Source: scripts/generate_curriculum.py (headless, not demand studio UI)
+================================================================================
+
+── Rationale ──────────────────────────────────────────────────────────────────
+Event dispersal — 2x eastbound surge on PM base demand (300-600s window).
+Simulates concert/Raptors game dispersal. MP over-allocates green to surge,
+starves cross-streets, causes downstream spillback.
+
+── Layer 1: Demand Studio Parameters ──────────────────────────────────────────
+network_file                = sumo/network/osm.net.xml
+tmc_source                  = data/processed/tmc_parsed.csv
+date_policy                 = latest
+time_window_start           = 960 (16:00, PM peak base)
+time_window_duration_min    = 120
+simulation_begin            = 0
+simulation_end              = 1500 (1200s sim + 300s buffer)
+simulation_seconds          = 1200
+global_demand_scale         = 1.0
+strict_route_check          = True
+min_count_threshold         = 1
+streetcar_share_from_bus    = 0.0
+
+── Included Modes ─────────────────────────────────────────────────────────────
+cars                        = True  (scale 1.0)
+trucks                      = True  (scale 1.0)
+buses                       = True  (scale 1.0)
+pedestrians                 = True  (scale 1.0)
+streetcars                  = True  (via Layer 2 injection)
+
+── Layer 2: SUMO-Native Modifications ─────────────────────────────────────────
+streetcar_injection:
+  headway_seconds           = 360 (6-min, TTC 505 Dundas)
+  directions                = eastbound, westbound
+  status                    = SKIPPED (network lacks tram-allowed edges)
+
+surge_config:
+  direction                 = eastbound
+  multiplier                = 2.0
+  begin_s                   = 300
+  end_s                     = 600
+  overlay_flows             = ~37 (directionally filtered from base)
+  overlay_vehicles          = ~844
+
+── Output Summary ─────────────────────────────────────────────────────────────
+output_file                 = sumo/demand/curriculum/demand_surge.rou.xml
+vehicle_flows               = 192
+pedestrian_flows            = 8
+total_cars                  = ~19,630 (includes surge overlay)
+total_trucks                = 252
+total_buses                 = 124
+total_streetcars            = 0
+total_pedestrians           = 5,347
+
+── MP Failure Mode Target ─────────────────────────────────────────────────────
+Non-stationary + surge — MP over-reacts to surge queue imbalance, can't
+anticipate surge end, starves cross-streets during the 5-minute burst.
+Compounds directional asymmetry with temporal non-stationarity.

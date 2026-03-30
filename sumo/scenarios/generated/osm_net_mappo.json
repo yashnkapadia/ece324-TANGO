@@ -1,0 +1,191 @@
+{
+  "generated_utc": "2026-03-30T16:52:34Z",
+  "network_file": "sumo/network/osm.net.xml",
+  "demand_file": "sumo/demand/generated/osm_net_mappo.rou.xml",
+  "sumocfg_file": "sumo/config/generated/osm_net_mappo.sumocfg",
+  "signal_file": "sumo/network/tls_overrides.add.xml.gz",
+  "controller_mode": "mappo",
+  "signal_settings": {
+    "fixed_time": {
+      "ew_green": 30,
+      "ns_green": 20,
+      "yellow": 3,
+      "all_red": 2,
+      "offset": 0
+    },
+    "max_pressure": {
+      "min_green": 10,
+      "max_green": 45,
+      "yellow": 3,
+      "all_red": 2,
+      "pressure_exponent": 1.0,
+      "queue_exponent": 1.0
+    },
+    "include_cluster_signals": true
+  },
+  "mappo_hyperparameters": {
+    "learning_rate_actor": 0.0003,
+    "learning_rate_critic": 0.0005,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_ratio": 0.2,
+    "entropy_coef": 0.01,
+    "value_loss_coef": 0.5,
+    "max_grad_norm": 0.5,
+    "rollout_steps": 1024,
+    "ppo_epochs": 10,
+    "minibatch_size": 256,
+    "num_envs": 8,
+    "hidden_dim": 256,
+    "hidden_layers": 2,
+    "target_kl": 0.03,
+    "seed": 42,
+    "shared_critic": true,
+    "normalize_advantages": true
+  },
+  "demand_settings": {
+    "tmc_source": "data/processed/tmc_parsed.csv",
+    "date_policy": "latest",
+    "selected_date": null,
+    "date_range_start": null,
+    "date_range_end": null,
+    "time_window_start": "16:00",
+    "time_window_duration_min": 120,
+    "simulation_begin": 0,
+    "simulation_end": 1500,
+    "strict_route_check": true,
+    "min_count_threshold": 1,
+    "global_demand_scale": 1.0,
+    "mode_scales": {
+      "cars": 1.0,
+      "trucks": 1.0,
+      "buses": 1.0,
+      "pedestrians": 1.0
+    },
+    "streetcar_share_from_bus": 0.0,
+    "heading_ranges": {
+      "n": [
+        160.0,
+        230.0
+      ],
+      "s": [
+        340.0,
+        40.0
+      ],
+      "e": [
+        250.0,
+        310.0
+      ],
+      "w": [
+        70.0,
+        130.0
+      ]
+    },
+    "included_modes": [
+      "buses",
+      "cars",
+      "pedestrians",
+      "trucks"
+    ],
+    "vtype_settings": {
+      "car": {
+        "accel": 2.6,
+        "decel": 4.5,
+        "sigma": 0.5,
+        "length": 5.0,
+        "maxSpeed": 13.89
+      },
+      "truck": {
+        "accel": 1.2,
+        "decel": 3.5,
+        "sigma": 0.5,
+        "length": 10.5,
+        "maxSpeed": 12.5
+      },
+      "bus": {
+        "accel": 1.3,
+        "decel": 4.0,
+        "sigma": 0.5,
+        "length": 12.0,
+        "maxSpeed": 12.5
+      },
+      "streetcar": {
+        "accel": 1.0,
+        "decel": 2.5,
+        "sigma": 0.4,
+        "length": 30.0,
+        "maxSpeed": 16.0
+      }
+    },
+    "matched_locations": [
+      {
+        "location_name": "Dundas St W / McCaul St",
+        "junction_id": "cluster_29696843_393551252_393552059_394512440_#1more",
+        "distance_m": 0.63
+      },
+      {
+        "location_name": "Bathurst St / Dundas St W",
+        "junction_id": "cluster_21631723_393551231_393552095_401526123_#1more",
+        "distance_m": 0.84
+      },
+      {
+        "location_name": "Spadina Ave / Dundas St W",
+        "junction_id": "cluster_25629241_25629242_393547020_393547032_#4more",
+        "distance_m": 1.02
+      },
+      {
+        "location_name": "Dundas St W / Denison Ave",
+        "junction_id": "cluster_29604657_3240419088_3240419089_393551241_#1more",
+        "distance_m": 1.08
+      },
+      {
+        "location_name": "Dundas St W / St Patrick St",
+        "junction_id": "cluster_11149179983_29604800_393551254_393552055_#1more",
+        "distance_m": 1.2
+      },
+      {
+        "location_name": "Dundas St W / Huron St",
+        "junction_id": "cluster_1369085152_1369085197_29604707_393551250_#1more",
+        "distance_m": 1.56
+      },
+      {
+        "location_name": "Dundas St W / Beverley St",
+        "junction_id": "cluster_29604747_393551251_393552061_394502530_#1more",
+        "distance_m": 2.03
+      },
+      {
+        "location_name": "University Ave / Dundas St W",
+        "junction_id": "cluster_34600564_391169142_391175820_393546103_#5more",
+        "distance_m": 2.8
+      }
+    ]
+  },
+  "stats": {
+    "locations_considered": 8,
+    "locations_with_output": 7,
+    "vehicle_flows_created": 156,
+    "person_flows_created": 8,
+    "flows_by_mode": {
+      "cars": 70,
+      "trucks": 53,
+      "buses": 33,
+      "streetcars": 0,
+      "pedestrians": 8
+    },
+    "vehicles_by_mode": {
+      "cars": 18810,
+      "trucks": 239,
+      "buses": 114,
+      "streetcars": 0,
+      "pedestrians": 5347
+    },
+    "skipped_no_data": 0,
+    "skipped_no_node": 0,
+    "skipped_unmapped_approach": 1,
+    "skipped_missing_turn": 25,
+    "skipped_no_route": 22,
+    "skipped_below_threshold": 0
+  },
+  "warnings": [],
+  "tls_generation": null
+}

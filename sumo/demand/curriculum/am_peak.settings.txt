@@ -1,0 +1,74 @@
+================================================================================
+TANGO Curriculum Scenario: AM Peak
+Generated: 2026-03-30
+Source: scripts/generate_curriculum.py (headless, not demand studio UI)
+================================================================================
+
+── Rationale ──────────────────────────────────────────────────────────────────
+MP's home turf — near-stationary, car-dominated. Includes real AM pedestrians
++ 505 streetcar at 6-min headway. Control scenario: MP should perform well here.
+
+── Layer 1: Demand Studio Parameters ──────────────────────────────────────────
+network_file                = sumo/network/osm.net.xml
+tmc_source                  = data/processed/tmc_parsed.csv
+date_policy                 = latest
+time_window_start           = 420 (07:00)
+time_window_duration_min    = 120
+simulation_begin            = 0
+simulation_end              = 1200 (900s sim + 300s buffer)
+simulation_seconds          = 900
+global_demand_scale         = 1.0
+strict_route_check          = True
+min_count_threshold         = 1
+streetcar_share_from_bus    = 0.0 (streetcars handled by Layer 2)
+
+── Included Modes ─────────────────────────────────────────────────────────────
+cars                        = True  (scale 1.0)
+trucks                      = True  (scale 1.0)
+buses                       = True  (scale 1.0)
+pedestrians                 = True  (scale 1.0)
+streetcars                  = True  (via Layer 2 injection)
+
+── Layer 2: SUMO-Native Modifications ─────────────────────────────────────────
+streetcar_injection:
+  headway_seconds           = 360 (6-min, TTC 505 Dundas 2026 plan)
+  directions                = eastbound, westbound
+  status                    = SKIPPED (network lacks tram-allowed edges)
+
+surge_config                = None
+
+── Corridor Intersections (8 TMC locations) ───────────────────────────────────
+1. University Ave / Dundas St W
+2. Dundas St W / St Patrick St
+3. Dundas St W / McCaul St
+4. Dundas St W / Beverley St
+5. Dundas St W / Huron St
+6. Spadina Ave / Dundas St W
+7. Dundas St W / Denison Ave
+8. Bathurst St / Dundas St W
+
+── Heading Ranges (approach classification) ───────────────────────────────────
+north                       = 160.0° – 230.0°
+south                       = 340.0° – 40.0°
+east                        = 250.0° – 310.0°
+west                        = 70.0° – 130.0°
+
+── Vehicle Type Defaults ──────────────────────────────────────────────────────
+car:        length=4.5m, minGap=2.5m, maxSpeed=50km/h, accel=2.6, decel=4.5
+truck:      length=12.0m, minGap=3.0m, maxSpeed=40km/h, accel=1.5, decel=4.0
+bus:        length=12.0m, minGap=3.0m, maxSpeed=40km/h, accel=1.2, decel=4.0
+streetcar:  length=30.0m, vClass=tram, guiShape=rail
+
+── Output Summary ─────────────────────────────────────────────────────────────
+output_file                 = sumo/demand/curriculum/am_peak.rou.xml
+vehicle_flows               = 174
+pedestrian_flows            = 8
+total_cars                  = 13,144
+total_trucks                = 388
+total_buses                 = 168
+total_streetcars            = 0 (skipped — no tram edges)
+total_pedestrians           = 2,096
+
+── MP Failure Mode Target ─────────────────────────────────────────────────────
+None expected. This is MP's optimal operating regime (near-stationary,
+car-dominated). Serves as the control/baseline scenario.

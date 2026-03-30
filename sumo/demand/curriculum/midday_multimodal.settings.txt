@@ -1,0 +1,54 @@
+================================================================================
+TANGO Curriculum Scenario: Midday Multimodal + Heavy Pedestrian
+Generated: 2026-03-30
+Source: scripts/generate_curriculum.py (headless, not demand studio UI)
+================================================================================
+
+── Rationale ──────────────────────────────────────────────────────────────────
+Peak multimodal conflict — ~3,800 peds/hr at Spadina (Chinatown/Kensington).
+Full vehicle mix: cars, trucks, buses (TMC). MP ignores person-weighting
+(bus=30 people, car=1.3).
+
+── Layer 1: Demand Studio Parameters ──────────────────────────────────────────
+network_file                = sumo/network/osm.net.xml
+tmc_source                  = data/processed/tmc_parsed.csv
+date_policy                 = latest
+time_window_start           = 660 (11:00)
+time_window_duration_min    = 180
+simulation_begin            = 0
+simulation_end              = 1500 (1200s sim + 300s buffer)
+simulation_seconds          = 1200
+global_demand_scale         = 1.0
+strict_route_check          = True
+min_count_threshold         = 1
+streetcar_share_from_bus    = 0.0
+
+── Included Modes ─────────────────────────────────────────────────────────────
+cars                        = True  (scale 1.0)
+trucks                      = True  (scale 1.0)
+buses                       = True  (scale 1.0)
+pedestrians                 = True  (scale 1.0)
+streetcars                  = True  (via Layer 2 injection)
+
+── Layer 2: SUMO-Native Modifications ─────────────────────────────────────────
+streetcar_injection:
+  headway_seconds           = 360 (6-min, TTC 505 Dundas midday)
+  directions                = eastbound, westbound
+  status                    = SKIPPED (network lacks tram-allowed edges)
+
+surge_config                = None
+
+── Output Summary ─────────────────────────────────────────────────────────────
+output_file                 = sumo/demand/curriculum/midday_multimodal.rou.xml
+vehicle_flows               = 177
+pedestrian_flows            = 8
+total_cars                  = 20,928
+total_trucks                = 679
+total_buses                 = 179
+total_streetcars            = 0
+total_pedestrians           = 6,538
+
+── MP Failure Mode Target ─────────────────────────────────────────────────────
+Multimodal conflict — MP treats all queue counts equally, doesn't weight by
+person-delay. Pedestrian phases eat into vehicle green time. Bus=30 people
+vs car=1.3.
