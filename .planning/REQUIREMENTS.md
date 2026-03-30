@@ -7,8 +7,8 @@
 
 ### Foundation Fixes
 
-- [ ] **FIX-01**: Demand route files extend beyond simulation end time to prevent FatalTraCIError from demand exhaustion
-- [ ] **FIX-02**: FatalTraCIError mid-episode is treated as truncation (bootstrap from critic) not terminal (value=0)
+- [x] **FIX-01**: Demand route files extend beyond simulation end time to prevent FatalTraCIError from demand exhaustion
+- [x] **FIX-02**: FatalTraCIError mid-episode is treated as truncation (bootstrap from critic) not terminal (value=0)
 - [ ] **FIX-03**: Training runs extended to 200+ episodes to allow policy convergence before curriculum
 
 ### Residual MAPPO Architecture
@@ -22,8 +22,8 @@
 
 ### Demand Generation
 
-- [ ] **DEM-01**: Headless CLI wrapper around demand studio's generate_scenario() callable without Dash UI
-- [ ] **DEM-02**: CLI generates demand .rou.xml files with configurable time-of-day, demand scale, and mode mix
+- [x] **DEM-01**: Headless CLI wrapper around demand studio's generate_scenario() callable without Dash UI
+- [x] **DEM-02**: CLI generates demand .rou.xml files with configurable time-of-day, demand scale, and mode mix
 - [ ] **DEM-03**: At least 4 curriculum scenarios generated: AM peak, PM peak, off-peak, incident/reduced capacity
 - [ ] **DEM-04**: Multimodal demand included (cars, trucks, buses) using TMC data
 
@@ -82,10 +82,10 @@
 | RES-04 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-05 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-06 | Phase 2 | Action-Gate Residual MAPPO | Pending |
-| FIX-01 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
-| FIX-02 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
-| DEM-01 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
-| DEM-02 | Phase 3 | Simulation Alignment + Headless Demand CLI | Pending |
+| FIX-01 | Phase 3 | Simulation Alignment + Headless Demand CLI | Complete |
+| FIX-02 | Phase 3 | Simulation Alignment + Headless Demand CLI | Complete |
+| DEM-01 | Phase 3 | Simulation Alignment + Headless Demand CLI | Complete |
+| DEM-02 | Phase 3 | Simulation Alignment + Headless Demand CLI | Complete |
 | FIX-03 | Phase 4 | Baseline Convergence Validation | Pending |
 | CUR-01 | Phase 5 | Curriculum Training Integration | Pending |
 | CUR-02 | Phase 5 | Curriculum Training Integration | Pending |
@@ -100,7 +100,7 @@
 | EXP-03 | Phase 4.5 | Expansion Scenarios (Conditional) | Pending |
 
 **Coverage:**
-- v1 requirements: 20 total, 2 complete (DEM-03, DEM-04)
+- v1 requirements: 20 total, 6 complete (DEM-01, DEM-02, DEM-03, DEM-04, FIX-01, FIX-02)
 - v1 conditional requirements: 3 (EXP-01, EXP-02, EXP-03)
 - Mapped to phases: 23
 - Unmapped: 0

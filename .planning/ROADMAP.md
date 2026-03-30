@@ -147,7 +147,7 @@ Phase 2 (Action-Gate MAPPO) ─┘                                  │
 |-------|----------------|--------|-----------|
 | 1. Curriculum Scenario Design | 1/1 | Verified (1 gap fixed) | 2026-03-29 |
 | 2. Action-Gate Residual MAPPO | 0/4 | Planned | - |
-| 3. Simulation Alignment + Headless Demand CLI | 0/? | Not started | - |
+| 3. Simulation Alignment + Headless Demand CLI | 1/1 | Complete | 2026-03-30 |
 | 4. Baseline Convergence Validation | 0/? | Not started | - |
 | 4.5 Expansion Scenarios | 0/? | Conditional — after Phase 4 | - |
 | 5. Curriculum Training Integration | 0/? | Not started | - |
