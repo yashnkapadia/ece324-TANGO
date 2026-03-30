@@ -27,6 +27,7 @@ class TrainConfig:
     reward_fairness_weight: float
     reward_residual_weight: float
     use_obs_norm: bool = False
+    residual_mode: str = "none"
 
 
 @dataclass
@@ -48,6 +49,7 @@ class EvalConfig:
     reward_fairness_weight: float
     reward_residual_weight: float
     use_obs_norm: bool = False
+    residual_mode: str = "none"
 
 
 class AsceTrainerBackend:
