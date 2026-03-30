@@ -124,6 +124,32 @@ python apps/demand_studio/app.py
 
 Then open `http://127.0.0.1:8050` in your browser.
 
+UI walkthrough screenshots:
+
+Main UI (network viewer + setup/generation workflow):
+
+![Demand Studio Main UI](docs/assets/images/demand_studio_1.png)
+
+Demand settings tab (TMC location mapping, date/time policy, mode scaling):
+
+![Demand Studio Demand Settings](docs/assets/images/demand_studio_2.png)
+
+Signal and MAPPO settings tab (controller mode, fixed-time and MAPPO hyperparameters):
+
+![Demand Studio Signal and MAPPO Settings](docs/assets/images/demand_studio_3.png)
+
+Advanced vehicle settings tab (approach heading ranges, per-mode vehicle parameters, validation):
+
+![Demand Studio Advanced Vehicle Settings](docs/assets/images/demand_studio_4.png)
+
+UI/processing stack used in Demand Studio:
+- Dash for the local web UI, tabbed layout, state stores, and callbacks
+- Plotly (graph_objects, Scattergl) for interactive network rendering and hover inspection
+- Pandas and NumPy for TMC filtering, aggregation, and numeric transformations
+- SUMO sumolib for network loading, topology inspection, and route/connectivity checks
+- lxml for writing SUMO route, additional, and config XML files
+- Custom CSS in `apps/demand_studio/assets/demand_studio.css` for styling
+
 What the interface does:
 - Connects to a selected `*.net.xml` or `*.net.xml.gz` SUMO network file
 - Renders the network in-app with hover details for each junction
@@ -141,7 +167,6 @@ What the interface does:
 
 Important data rule:
 - Generated demand in this interface is based only on `data/processed/tmc_parsed.csv`
-- No random or placeholder demand is created
 
 Fixed output locations (not user-selectable):
 - Demand route files: `sumo/demand/generated/*.rou.xml`
@@ -149,12 +174,8 @@ Fixed output locations (not user-selectable):
 - Scenario settings export: `sumo/scenarios/generated/*.json`
 - Fixed-time TLS files: `sumo/network/generated/*_fixed_tls.add.xml.gz`
 
-The existing `sumo/demand/demand.rou.xml` remains unchanged and is not replaced by this app.
-
 Network file note:
 - `net.xml` (or `net.xml.gz`) stores network structure and traffic control topology
-- It does not store demand volumes
-- So it is valid to have built the network earlier without choosing demand options like streetcars or pedestrians
 - Demand behavior is applied later through route and scenario files
 
 ### Run Smoke Test
