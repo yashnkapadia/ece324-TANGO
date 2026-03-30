@@ -26,6 +26,66 @@ class Actor(nn.Module):
         return self.net(obs)
 
 
+def augment_obs_with_mp(
+    obs_arr: np.ndarray, mp_actions_list: list[int], n_actions: int
+) -> np.ndarray:
+    """Append MP one-hot to each agent's padded obs. Shape: [N, obs_dim + n_actions]."""
+    N = obs_arr.shape[0]
+    one_hots = np.zeros((N, n_actions), dtype=np.float32)
+    for i, mp_a in enumerate(mp_actions_list):
+        one_hots[i, int(mp_a)] = 1.0
+    return np.concatenate([obs_arr, one_hots], axis=1)
+
+
+class GatedActor(nn.Module):
+    """Two-head actor: gate_head (binary follow/override) + phase_head (phase selection).
+
+    gate_head: Linear(hidden_dim, 2) — index 0 = gate=1 (override), index 1 = gate=0 (follow MP)
+    phase_head: Linear(hidden_dim, n_actions) — used only when gate==1
+    MLP body (self.body) is shared between both heads.
+
+    gate_init_bias: negative values (e.g. -2.0) bias gate toward follow-MP at init.
+        Sign convention: bias[1] (follow-MP) is set to -gate_init_bias (positive when
+        gate_init_bias is negative), bias[0] (override) is set to gate_init_bias (negative).
+        This makes softmax assign higher probability to index 1 (follow MP).
+    """
+
+    def __init__(
+        self,
+        obs_dim: int,
+        n_actions: int,
+        hidden_dim: int = 128,
+        gate_init_bias: float = -2.0,
+    ):
+        super().__init__()
+        self.body = nn.Sequential(
+            nn.Linear(obs_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+        )
+        self.phase_head = nn.Linear(hidden_dim, n_actions)
+        self.gate_head = nn.Linear(hidden_dim, 2)
+        # Warm-start: bias gate toward index 1 (follow MP) by setting
+        # gate_head.bias[1] high and bias[0] low.
+        with torch.no_grad():
+            self.gate_head.bias[0] = gate_init_bias  # override logit low
+            self.gate_head.bias[1] = -gate_init_bias  # follow-MP logit high
+
+    def forward_gate(self, obs: torch.Tensor) -> torch.Tensor:
+        """Returns gate logits [N, 2]."""
+        return self.gate_head(self.body(obs))
+
+    def forward_phase(self, obs: torch.Tensor) -> torch.Tensor:
+        """Returns phase logits [N, n_actions]."""
+        return self.phase_head(self.body(obs))
+
+    def forward(self, obs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Returns (gate_logits [N,2], phase_logits [N, n_actions])."""
+        h = self.body(obs)
+        return self.gate_head(h), self.phase_head(h)
+
+
 class Critic(nn.Module):
     def __init__(self, global_obs_dim: int, hidden_dim: int = 128):
         super().__init__()
@@ -51,6 +111,8 @@ class Transition:
     done: bool
     value: float
     n_valid_actions: int = 0
+    mp_action: int = 0  # MP recommendation at this step (for action_gate mode)
+    gate: int = 0  # Gate decision: 0=follow MP, 1=override (for action_gate mode)
 
 
 class MAPPOTrainer:
