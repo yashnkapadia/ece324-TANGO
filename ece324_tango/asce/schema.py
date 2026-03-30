@@ -16,5 +16,9 @@ ASCE_DATASET_COLUMNS = [
     "delay",
     "queue_total",
     "throughput",
+    "person_delay",
+    "person_throughput",
+    "person_delay_ns",
+    "person_delay_ew",
     "scenario_id",
 ]
