@@ -62,6 +62,11 @@ def main(
         "--resume/--no-resume",
         help="Resume training from existing model_path checkpoint",
     ),
+    num_workers: int = typer.Option(
+        1,
+        "--num-workers",
+        help="Number of parallel SUMO workers for episode collection (1=sequential)",
+    ),
 ):
     """Train the local ASCE MAPPO controller."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -81,6 +86,11 @@ def main(
         raise typer.BadParameter(
             f"Unsupported residual mode: {residual_mode!r}. "
             f"Expected one of: {', '.join(sorted(_VALID_RESIDUAL_MODES))}."
+        )
+
+    if num_workers < 1:
+        raise typer.BadParameter(
+            f"--num-workers must be >= 1, got {num_workers}."
         )
 
     logger.info(f"Using SUMO net: {net_file}")
@@ -112,6 +122,7 @@ def main(
         checkpoint_every=checkpoint_every,
         eval_every=eval_every,
         resume=resume,
+        num_workers=num_workers,
     )
     backend.train(cfg)
 

@@ -31,6 +31,7 @@ class TrainConfig:
     checkpoint_every: int = 0  # save checkpoint every N episodes (0 = end only)
     eval_every: int = 0  # run baseline eval every N episodes (0 = disabled)
     resume: bool = False  # resume from model_path if it exists
+    num_workers: int = 1  # parallel SUMO workers for episode collection (1=sequential)
 
 
 @dataclass
