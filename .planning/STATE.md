@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Position
 
 Phase: 2 of 6 (Action-Gate Residual MAPPO) + Phase 3 complete
-Plan: 2/4 Phase 2 in progress; Phase 3 done (1/1)
+Plan: 3/4 Phase 2 in progress; Phase 3 done (1/1)
 Status: Executing Phase 2; Phase 3 complete
-Last activity: 2026-03-30 — Phase 3: flow buffer, truncation fix, pixi task, scenarios regenerated
+Last activity: 2026-03-30 — Plan 02-03: ResidualMAPPOTrainer with joint logp PPO update
 
-Progress: [███░░░░░░░] ~25%
+Progress: [████░░░░░░] ~35%
 
 ## Performance Metrics
 
@@ -59,12 +59,12 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 1] Curriculum design is the intellectual core — which scenarios, why, what MP assumptions they violate. Requires TMC data exploration and understanding demand studio capabilities/parameters.
-- [Phase 2] Joint log-probability correctness is highest-risk silent error — write unit test confirming zero gradient on phase head for gate=0 transitions before integration.
+- [Phase 2] RESOLVED — Joint logp implemented and verified: gate_mask zeros phase_logp for gate=0 transitions, all 7 tests pass including zero-gradient check.
 - [Phase 3] RESOLVED — headless demand path works end-to-end; pixi deps installed; all 4 scenarios regenerated with buffer
 - [Phase 4] Wall-clock time for 200 episodes unknown — if >8 hours on RTX 4070, reduce to 100 episodes with tighter convergence criterion.
 
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed Phase 3 (Simulation Alignment + Headless Demand CLI)
+Stopped at: Completed 02-03-PLAN.md (ResidualMAPPOTrainer with joint logp PPO update)
 Resume file: None

@@ -15,9 +15,9 @@
 
 - [ ] **RES-01**: Max-Pressure action encoded as one-hot and appended to actor observation at each step
 - [ ] **RES-02**: Actor has binary override gate head (gate logit) alongside existing phase head
-- [ ] **RES-03**: When gate=0 (follow MP), the MP action is executed; when gate=1 (override), the phase head action is used
-- [ ] **RES-04**: PPO update uses joint log-probability: log P(gate) + (gate==1) * log P(phase), with phase head contributing zero gradient when gate=0
-- [ ] **RES-05**: Gate can be warm-started (bias toward gate=0 / follow MP) to stabilize early training
+- [x] **RES-03**: When gate=0 (follow MP), the MP action is executed; when gate=1 (override), the phase head action is used
+- [x] **RES-04**: PPO update uses joint log-probability: log P(gate) + (gate==1) * log P(phase), with phase head contributing zero gradient when gate=0
+- [x] **RES-05**: Gate can be warm-started (bias toward gate=0 / follow MP) to stabilize early training
 - [ ] **RES-06**: Evaluation logs gate_fraction metric (fraction of steps where MAPPO overrides MP)
 
 ### Demand Generation

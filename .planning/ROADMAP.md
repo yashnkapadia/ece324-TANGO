@@ -48,8 +48,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 02-01-PLAN.md — TDD: joint logp and gradient isolation tests (failing red tests first)
-- [ ] 02-02-PLAN.md — GatedActor class, Transition extension, augment_obs_with_mp helper
-- [ ] 02-03-PLAN.md — ResidualMAPPOTrainer with act_batch_residual, joint logp PPO update, TrainConfig residual_mode
+- [x] 02-02-PLAN.md — GatedActor class, Transition extension, augment_obs_with_mp helper
+- [x] 02-03-PLAN.md — ResidualMAPPOTrainer with act_batch_residual, joint logp PPO update, TrainConfig residual_mode
 - [ ] 02-04-PLAN.md — Backend wiring, gate_fraction logging, CLI --residual-mode flag
 
 ### Phase 3: Simulation Alignment + Headless Demand CLI
@@ -146,7 +146,7 @@ Phase 2 (Action-Gate MAPPO) ─┘                                  │
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Curriculum Scenario Design | 1/1 | Verified (1 gap fixed) | 2026-03-29 |
-| 2. Action-Gate Residual MAPPO | 0/4 | Planned | - |
+| 2. Action-Gate Residual MAPPO | 2/4 | Executing (02-03 in progress) | - |
 | 3. Simulation Alignment + Headless Demand CLI | 1/1 | Complete | 2026-03-30 |
 | 4. Baseline Convergence Validation | 0/? | Not started | - |
 | 4.5 Expansion Scenarios | 0/? | Conditional — after Phase 4 | - |
