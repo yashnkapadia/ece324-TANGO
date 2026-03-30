@@ -46,3 +46,4 @@ train-asce-toronto-demand = "python -m ece324_tango.modeling.train --net-file su
 eval-asce-toronto-demand = "python -m ece324_tango.modeling.predict --net-file sumo/network/osm.net.xml --route-file sumo/demand/demand.rou.xml --episodes 1 --seconds 120 --delta-time 5 --reward-mode objective --model-path models/asce_mappo_toronto_demand.pt --out-csv reports/results/asce_eval_metrics_toronto_demand.csv"
 validate-asce-schema = "python -m ece324_tango.dataset"
 plot-interim-figures = "python -m ece324_tango.plots"
+generate-curriculum = "python scripts/generate_curriculum.py"

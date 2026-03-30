@@ -148,16 +148,24 @@ class LocalMappoBackend(AsceTrainerBackend):
                             truncated = True
                     except FatalTraCIError:
                         # SUMO process terminated early (demand exhausted before sim end).
-                        # Treat as terminal step so the episode is cleanly finalised.
+                        # This is a truncation, NOT a terminal state — the episode was
+                        # cut short by an external event, so we should bootstrap from the
+                        # critic's last value estimate rather than assuming value=0 (FIX-02).
                         logger.warning(
                             f"Episode {ep}: SUMO connection closed at step {ep_steps} "
-                            "(demand exhausted). Treating as episode end."
+                            "(demand exhausted). Treating as truncation for bootstrapping."
                         )
                         done = True
-                        terminated = True
-                        truncated = False
+                        terminated = False
+                        truncated = True
                         next_obs = {}
                         rewards = {a: 0.0 for a in active_agents}
+                        # Build bootstrap observations from the last available obs
+                        # since SUMO can no longer provide next_obs.
+                        bootstrap_obs = {
+                            a: padded_obs_list[i]
+                            for i, a in enumerate(active_agents)
+                        }
                     if done and truncated and next_obs:
                         bootstrap_obs = {
                             a: np.asarray(next_obs[a], dtype=np.float32)

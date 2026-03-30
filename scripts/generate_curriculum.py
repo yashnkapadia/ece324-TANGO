@@ -1,9 +1,9 @@
 """Generate curriculum training scenario files from TMC data via demand studio.
 
 Usage:
-    pixi run python scripts/generate_curriculum.py
-    pixi run python scripts/generate_curriculum.py --scenarios am_peak pm_peak
-    pixi run python scripts/generate_curriculum.py --list
+    pixi run generate-curriculum
+    pixi run generate-curriculum --scenarios am_peak pm_peak
+    pixi run generate-curriculum --list
 """
 
 from __future__ import annotations
@@ -13,6 +13,10 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# Buffer added to flow end times so vehicles keep being injected past sim end.
+# Prevents FatalTraCIError from demand exhaustion near episode boundary (FIX-01).
+FLOW_END_BUFFER_S = 300
 
 # demand studio lives in apps/demand_studio/
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "demand_studio"))
@@ -305,11 +309,17 @@ def _audit_scenario(rou_path: Path, spec: ScenarioSpec) -> dict[str, Any]:
     if total < 100:
         issues.append(f"LOW VOLUME: only {total} total vehicles")
 
-    # Check simulation duration alignment
+    # Check simulation duration alignment — flows MUST extend past sim end (FIX-01)
     for f in flows:
         end = int(f.get("end", "0"))
-        if end > spec.simulation_seconds:
-            issues.append(f"TIMING: flow {f.get('id')} ends at {end}s > sim {spec.simulation_seconds}s")
+        fid = f.get("id", "?")
+        if fid.startswith("surge_"):
+            continue  # surge flows have intentionally short windows
+        if end <= spec.simulation_seconds:
+            issues.append(
+                f"TIMING: flow {fid} ends at {end}s <= sim {spec.simulation_seconds}s "
+                f"(should extend past sim end to prevent demand exhaustion)"
+            )
             break
 
     # Check surge was applied if specified
@@ -354,7 +364,7 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
         time_window_start=spec.time_window_start,
         time_window_duration=spec.time_window_duration,
         simulation_begin=0,
-        simulation_end=spec.simulation_seconds,
+        simulation_end=spec.simulation_seconds + FLOW_END_BUFFER_S,
         strict_route_check=False,
         min_count_threshold=1,
         global_demand_scale=spec.global_demand_scale,
@@ -388,7 +398,9 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
 
     # Apply Layer 2 modifiers
     if spec.streetcar_injection is not None:
-        _inject_streetcars(dst, spec.streetcar_injection, net, spec.simulation_seconds)
+        _inject_streetcars(
+            dst, spec.streetcar_injection, net, spec.simulation_seconds + FLOW_END_BUFFER_S
+        )
 
     if spec.surge is not None:
         _apply_surge(dst, spec.surge, net)
