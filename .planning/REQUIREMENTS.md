@@ -66,28 +66,28 @@
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| FIX-01 | Phase 1 | Pending |
-| FIX-02 | Phase 1 | Pending |
-| FIX-03 | Phase 3 | Pending |
-| RES-01 | Phase 2 | Pending |
-| RES-02 | Phase 2 | Pending |
-| RES-03 | Phase 2 | Pending |
-| RES-04 | Phase 2 | Pending |
-| RES-05 | Phase 2 | Pending |
-| RES-06 | Phase 2 | Pending |
-| DEM-01 | Phase 1 | Pending |
-| DEM-02 | Phase 1 | Pending |
-| DEM-03 | Phase 1 | Pending |
-| DEM-04 | Phase 1 | Pending |
-| CUR-01 | Phase 4 | Pending |
-| CUR-02 | Phase 4 | Pending |
-| CUR-03 | Phase 4 | Pending |
-| DAT-01 | Phase 5 | Pending |
-| DAT-02 | Phase 5 | Pending |
-| DAT-03 | Phase 5 | Pending |
-| DAT-04 | Phase 5 | Pending |
+| Requirement | Phase | Phase Name | Status |
+|-------------|-------|------------|--------|
+| FIX-01 | Phase 1 | Foundation Fixes + Scenario Pool | Pending |
+| FIX-02 | Phase 1 | Foundation Fixes + Scenario Pool | Pending |
+| FIX-03 | Phase 3 | Baseline Convergence Validation | Pending |
+| RES-01 | Phase 2 | Action-Gate Residual MAPPO | Pending |
+| RES-02 | Phase 2 | Action-Gate Residual MAPPO | Pending |
+| RES-03 | Phase 2 | Action-Gate Residual MAPPO | Pending |
+| RES-04 | Phase 2 | Action-Gate Residual MAPPO | Pending |
+| RES-05 | Phase 2 | Action-Gate Residual MAPPO | Pending |
+| RES-06 | Phase 2 | Action-Gate Residual MAPPO | Pending |
+| DEM-01 | Phase 1 | Foundation Fixes + Scenario Pool | Pending |
+| DEM-02 | Phase 1 | Foundation Fixes + Scenario Pool | Pending |
+| DEM-03 | Phase 1 | Foundation Fixes + Scenario Pool | Pending |
+| DEM-04 | Phase 1 | Foundation Fixes + Scenario Pool | Pending |
+| CUR-01 | Phase 4 | Curriculum Training Integration | Pending |
+| CUR-02 | Phase 4 | Curriculum Training Integration | Pending |
+| CUR-03 | Phase 4 | Curriculum Training Integration | Pending |
+| DAT-01 | Phase 5 | Eval Loop + Dataset Logging | Pending |
+| DAT-02 | Phase 5 | Eval Loop + Dataset Logging | Pending |
+| DAT-03 | Phase 5 | Eval Loop + Dataset Logging | Pending |
+| DAT-04 | Phase 5 | Eval Loop + Dataset Logging | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
@@ -96,4 +96,4 @@
 
 ---
 *Requirements defined: 2026-03-29*
-*Last updated: 2026-03-29 after initial definition*
+*Last updated: 2026-03-29 after roadmap creation*
