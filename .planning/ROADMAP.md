@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Action-Gate Residual MAPPO** - Two-head actor (gate + phase) with MP one-hot observation input and joint log-probability PPO update
 - [ ] **Phase 3: Simulation Alignment + Headless Demand CLI** - Extend flow durations per scenario specs, fix truncation handling, build headless CLI guided by Phase 1 design
 - [ ] **Phase 4: Baseline Convergence Validation** - 200+ episode training run confirming action-gate policy converges on fixed demand before curriculum
+- [ ] **Phase 4.5: Expansion Scenarios** *(conditional)* - Lane closure, safety-constrained baseline, streetcar short-turn — execute if initial 4 don't sufficiently differentiate MAPPO from MP
 - [ ] **Phase 5: Curriculum Training Integration** - CurriculumManager with scenario sampling, per-episode env rebuild, proposal KPI target
 - [ ] **Phase 6: Eval Loop + Dataset Logging** - Streaming Parquet writer for all 3 controllers across all scenarios, PIRA-compatible schema
 
@@ -73,9 +74,44 @@ Plans:
   3. Gate_fraction shows an increasing trend over training, confirming the policy learns when to override
 **Plans**: TBD
 
+### Phase 4.5: Expansion Scenarios (Conditional)
+**Goal**: Add 3 harder scenarios that compound MP failure modes — lane closure, safety-constrained baseline, and Toronto-specific streetcar short-turn event
+**Depends on**: Phase 4 (convergence results inform whether more scenarios are needed)
+**Requirements**: EXP-01, EXP-02, EXP-03
+**Condition**: Execute if Phase 4 convergence is achieved AND initial 4 scenarios don't sufficiently differentiate MAPPO from MP. Skip if the initial 4 already meet the proposal KPI target.
+**Success Criteria** (what must be TRUE):
+  1. Lane closure scenario: Dundas segment between Spadina-Denison has reduced capacity (speed limit or lane closure via TraCI); SUMO runs without error
+  2. Safety-constrained scenario: AM peak demand with hard min_green=7s/max_green=45s/ped_recall enforced; same demand as Scenario 1 but with constraints active
+  3. Streetcar short-turn scenario (505 Dundas): midday base demand + burst of 3-4 streetcars within 60s at Spadina followed by 15-min gap; models real TTC bunching event
+  4. Each expansion scenario documented with rationale referencing specific MP failure modes it compounds
+  5. All 3 scenarios pass SUMO validation and produce meaningfully different traffic patterns from initial 4
+
+**Scenario Details:**
+
+**Scenario 5: Lane Closure (Construction)**
+- Base: AM peak demand
+- Layer 2 mod: Reduce edge speed on Dundas between Spadina and Denison to 5 km/h, or close 1 lane via TraCI at sim start
+- MP failure: Optimizes per-intersection independently; can't meter traffic upstream of downstream bottleneck
+- Duration: 900s
+
+**Scenario 6: Safety-Constrained Baseline**
+- Base: Identical to Scenario 1 (AM peak, full multimodal)
+- Layer 2 mod: Hard action masking — min_green=7s, max_green=45s, pedestrian recall every 2 cycles
+- MP failure: Unconstrained MP may rapid-switch or starve phases; constrained MP performs differently. MAPPO learns to work within constraints naturally.
+- Duration: 900s
+
+**Scenario 7: Streetcar Short-Turn (505 Dundas)**
+- Base: Midday multimodal demand
+- Layer 2 mod: Inject 3-4 streetcar flows arriving within 60s at Spadina (normally 6-min headway), then 15-min gap. Models real TTC bunching from short-turns.
+- MP failure: Compounds non-stationarity + multimodal + asymmetric demand. 30m streetcars block right-turning traffic, pedestrian conflicts spike during bunched arrivals.
+- Duration: 1200s
+- Toronto-specific: 505 Dundas short-turns are a known operational issue on this exact corridor
+
+**Plans**: TBD
+
 ### Phase 5: Curriculum Training Integration
 **Goal**: MAPPO trains across varied demand scenarios and achieves the proposal's person-time-loss target on at least one evaluation scenario
-**Depends on**: Phase 1 (scenario portfolio), Phase 4 (converged base policy)
+**Depends on**: Phase 1 (scenario portfolio), Phase 4 (converged base policy), Phase 4.5 if executed
 **Requirements**: CUR-01, CUR-02, CUR-03
 **Success Criteria** (what must be TRUE):
   1. TrainConfig accepts a list of route files and the training loop cycles through them across episodes
@@ -109,9 +145,10 @@ Phase 2 (Action-Gate MAPPO) ─┘                                  │
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Curriculum Scenario Design | 0/? | Not started | - |
+| 1. Curriculum Scenario Design | 1/1 | Verified (1 gap fixed) | 2026-03-29 |
 | 2. Action-Gate Residual MAPPO | 0/4 | Planned | - |
 | 3. Simulation Alignment + Headless Demand CLI | 0/? | Not started | - |
 | 4. Baseline Convergence Validation | 0/? | Not started | - |
+| 4.5 Expansion Scenarios | 0/? | Conditional — after Phase 4 | - |
 | 5. Curriculum Training Integration | 0/? | Not started | - |
 | 6. Eval Loop + Dataset Logging | 0/? | Not started | - |

@@ -40,6 +40,12 @@
 - [ ] **DAT-03**: Parquet schema matches ASCE_DATASET_COLUMNS plus controller and scenario_id fields
 - [ ] **DAT-04**: All 3 controllers (MAPPO, Fixed-Time, Max-Pressure) produce labeled rows in the same dataset
 
+### Expansion Scenarios (Conditional — Phase 4.5)
+
+- [ ] **EXP-01**: Lane closure scenario — Dundas segment with reduced capacity via TraCI; SUMO runs without error
+- [ ] **EXP-02**: Safety-constrained scenario — AM peak demand with hard min_green/max_green/ped_recall enforced
+- [ ] **EXP-03**: Streetcar short-turn scenario — midday base + 505 Dundas bunching event (3-4 streetcars in 60s + 15-min gap)
+
 ## v2 Requirements
 
 ### PIRA Integration
@@ -59,7 +65,7 @@
 | Feature | Reason |
 |---------|--------|
 | GNN/attention architecture rewrite (CoLight, CityLight) | On 8-intersection linear corridor, adds complexity without proportional benefit |
-| Pedestrian/cyclist signal phases | Vehicle-focused for milestone 2; TMC ped data available for future |
+| Cyclist-specific signal phases | TMC cyclist data exists but volumes are low on Dundas corridor; defer |
 | Real-time deployment | Academic project; SUMO simulation only |
 | Imitation learning pretraining | Residual approach is strictly better — learns when to deviate, not just to copy |
 | Alternative RL algorithms (QMIX, SAC) | MAPPO validated in literature for this domain; switching adds risk |
@@ -68,8 +74,8 @@
 
 | Requirement | Phase | Phase Name | Status |
 |-------------|-------|------------|--------|
-| DEM-03 | Phase 1 | Curriculum Scenario Design | Pending |
-| DEM-04 | Phase 1 | Curriculum Scenario Design | Pending |
+| DEM-03 | Phase 1 | Curriculum Scenario Design | Complete |
+| DEM-04 | Phase 1 | Curriculum Scenario Design | Complete |
 | RES-01 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-02 | Phase 2 | Action-Gate Residual MAPPO | Pending |
 | RES-03 | Phase 2 | Action-Gate Residual MAPPO | Pending |
@@ -89,11 +95,16 @@
 | DAT-03 | Phase 6 | Eval Loop + Dataset Logging | Pending |
 | DAT-04 | Phase 6 | Eval Loop + Dataset Logging | Pending |
 
+| EXP-01 | Phase 4.5 | Expansion Scenarios (Conditional) | Pending |
+| EXP-02 | Phase 4.5 | Expansion Scenarios (Conditional) | Pending |
+| EXP-03 | Phase 4.5 | Expansion Scenarios (Conditional) | Pending |
+
 **Coverage:**
-- v1 requirements: 20 total
-- Mapped to phases: 20
+- v1 requirements: 20 total, 2 complete (DEM-03, DEM-04)
+- v1 conditional requirements: 3 (EXP-01, EXP-02, EXP-03)
+- Mapped to phases: 23
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
-*Last updated: 2026-03-29 after roadmap creation*
+*Last updated: 2026-03-29 after Phase 1 verification + expansion scenarios added*
