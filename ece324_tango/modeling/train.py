@@ -82,8 +82,31 @@ def main(
         "--route-files",
         help="Comma-separated list of route files for curriculum training",
     ),
+    warm_start_model: str = typer.Option(
+        "",
+        "--warm-start-model",
+        help="Load weights from this checkpoint as a prior (episode count is NOT resumed)",
+    ),
+    reset_obs_norm: bool = typer.Option(
+        False,
+        "--reset-obs-norm/--no-reset-obs-norm",
+        help="Discard the loaded obs normalizer stats after warm-start (recommended when "
+             "switching training distribution)",
+    ),
+    log_file: str = typer.Option(
+        "",
+        "--log-file",
+        help="Write log output to this file (replaces tee, enables TUI)",
+    ),
 ):
     """Train the local ASCE MAPPO controller."""
+    import warnings
+
+    warnings.filterwarnings("ignore", category=UserWarning, module="gymnasium")
+
+    if log_file:
+        logger.add(log_file, level="DEBUG", format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}")
+        logger.info(f"Logging to {log_file}")
     model_path.parent.mkdir(parents=True, exist_ok=True)
     rollout_csv.parent.mkdir(parents=True, exist_ok=True)
     episode_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -92,7 +115,7 @@ def main(
         [f.strip() for f in route_files.split(",") if f.strip()] if route_files else []
     )
 
-    if not net_file or not route_file:
+    if not net_file or (not route_file and not parsed_route_files):
         net_file, route_file = get_default_sumo_files()
 
     if parsed_route_files:
@@ -117,8 +140,21 @@ def main(
             f"--num-workers must be >= 1, got {num_workers}."
         )
 
+    if warm_start_model and not Path(warm_start_model).exists():
+        raise typer.BadParameter(
+            f"--warm-start-model path does not exist: {warm_start_model}"
+        )
+
+    if reset_obs_norm and not warm_start_model:
+        raise typer.BadParameter(
+            "--reset-obs-norm requires --warm-start-model to be set."
+        )
+
     logger.info(f"Using SUMO net: {net_file}")
-    logger.info(f"Using SUMO route: {route_file}")
+    if parsed_route_files:
+        logger.info(f"Using SUMO routes: {len(parsed_route_files)} curriculum files")
+    else:
+        logger.info(f"Using SUMO route: {route_file}")
     backend = LocalMappoBackend()
     cfg = TrainConfig(
         model_path=model_path,
@@ -146,6 +182,8 @@ def main(
         checkpoint_every=checkpoint_every,
         eval_every=eval_every,
         resume=resume,
+        warm_start_model=warm_start_model,
+        reset_obs_norm=reset_obs_norm,
         num_workers=num_workers,
         scale_lr_by_workers=scale_lr_by_workers,
         final_eval_seeds=final_eval_seeds,

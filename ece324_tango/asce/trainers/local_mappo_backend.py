@@ -16,6 +16,7 @@ from ece324_tango.asce.env import (
     pad_observation,
 )
 from ece324_tango.asce.kpi import KPITracker
+from ece324_tango.asce.obs_norm import ObsRunningNorm
 from ece324_tango.asce.mappo import (
     MAPPOTrainer,
     ResidualMAPPOTrainer,
@@ -35,6 +36,32 @@ from ece324_tango.asce.traffic_metrics import (
     rewards_from_metrics,
 )
 from ece324_tango.asce.trainers.base import AsceTrainerBackend, EvalConfig, TrainConfig
+
+
+def _worker_init():
+    """Pool initializer: workers ignore SIGINT so the parent handles it."""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    # Workers inherit the parent's stdout/stderr fds (same terminal the parent's
+    # rich.Live TUI is drawing on). Silence all three layers:
+    #   1. OS-level dup2 → catches C-extension output (SUMO binary step logs)
+    #   2. Python sys.stdout/stderr replacement → catches TraCI print() calls
+    #   3. loguru.remove() → removes tqdm/default handlers added by config.py
+    #   4. warnings.filterwarnings → suppresses gymnasium UserWarning to stderr
+    import os
+    import sys
+    import warnings
+
+    _devnull = open(os.devnull, "w")
+    os.dup2(_devnull.fileno(), 1)
+    os.dup2(_devnull.fileno(), 2)
+    sys.stdout = _devnull
+    sys.stderr = _devnull
+    warnings.filterwarnings("ignore")
+
+    from loguru import logger as _logger
+
+    _logger.remove()
 
 
 def _run_episode_worker(args: dict) -> dict:
@@ -358,6 +385,182 @@ def _run_episode_worker(args: dict) -> dict:
     }
 
 
+def _run_eval_worker(args: dict) -> dict:
+    """Run multi-scenario eval in a subprocess so training isn't blocked.
+
+    Receives a snapshot of model weights (CPU tensors).  Creates its own
+    trainer, loads weights, runs MAPPO + baselines on every scenario, and
+    returns per-scenario MAPPO/MP ratios.
+    """
+    import os
+    import sys
+    import time as _time
+
+    os.environ["LIBSUMO_AS_TRACI"] = "1"
+    libsumo_path = "/usr/share/sumo/tools/libsumo/"
+    if libsumo_path not in sys.path:
+        sys.path.insert(0, libsumo_path)
+
+    import numpy as np_w
+    import torch
+
+    from ece324_tango.asce.baselines import (
+        FixedTimeController as FTC,
+        MaxPressureController as MPC,
+    )
+    from ece324_tango.asce.env import (
+        create_parallel_env as _cpe,
+        flatten_obs_by_agent as _foba,
+        pad_observation as _po,
+    )
+    from ece324_tango.asce.kpi import KPITracker as _KPI
+    from ece324_tango.asce.mappo import ResidualMAPPOTrainer as _RMT
+    from ece324_tango.asce.runtime import extract_reset_obs as _ero
+    from ece324_tango.sumo_rl.environment.env import SumoEnvironment as _SE
+
+    t0 = _time.time()
+    net_file = args["net_file"]
+    eval_routes = args["eval_routes"]
+    model_state = args["model_state_dict"]
+    obs_dim = args["obs_dim"]
+    global_obs_dim = args["global_obs_dim"]
+    n_actions = args["n_actions"]
+    action_dims = args["action_dims"]
+    ordered_agents = args["ordered_agents"]
+    train_ep = args["train_ep"]
+    seconds = args["seconds"]
+    delta_time = args["delta_time"]
+    seed = args["seed"]
+    residual_mode = args["residual_mode"]
+    use_obs_norm = args["use_obs_norm"]
+
+    # Build a throwaway trainer with the snapshotted weights
+    trainer = _RMT(
+        obs_dim=obs_dim,
+        global_obs_dim=global_obs_dim,
+        n_actions=n_actions,
+        residual_mode=residual_mode,
+        device="cpu",
+        use_obs_norm=use_obs_norm,
+    )
+    trainer.actor.load_state_dict(model_state["actor"])
+    trainer.critic.load_state_dict(model_state["critic"])
+    if trainer.obs_norm is not None and model_state.get("obs_norm") is not None:
+        trainer.obs_norm.load_state_dict(model_state["obs_norm"])
+    if trainer.gobs_norm is not None and model_state.get("gobs_norm") is not None:
+        trainer.gobs_norm.load_state_dict(model_state["gobs_norm"])
+    trainer.actor.eval()
+    trainer.critic.eval()
+
+    per_scenario: list[tuple[str, float]] = []
+
+    for eval_route in eval_routes:
+        from pathlib import Path as _P
+
+        scenario_name = _P(eval_route).stem.removesuffix(".rou")
+        results = {}
+
+        for ctrl in ["mappo", "max_pressure", "fixed_time", "nema"]:
+            try:
+                if ctrl == "nema":
+                    ev = _SE(
+                        net_file=net_file,
+                        route_file=eval_route,
+                        use_gui=False,
+                        num_seconds=seconds,
+                        delta_time=delta_time,
+                        sumo_seed=seed,
+                        single_agent=False,
+                        sumo_warnings=False,
+                        fixed_ts=True,
+                        additional_sumo_cmd="--no-step-log true",
+                    )
+                else:
+                    ev = _cpe(
+                        net_file=net_file,
+                        route_file=eval_route,
+                        seed=seed,
+                        use_gui=False,
+                        seconds=seconds,
+                        delta_time=delta_time,
+                        quiet_sumo=True,
+                    )
+                obs_raw = ev.reset(seed=seed)
+                obs = _ero(obs_raw)
+                if not obs:
+                    ev.close()
+                    continue
+                agents = sorted(obs.keys())
+                a_dims = {a: int(ev.action_spaces(a).n) for a in agents}
+                mp = MPC(action_size_by_agent=a_dims)
+                ft = FTC(action_size_by_agent=a_dims, green_duration_s=delta_time)
+                kpi = _KPI()
+                done = False
+
+                while not done:
+                    active = sorted(obs.keys())
+                    if ctrl == "mappo":
+                        gobs = _foba(obs, active)
+                        padded = [
+                            _po(np_w.asarray(obs[a], dtype=np_w.float32), target_dim=obs_dim)
+                            for a in active
+                        ]
+                        n_valid = [a_dims[a] for a in active]
+                        if residual_mode == "action_gate":
+                            mp_acts = mp.actions(obs, env=ev)
+                            mp_list = [mp_acts.get(a, 0) for a in active]
+                            batch_out = trainer.act_batch_residual(padded, gobs, n_valid, mp_list)
+                        else:
+                            batch_out = trainer.act_batch(padded, gobs, n_valid)
+                        actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active)}
+                    elif ctrl == "max_pressure":
+                        actions = mp.actions(obs, env=ev)
+                    elif ctrl == "fixed_time":
+                        actions = ft.actions(obs)
+                    else:
+                        actions = {}
+
+                    try:
+                        result = ev.step(actions)
+                        if ctrl == "nema":
+                            obs, _, dones, _ = result
+                            done = dones.get("__all__", False) if isinstance(dones, dict) else dones
+                        else:
+                            obs, _, done_flag, _ = result
+                            done = (
+                                done_flag.get("__all__", False)
+                                if isinstance(done_flag, dict)
+                                else done_flag
+                            )
+                    except Exception:
+                        done = True
+                    kpi.update(ev)
+
+                k = kpi.summary()
+                results[ctrl] = k.person_time_loss_s
+            except Exception:
+                pass
+            finally:
+                try:
+                    ev.close()
+                except Exception:
+                    pass
+
+        mappo_ptl = results.get("mappo", 0.0)
+        mp_ptl = results.get("max_pressure", 1.0)
+        ratio = mappo_ptl / max(mp_ptl, 1.0)
+        ft_ptl = results.get("fixed_time", 1.0)
+        nema_ptl = results.get("nema", 1.0)
+        per_scenario.append((scenario_name, ratio, mappo_ptl, mp_ptl, ft_ptl, nema_ptl))
+
+    elapsed = _time.time() - t0
+    return {
+        "train_ep": train_ep,
+        "per_scenario": per_scenario,
+        "elapsed": elapsed,
+    }
+
+
 class LocalMappoBackend(AsceTrainerBackend):
     name = "local_mappo"
 
@@ -454,6 +657,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                     )
                 else:
                     logger.info(f"Resumed model from {cfg.model_path}, starting at episode 0")
+
+            # Warm-start: load weights from a prior model without resuming episode count
+            elif cfg.warm_start_model:
+                # Capture correct normalizer dims before load() overwrites them
+                # (ResidualMAPPOTrainer uses augmented_dim = obs_dim + n_actions)
+                fresh_obs_norm_dim = trainer.obs_norm.dim if trainer.obs_norm else obs_dim
+                fresh_gobs_norm_dim = (
+                    trainer.gobs_norm.dim if trainer.gobs_norm else global_obs_dim
+                )
+                trainer.load(cfg.warm_start_model)
+                logger.info(f"Warm-started weights from {cfg.warm_start_model}")
+                if cfg.reset_obs_norm:
+                    if trainer.obs_norm is not None:
+                        trainer.obs_norm = ObsRunningNorm(fresh_obs_norm_dim)
+                    if trainer.gobs_norm is not None:
+                        trainer.gobs_norm = ObsRunningNorm(fresh_gobs_norm_dim)
+                    logger.info("Obs normalizer reset — will re-fit to curriculum distribution")
 
             all_rows: List[dict] = []
             ep_metrics: List[dict] = []
@@ -831,7 +1051,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             logger.success(f"Saved episode metrics: {cfg.episode_metrics_csv}")
 
             # Post-training multi-seed evaluation
-            if cfg.final_eval_seeds > 0:
+            if cfg.final_eval_seeds > 0 and not _interrupt_requested:
                 logger.info(
                     f"Running {cfg.final_eval_seeds}-seed final evaluation ..."
                 )
@@ -889,7 +1109,33 @@ class LocalMappoBackend(AsceTrainerBackend):
         }
 
         mp_ctx = multiprocessing.get_context("spawn")
-        pool = mp_ctx.Pool(processes=cfg.num_workers, maxtasksperchild=1)
+        pool = mp_ctx.Pool(
+            processes=cfg.num_workers, maxtasksperchild=1,
+            initializer=_worker_init,
+        )
+        eval_pool = mp_ctx.Pool(
+            processes=1, maxtasksperchild=1,
+            initializer=_worker_init,
+        )
+        bg_eval_result = None
+
+        # Live status panel
+        from ece324_tango.asce.trainers.training_tui import TrainingStatus
+
+        scenario_pool_names = [
+            Path(rf).stem.removesuffix(".rou")
+            for rf in (cfg.route_files if cfg.route_files else [cfg.route_file])
+        ]
+        tui = TrainingStatus(
+            total_episodes=cfg.episodes,
+            num_workers=cfg.num_workers,
+            scenario_names=scenario_pool_names,
+            device=str(trainer.device) if hasattr(trainer, "device") else "cuda",
+            scenario_id=cfg.scenario_id,
+            start_episode=start_episode,
+            initial_best_ratio=best_eval_ratio,
+        )
+        tui.start()
 
         try:
             for ep_batch_start in range(
@@ -920,6 +1166,17 @@ class LocalMappoBackend(AsceTrainerBackend):
                     Path(rf).stem.removesuffix(".rou") for rf in scenario_pool
                 ]
 
+                # Log scenario assignments for this batch
+                if len(scenario_pool) > 1:
+                    assignments = [
+                        f"w{i}={scenario_ids[(ep_batch_start + i) % len(scenario_pool)]}"
+                        for i in range(batch_size)
+                    ]
+                    logger.info(
+                        f"Batch ep {ep_batch_start}-{ep_batch_start + batch_size - 1} "
+                        f"scenarios: {', '.join(assignments)}"
+                    )
+
                 worker_args = [
                     {
                         "net_file": cfg.net_file,
@@ -947,7 +1204,34 @@ class LocalMappoBackend(AsceTrainerBackend):
                     for i in range(batch_size)
                 ]
 
-                results = pool.map(_run_episode_worker, worker_args)
+                async_result = pool.map_async(_run_episode_worker, worker_args)
+                # Poll with timeout so Ctrl+C can break through
+                while not async_result.ready():
+                    if _interrupt_requested_ref():
+                        break
+                    async_result.wait(timeout=2.0)
+                if _interrupt_requested_ref() and not async_result.ready():
+                    # Workers ignore SIGINT, so terminate them
+                    pool.terminate()
+                    pool.join()
+                    # Save what we have
+                    logger.warning(
+                        f"Interrupted during batch ep {ep_batch_start} "
+                        f"— saving checkpoint ..."
+                    )
+                    trainer.save(str(cfg.model_path))
+                    pd.DataFrame(ep_metrics).to_csv(
+                        cfg.episode_metrics_csv, index=False
+                    )
+                    logger.success(
+                        f"Checkpoint saved. "
+                        f"Resume with --resume --episodes {cfg.episodes}"
+                    )
+                    tui.stop()
+                    eval_pool.terminate()
+                    eval_pool.join()
+                    return best_eval_ratio
+                results = async_result.get()
 
                 # Update obs_norm in main process from worker-collected raw observations
                 for res in results:
@@ -984,9 +1268,11 @@ class LocalMappoBackend(AsceTrainerBackend):
                 # Collect metrics and rows from all workers
                 batch_elapsed = _time.time() - batch_t0
                 worker_times = [r["elapsed"] for r in results]
+                progress_pct = min(100, (ep_batch_start + batch_size) / cfg.episodes * 100)
                 logger.info(
                     f"Workers completed: ep {ep_batch_start}-"
-                    f"{ep_batch_start + batch_size - 1}, "
+                    f"{ep_batch_start + batch_size - 1} "
+                    f"({progress_pct:.0f}%), "
                     f"avg {np.mean(worker_times):.1f}s/episode, "
                     f"batch wall {batch_elapsed:.1f}s"
                 )
@@ -1009,11 +1295,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                         }
                     )
                     logger.info(
-                        f"Episode {ep_num}: "
+                        f"Episode {ep_num} [{res['scenario_id']}]: "
                         f"reward={res['ep_reward'] / max(1, res['ep_steps']):.4f}, "
                         f"steps={res['ep_steps']}, "
                         f"gate_fraction={res['gate_fraction']:.3f}"
                     )
+
+                # Update TUI panel
+                batch_gate_fracs = [r["gate_fraction"] for r in results]
+                batch_rewards = [
+                    r["ep_reward"] / max(1, r["ep_steps"]) for r in results
+                ]
+                tui.update_batch(
+                    last_ep=ep_batch_start + batch_size - 1,
+                    batch_wall_s=batch_elapsed,
+                    avg_gate_frac=float(np.mean(batch_gate_fracs)),
+                    avg_reward=float(np.mean(batch_rewards)),
+                )
 
                 # Periodic checkpoint — trigger if any episode in batch crosses boundary
                 last_ep = ep_batch_start + batch_size - 1
@@ -1029,37 +1327,112 @@ class LocalMappoBackend(AsceTrainerBackend):
                     )
                     logger.info(f"  Checkpoint saved at episode {last_ep}")
 
-                # Periodic baseline evaluation — trigger if any episode crosses boundary
+                # Collect background eval results (if any finished)
+                if bg_eval_result is not None and bg_eval_result.ready():
+                    try:
+                        ev_res = bg_eval_result.get(timeout=1)
+                        parts = ", ".join(
+                            f"{name} MAPPO/MP={r:.3f}"
+                            for name, r, *_ in ev_res["per_scenario"]
+                        )
+                        for name, ratio, m_ptl, mp_ptl, ft_ptl, nema_ptl in ev_res["per_scenario"]:
+                            logger.info(
+                                f"  EVAL ep {ev_res['train_ep']} [{name}]: "
+                                f"person-time-loss -> MAPPO={m_ptl:.0f}s, MP={mp_ptl:.0f}s, "
+                                f"FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
+                                f"MAPPO/MP={ratio:.3f}"
+                            )
+                        worst = max(r for _, r, *_ in ev_res["per_scenario"])
+                        if len(ev_res["per_scenario"]) > 1:
+                            logger.info(
+                                f"  EVAL ep {ev_res['train_ep']}: {parts} | "
+                                f"worst={worst:.3f} ({ev_res['elapsed']:.0f}s)"
+                            )
+                        if worst < best_eval_ratio:
+                            best_eval_ratio = worst
+                            trainer.save(str(best_model_path))
+                            logger.info(
+                                f"  New best model: MAPPO/MP={worst:.3f} → "
+                                f"{best_model_path}"
+                            )
+                        tui.update_eval_results(
+                            eval_ep=ev_res["train_ep"],
+                            ratios={
+                                name: r
+                                for name, r, *_ in ev_res["per_scenario"]
+                            },
+                        )
+                    except Exception as e:
+                        logger.warning(f"  Background eval failed: {e}")
+                    bg_eval_result = None
+
+                # Periodic baseline evaluation — launch in background
                 if cfg.eval_every > 0 and (
                     last_ep // cfg.eval_every > (first_ep - 1) // cfg.eval_every
                     if first_ep > 0
                     else (last_ep + 1) >= cfg.eval_every
                 ):
-                    eval_ratio = self._run_inline_eval(
-                        cfg,
-                        env,
-                        trainer,
-                        obs_dim,
-                        global_obs_dim,
-                        action_dims,
-                        n_actions,
-                        ordered_agents,
-                        last_ep,
-                        route_files=cfg.route_files if cfg.route_files else None,
-                    )
-                    if eval_ratio < best_eval_ratio:
-                        best_eval_ratio = eval_ratio
-                        trainer.save(str(best_model_path))
+                    if bg_eval_result is not None and not bg_eval_result.ready():
                         logger.info(
-                            f"  New best model: MAPPO/MP={eval_ratio:.3f} → "
-                            f"{best_model_path}"
+                            f"  Eval still running from prior batch — skipping eval at ep {last_ep}"
                         )
+                    else:
+                        eval_routes = cfg.route_files if cfg.route_files else [cfg.route_file]
+                        eval_model_state_dict = {
+                            "actor": {
+                                k: v.cpu() for k, v in trainer.actor.state_dict().items()
+                            },
+                            "critic": {
+                                k: v.cpu() for k, v in trainer.critic.state_dict().items()
+                            },
+                            "obs_norm": trainer.obs_norm.state_dict()
+                            if trainer.obs_norm is not None
+                            else None,
+                            "gobs_norm": trainer.gobs_norm.state_dict()
+                            if trainer.gobs_norm is not None
+                            else None,
+                        }
+                        eval_args = {
+                            "net_file": cfg.net_file,
+                            "eval_routes": eval_routes,
+                            "model_state_dict": eval_model_state_dict,
+                            "obs_dim": obs_dim,
+                            "global_obs_dim": global_obs_dim,
+                            "n_actions": n_actions,
+                            "action_dims": action_dims,
+                            "ordered_agents": ordered_agents,
+                            "train_ep": last_ep,
+                            "seconds": cfg.seconds,
+                            "delta_time": cfg.delta_time,
+                            "seed": cfg.seed,
+                            "residual_mode": cfg.residual_mode,
+                            "use_obs_norm": cfg.use_obs_norm,
+                        }
+                        bg_eval_result = eval_pool.apply_async(
+                            _run_eval_worker, (eval_args,)
+                        )
+                        logger.info(
+                            f"  Background eval launched for ep {last_ep} "
+                            f"({len(eval_routes)} scenarios)"
+                        )
+                        tui.update_eval_started()
 
                 # Graceful exit on interrupt
                 if _interrupt_requested_ref():
                     logger.warning(
                         f"Interrupted after episode {last_ep} — saving checkpoint ..."
                     )
+                    # Kill background eval immediately
+                    if bg_eval_result is not None and not bg_eval_result.ready():
+                        logger.info("  Terminating background eval ...")
+                        eval_pool.terminate()
+                        eval_pool.join()
+                        # Recreate pool so finally block doesn't error
+                        eval_pool = mp_ctx.Pool(
+                            processes=1, maxtasksperchild=1,
+                            initializer=_worker_init,
+                        )
+                        bg_eval_result = None
                     trainer.save(str(cfg.model_path))
                     pd.DataFrame(ep_metrics).to_csv(
                         cfg.episode_metrics_csv, index=False
@@ -1073,9 +1446,37 @@ class LocalMappoBackend(AsceTrainerBackend):
                         f"Resume with --resume --episodes {cfg.episodes}"
                     )
                     break
+
+            # Drain any pending background eval before returning
+            if bg_eval_result is not None:
+                try:
+                    if bg_eval_result.ready():
+                        ev_res = bg_eval_result.get(timeout=1)
+                        worst = max(r for _, r, *_ in ev_res["per_scenario"])
+                        for name, ratio, m_ptl, mp_ptl, ft_ptl, nema_ptl in ev_res["per_scenario"]:
+                            logger.info(
+                                f"  EVAL ep {ev_res['train_ep']} [{name}]: "
+                                f"person-time-loss -> MAPPO={m_ptl:.0f}s, MP={mp_ptl:.0f}s, "
+                                f"FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
+                                f"MAPPO/MP={ratio:.3f}"
+                            )
+                        if worst < best_eval_ratio:
+                            best_eval_ratio = worst
+                            trainer.save(str(best_model_path))
+                            logger.info(
+                                f"  New best model: MAPPO/MP={worst:.3f} → "
+                                f"{best_model_path}"
+                            )
+                    else:
+                        logger.info("  Background eval still running — skipping final drain")
+                except Exception:
+                    pass
         finally:
-            pool.close()
+            tui.stop()
+            pool.terminate()
             pool.join()
+            eval_pool.terminate()
+            eval_pool.join()
         return best_eval_ratio
 
     def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,

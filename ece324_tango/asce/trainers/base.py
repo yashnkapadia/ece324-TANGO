@@ -31,6 +31,8 @@ class TrainConfig:
     checkpoint_every: int = 0  # save checkpoint every N episodes (0 = end only)
     eval_every: int = 0  # run baseline eval every N episodes (0 = disabled)
     resume: bool = False  # resume from model_path if it exists
+    warm_start_model: str = ""  # load weights from this path as a prior (no episode resume)
+    reset_obs_norm: bool = False  # discard loaded obs normalizer stats (use with warm_start_model)
     num_workers: int = 1  # parallel SUMO workers for episode collection (1=sequential)
     scale_lr_by_workers: bool = True  # scale LR by 1/sqrt(num_workers) for batched training
     final_eval_seeds: int = 5  # multi-seed eval after training (0 = disabled)
