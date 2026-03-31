@@ -38,6 +38,7 @@ class TrainConfig:
     eval_baselines: list[str] = field(default_factory=lambda: ["max_pressure"])
     scale_lr_by_workers: bool = True  # scale LR by 1/sqrt(num_workers) for batched training
     final_eval_seeds: int = 5  # multi-seed eval after training (0 = disabled)
+    log_file: str = ""
     route_files: list[str] = field(default_factory=list)  # curriculum scenario route files
 
 

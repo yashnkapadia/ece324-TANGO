@@ -118,6 +118,8 @@ def main(
     if log_file:
         logger.add(log_file, level="DEBUG", format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}")
         logger.info(f"Logging to {log_file}")
+        if resume:
+            logger.info("=" * 24 + " RESUME SESSION " + "=" * 24)
     model_path.parent.mkdir(parents=True, exist_ok=True)
     rollout_csv.parent.mkdir(parents=True, exist_ok=True)
     episode_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -227,6 +229,7 @@ def main(
         eval_baselines=parsed_eval_baselines,
         scale_lr_by_workers=scale_lr_by_workers,
         final_eval_seeds=final_eval_seeds,
+        log_file=log_file,
         route_files=parsed_route_files,
     )
     backend.train(cfg)

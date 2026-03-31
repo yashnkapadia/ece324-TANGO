@@ -1,4 +1,7 @@
-from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
+from ece324_tango.asce.trainers.local_mappo_backend import (
+    LocalMappoBackend,
+    _infer_start_episode_from_log,
+)
 from ece324_tango.asce.trainers.training_tui import TrainingStatus
 
 
@@ -37,3 +40,18 @@ def test_train_state_round_trip(tmp_path):
     assert restored["scenario_best_ratios"]["am_peak"] == 0.88
     assert restored["last_eval_ep"] == 63
     assert restored["last_eval_ratios"]["pm_peak"] == 0.95
+
+
+def test_infer_start_episode_from_log(tmp_path):
+    log_file = tmp_path / "run.log"
+    log_file.write_text(
+        "\n".join(
+            [
+                "2026-03-31 INFO Checkpoint saved at episode 31.",
+                "2026-03-31 INFO Resumed from models/asce_mappo_curriculum.pt at episode 32",
+                "2026-03-31 INFO Checkpoint saved at episode 104.",
+            ]
+        )
+    )
+
+    assert _infer_start_episode_from_log(str(log_file)) == 105

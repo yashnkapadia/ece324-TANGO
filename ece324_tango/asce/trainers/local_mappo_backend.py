@@ -7,6 +7,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+from pandas.errors import EmptyDataError
 from loguru import logger
 from traci.exceptions import FatalTraCIError
 
@@ -113,6 +114,51 @@ def _build_scenario_best_paths(model_path: Path, scenario_names: list[str]) -> d
 
 def _build_train_state_path(model_path: Path) -> Path:
     return model_path.with_name(f"{model_path.stem}_train_state.json")
+
+
+def _load_checkpoint_metadata(checkpoint_path: Path) -> dict:
+    import torch
+
+    payload = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    return {
+        "use_obs_norm": bool(
+            payload.get(
+                "use_obs_norm",
+                payload.get("obs_norm") is not None
+                or payload.get("gobs_norm") is not None,
+            )
+        ),
+        "residual_mode": payload.get("residual_mode", "none"),
+    }
+
+
+def _infer_start_episode_from_log(log_file: str) -> int | None:
+    if not log_file:
+        return None
+    path = Path(log_file)
+    if not path.exists():
+        return None
+
+    best = None
+    for line in path.read_text(errors="ignore").splitlines():
+        if "Checkpoint saved at episode " in line:
+            try:
+                episode = int(line.rsplit("Checkpoint saved at episode ", 1)[1].split(".", 1)[0])
+                best = max(best or episode, episode)
+            except Exception:
+                continue
+        elif "Resumed from " in line and " at episode " in line:
+            try:
+                episode = int(line.rsplit(" at episode ", 1)[1])
+                best = max(best or episode, episode)
+            except Exception:
+                continue
+        elif "Resume with --resume --episodes " in line:
+            # These lines appear after an interrupt/save and imply the current batch
+            # was persisted. Prefer explicit "Checkpoint saved at episode X" when present.
+            continue
+
+    return None if best is None else best + 1
 
 
 def _run_episode_worker(args: dict) -> dict:
@@ -720,6 +766,30 @@ class LocalMappoBackend(AsceTrainerBackend):
             resolved_device = self._resolve_device(cfg.device)
             logger.info(f"Training device: {resolved_device}")
 
+            checkpoint_metadata = None
+            metadata_source = None
+            if cfg.resume and cfg.model_path.exists():
+                checkpoint_metadata = _load_checkpoint_metadata(cfg.model_path)
+                metadata_source = str(cfg.model_path)
+            elif cfg.warm_start_model:
+                checkpoint_metadata = _load_checkpoint_metadata(Path(cfg.warm_start_model))
+                metadata_source = cfg.warm_start_model
+
+            effective_use_obs_norm = cfg.use_obs_norm
+            effective_residual_mode = cfg.residual_mode
+            if checkpoint_metadata is not None:
+                effective_use_obs_norm = checkpoint_metadata["use_obs_norm"]
+                effective_residual_mode = checkpoint_metadata["residual_mode"]
+                if (
+                    effective_use_obs_norm != cfg.use_obs_norm
+                    or effective_residual_mode != cfg.residual_mode
+                ):
+                    logger.info(
+                        f"Aligning trainer config to checkpoint metadata from "
+                        f"{metadata_source}: residual_mode={effective_residual_mode}, "
+                        f"use_obs_norm={effective_use_obs_norm}"
+                    )
+
             # Scale LR for batched training: 1/sqrt(num_workers) reduces
             # effective step size to compensate for larger gradient batches.
             lr_kwargs = {}
@@ -737,14 +807,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                     f"critic_lr={lr_kwargs['critic_lr']:.2e}"
                 )
 
-            if cfg.residual_mode == "action_gate":
+            if effective_residual_mode == "action_gate":
                 trainer = ResidualMAPPOTrainer(
                     obs_dim=obs_dim,
                     global_obs_dim=global_obs_dim,
                     n_actions=n_actions,
                     residual_mode="action_gate",
                     device=resolved_device,
-                    use_obs_norm=cfg.use_obs_norm,
+                    use_obs_norm=effective_use_obs_norm,
                     **lr_kwargs,
                 )
             else:
@@ -753,7 +823,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     global_obs_dim=global_obs_dim,
                     n_actions=n_actions,
                     device=resolved_device,
-                    use_obs_norm=cfg.use_obs_norm,
+                    use_obs_norm=effective_use_obs_norm,
                     **lr_kwargs,
                 )
 
@@ -765,14 +835,37 @@ class LocalMappoBackend(AsceTrainerBackend):
             if cfg.resume and cfg.model_path.exists():
                 trainer.load(str(cfg.model_path))
                 # Infer start_episode from existing metrics CSV
+                recovered_start_episode = False
                 if cfg.episode_metrics_csv.exists():
-                    existing_metrics = pd.read_csv(cfg.episode_metrics_csv)
-                    start_episode = int(existing_metrics["episode"].max()) + 1
-                    logger.info(
-                        f"Resumed from {cfg.model_path} at episode {start_episode}"
-                    )
+                    try:
+                        existing_metrics = pd.read_csv(cfg.episode_metrics_csv)
+                        if not existing_metrics.empty and "episode" in existing_metrics:
+                            start_episode = int(existing_metrics["episode"].max()) + 1
+                            recovered_start_episode = True
+                        logger.info(
+                            f"Resumed from {cfg.model_path} at episode {start_episode}"
+                        )
+                    except EmptyDataError:
+                        logger.warning(
+                            f"Episode metrics CSV is empty: {cfg.episode_metrics_csv}. "
+                            "Continuing resume with checkpoint metadata only."
+                        )
+                    except Exception as exc:
+                        logger.warning(
+                            f"Failed to read episode metrics from "
+                            f"{cfg.episode_metrics_csv}: {exc}. "
+                            "Continuing resume with checkpoint metadata only."
+                        )
                 else:
                     logger.info(f"Resumed model from {cfg.model_path}, starting at episode 0")
+                if not recovered_start_episode:
+                    inferred_start_episode = _infer_start_episode_from_log(cfg.log_file)
+                    if inferred_start_episode is not None:
+                        start_episode = max(start_episode, inferred_start_episode)
+                        logger.info(
+                            f"Inferred resume episode {start_episode} from log file "
+                            f"{cfg.log_file}"
+                        )
 
             # Warm-start: load weights from a prior model without resuming episode count
             elif cfg.warm_start_model:
@@ -816,6 +909,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                     try:
                         ep_metrics_df = pd.read_csv(cfg.episode_metrics_csv)
                         ep_metrics = ep_metrics_df.to_dict("records")
+                    except EmptyDataError:
+                        logger.warning(
+                            f"Episode metrics CSV is empty: {cfg.episode_metrics_csv}"
+                        )
                     except Exception as exc:
                         logger.warning(
                             f"Failed to restore episode metrics from {cfg.episode_metrics_csv}: {exc}"
@@ -824,6 +921,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                     try:
                         rollout_df = pd.read_csv(cfg.rollout_csv)
                         all_rows = rollout_df.to_dict("records")
+                    except EmptyDataError:
+                        logger.warning(
+                            f"Rollout CSV is empty: {cfg.rollout_csv}"
+                        )
                     except Exception as exc:
                         logger.warning(
                             f"Failed to restore rollout rows from {cfg.rollout_csv}: {exc}"
