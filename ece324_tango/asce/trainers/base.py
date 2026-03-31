@@ -32,6 +32,7 @@ class TrainConfig:
     eval_every: int = 0  # run baseline eval every N episodes (0 = disabled)
     resume: bool = False  # resume from model_path if it exists
     num_workers: int = 1  # parallel SUMO workers for episode collection (1=sequential)
+    scale_lr_by_workers: bool = True  # scale LR by 1/sqrt(num_workers) for batched training
 
 
 @dataclass

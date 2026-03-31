@@ -11,7 +11,7 @@ from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.config import MODELS_DIR, PROCESSED_DATA_DIR, RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
-_VALID_REWARD_MODES = {"objective", "sumo", "time_loss", "residual_mp"}
+_VALID_REWARD_MODES = {"objective", "person_objective", "sumo", "time_loss", "residual_mp"}
 _VALID_RESIDUAL_MODES = {"none", "action_gate"}
 
 
@@ -34,7 +34,7 @@ def main(
     backend_verbose: bool = False,
     reward_mode: str = typer.Option(
         "objective",
-        help="Reward mode: objective | sumo | time_loss | residual_mp",
+        help="Reward mode: objective | person_objective | sumo | time_loss | residual_mp",
     ),
     reward_delay_weight: float = 1.0,
     reward_throughput_weight: float = 1.0,
@@ -66,6 +66,11 @@ def main(
         1,
         "--num-workers",
         help="Number of parallel SUMO workers for episode collection (1=sequential)",
+    ),
+    scale_lr_by_workers: bool = typer.Option(
+        True,
+        "--scale-lr/--no-scale-lr",
+        help="Scale learning rate by 1/sqrt(num_workers) for batched training stability",
     ),
 ):
     """Train the local ASCE MAPPO controller."""
@@ -123,6 +128,7 @@ def main(
         eval_every=eval_every,
         resume=resume,
         num_workers=num_workers,
+        scale_lr_by_workers=scale_lr_by_workers,
     )
     backend.train(cfg)
 

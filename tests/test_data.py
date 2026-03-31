@@ -18,6 +18,10 @@ def test_asce_schema_columns_stable():
         "delay",
         "queue_total",
         "throughput",
+        "person_delay",
+        "person_throughput",
+        "person_delay_ns",
+        "person_delay_ew",
         "scenario_id",
     }
     assert set(ASCE_DATASET_COLUMNS) == expected

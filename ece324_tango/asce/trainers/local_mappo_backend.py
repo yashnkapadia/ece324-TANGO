@@ -196,13 +196,20 @@ def _run_episode_worker(args: dict) -> dict:
                 )
                 aug_obs_list = [aug_arr[i] for i in range(len(active_agents))]
 
-            # Collect raw obs for norm update in main process (do NOT update here)
+            # Update obs_norm locally (same as sequential path) so act_batch
+            # sees properly normalized observations during this episode.
             if residual_mode == "action_gate" and aug_obs_list is not None:
-                for aug_obs in aug_obs_list:
-                    raw_obs_for_norm.append(aug_obs.copy())
+                if trainer.obs_norm is not None:
+                    for aug_obs in aug_obs_list:
+                        trainer.obs_norm.update(aug_obs)
+                raw_obs_for_norm.extend(aug_obs.copy() for aug_obs in aug_obs_list)
             else:
-                for padded_obs in padded_obs_list:
-                    raw_obs_for_norm.append(padded_obs.copy())
+                if trainer.obs_norm is not None:
+                    for padded_obs in padded_obs_list:
+                        trainer.obs_norm.update(padded_obs)
+                raw_obs_for_norm.extend(padded_obs.copy() for padded_obs in padded_obs_list)
+            if trainer.gobs_norm is not None:
+                trainer.gobs_norm.update(gobs)
             raw_gobs_for_norm.append(gobs.copy())
 
             if residual_mode == "action_gate":
@@ -394,6 +401,23 @@ class LocalMappoBackend(AsceTrainerBackend):
             resolved_device = self._resolve_device(cfg.device)
             logger.info(f"Training device: {resolved_device}")
 
+            # Scale LR for batched training: 1/sqrt(num_workers) reduces
+            # effective step size to compensate for larger gradient batches.
+            lr_kwargs = {}
+            if cfg.num_workers > 1 and cfg.scale_lr_by_workers:
+                import math as _math
+
+                lr_scale = 1.0 / _math.sqrt(cfg.num_workers)
+                lr_kwargs = {
+                    "actor_lr": 3e-4 * lr_scale,
+                    "critic_lr": 1e-3 * lr_scale,
+                }
+                logger.info(
+                    f"LR scaled by 1/sqrt({cfg.num_workers})={lr_scale:.3f}: "
+                    f"actor_lr={lr_kwargs['actor_lr']:.2e}, "
+                    f"critic_lr={lr_kwargs['critic_lr']:.2e}"
+                )
+
             if cfg.residual_mode == "action_gate":
                 trainer = ResidualMAPPOTrainer(
                     obs_dim=obs_dim,
@@ -402,6 +426,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     residual_mode="action_gate",
                     device=resolved_device,
                     use_obs_norm=cfg.use_obs_norm,
+                    **lr_kwargs,
                 )
             else:
                 trainer = MAPPOTrainer(
@@ -410,6 +435,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     n_actions=n_actions,
                     device=resolved_device,
                     use_obs_norm=cfg.use_obs_norm,
+                    **lr_kwargs,
                 )
 
             # Resume from checkpoint if requested
@@ -428,6 +454,10 @@ class LocalMappoBackend(AsceTrainerBackend):
 
             all_rows: List[dict] = []
             ep_metrics: List[dict] = []
+            best_eval_ratio = float("inf")  # best MAPPO/MP ratio (lower is better)
+            best_model_path = cfg.model_path.with_name(
+                cfg.model_path.stem + "_best" + cfg.model_path.suffix
+            )
 
             # Resolve effective reward mode: action_gate supersedes residual_mp
             if cfg.residual_mode == "action_gate" and cfg.reward_mode == "residual_mp":
@@ -728,10 +758,17 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Periodic baseline evaluation
                 if cfg.eval_every > 0 and (ep + 1) % cfg.eval_every == 0:
-                    self._run_inline_eval(
+                    eval_ratio = self._run_inline_eval(
                         cfg, env, trainer, obs_dim, global_obs_dim, action_dims,
                         n_actions, ordered_agents, ep,
                     )
+                    if eval_ratio < best_eval_ratio:
+                        best_eval_ratio = eval_ratio
+                        trainer.save(str(best_model_path))
+                        logger.info(
+                            f"  New best model: MAPPO/MP={eval_ratio:.3f} → "
+                            f"{best_model_path}"
+                        )
 
                 # Graceful exit on interrupt
                 if _interrupt_requested:
@@ -914,18 +951,27 @@ class LocalMappoBackend(AsceTrainerBackend):
                         f"gate_fraction={res['gate_fraction']:.3f}"
                     )
 
-                # Periodic checkpoint
+                # Periodic checkpoint — trigger if any episode in batch crosses boundary
                 last_ep = ep_batch_start + batch_size - 1
-                if cfg.checkpoint_every > 0 and (last_ep + 1) % cfg.checkpoint_every == 0:
+                first_ep = ep_batch_start
+                if cfg.checkpoint_every > 0 and (
+                    last_ep // cfg.checkpoint_every > (first_ep - 1) // cfg.checkpoint_every
+                    if first_ep > 0
+                    else (last_ep + 1) >= cfg.checkpoint_every
+                ):
                     trainer.save(str(cfg.model_path))
                     pd.DataFrame(ep_metrics).to_csv(
                         cfg.episode_metrics_csv, index=False
                     )
                     logger.info(f"  Checkpoint saved at episode {last_ep}")
 
-                # Periodic baseline evaluation
-                if cfg.eval_every > 0 and (last_ep + 1) % cfg.eval_every == 0:
-                    self._run_inline_eval(
+                # Periodic baseline evaluation — trigger if any episode crosses boundary
+                if cfg.eval_every > 0 and (
+                    last_ep // cfg.eval_every > (first_ep - 1) // cfg.eval_every
+                    if first_ep > 0
+                    else (last_ep + 1) >= cfg.eval_every
+                ):
+                    eval_ratio = self._run_inline_eval(
                         cfg,
                         env,
                         trainer,
@@ -936,6 +982,13 @@ class LocalMappoBackend(AsceTrainerBackend):
                         ordered_agents,
                         last_ep,
                     )
+                    if eval_ratio < best_eval_ratio:
+                        best_eval_ratio = eval_ratio
+                        trainer.save(str(best_model_path))
+                        logger.info(
+                            f"  New best model: MAPPO/MP={eval_ratio:.3f} → "
+                            f"{best_model_path}"
+                        )
 
                 # Graceful exit on interrupt
                 if _interrupt_requested_ref():
@@ -1064,12 +1117,14 @@ class LocalMappoBackend(AsceTrainerBackend):
         mp_ptl = results.get("max_pressure", 1.0)
         ft_ptl = results.get("fixed_time", 1.0)
         nema_ptl = results.get("nema", 1.0)
+        ratio = mappo_ptl / max(mp_ptl, 1.0)
         logger.info(
             f"  EVAL ep {train_ep}: person-time-loss → "
             f"MAPPO={mappo_ptl:.0f}s, MP={mp_ptl:.0f}s, FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
-            f"MAPPO/MP={mappo_ptl / max(mp_ptl, 1.0):.3f}, "
+            f"MAPPO/MP={ratio:.3f}, "
             f"MAPPO/NEMA={mappo_ptl / max(nema_ptl, 1.0):.3f}"
         )
+        return ratio
 
     def evaluate(self, cfg: EvalConfig) -> None:
         cfg.out_csv.parent.mkdir(parents=True, exist_ok=True)
