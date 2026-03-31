@@ -1014,7 +1014,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             prev_sigterm = signal.signal(signal.SIGTERM, _handle_interrupt)
 
             if cfg.num_workers > 1:
-                best_eval_ratio = self._train_parallel(
+                best_eval_ratio, completed_training = self._train_parallel(
                     cfg=cfg,
                     trainer=trainer,
                     obs_dim=obs_dim,
@@ -1050,10 +1050,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                 ).items():
                     if scenario_name in scenario_best_ratios and ratio is not None:
                         scenario_best_ratios[scenario_name] = float(ratio)
+            else:
+                completed_training = False
 
+            ran_training_episode = False
             for ep in range(start_episode, cfg.episodes):
                 if cfg.num_workers > 1:
                     break  # parallel path already handled all episodes
+                ran_training_episode = True
 
                 # Curriculum: select scenario for this episode
                 if cfg.route_files:
@@ -1389,8 +1393,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                     )
                     break
 
-            signal.signal(signal.SIGINT, prev_sigint)
-            signal.signal(signal.SIGTERM, prev_sigterm)
+            if cfg.num_workers == 1:
+                completed_training = (
+                    ran_training_episode and not _interrupt_requested
+                )
 
             self._save_model_atomic(trainer, cfg.model_path)
             logger.success(f"Saved MAPPO model: {cfg.model_path}")
@@ -1413,12 +1419,21 @@ class LocalMappoBackend(AsceTrainerBackend):
             logger.success(f"Saved episode metrics: {cfg.episode_metrics_csv}")
 
             # Post-training multi-seed evaluation
-            if cfg.final_eval_seeds > 0 and not _interrupt_requested:
+            if start_episode >= cfg.episodes:
+                logger.warning(
+                    f"Requested episodes ({cfg.episodes}) have already been reached "
+                    f"by the resume state ({start_episode}). Skipping final evaluation. "
+                    "Increase --episodes to continue training."
+                )
+            elif cfg.final_eval_seeds > 0 and completed_training and not _interrupt_requested:
                 logger.info(
                     f"Running {cfg.final_eval_seeds}-seed final evaluation ..."
                 )
                 final_ratios = []
                 for s in range(cfg.final_eval_seeds):
+                    if _interrupt_requested:
+                        logger.warning("Final evaluation interrupted — skipping remaining seeds.")
+                        break
                     eval_seed = cfg.seed + 1000 + s
                     eval_res = self._run_inline_eval(
                         cfg, env, trainer, obs_dim, global_obs_dim,
@@ -1426,16 +1441,23 @@ class LocalMappoBackend(AsceTrainerBackend):
                         train_ep=f"final-s{s}",
                         eval_seed=eval_seed,
                         route_files=cfg.route_files if cfg.route_files else None,
+                        interrupt_requested_ref=lambda: _interrupt_requested,
                     )
+                    if eval_res["worst_ratio"] is None:
+                        logger.warning("Final evaluation interrupted mid-seed.")
+                        break
                     final_ratios.append(eval_res["worst_ratio"])
-                mean_ratio = float(np.mean(final_ratios))
-                std_ratio = float(np.std(final_ratios))
-                logger.success(
-                    f"Final eval ({cfg.final_eval_seeds} seeds): "
-                    f"MAPPO/MP = {mean_ratio:.3f} +/- {std_ratio:.3f}  "
-                    f"(seeds: {[f'{r:.3f}' for r in final_ratios]})"
-                )
+                if final_ratios:
+                    mean_ratio = float(np.mean(final_ratios))
+                    std_ratio = float(np.std(final_ratios))
+                    logger.success(
+                        f"Final eval ({len(final_ratios)} seeds): "
+                        f"MAPPO/MP = {mean_ratio:.3f} +/- {std_ratio:.3f}  "
+                        f"(seeds: {[f'{r:.3f}' for r in final_ratios]})"
+                    )
         finally:
+            signal.signal(signal.SIGINT, prev_sigint)
+            signal.signal(signal.SIGTERM, prev_sigterm)
             env.close()
 
     def _train_parallel(
@@ -1461,7 +1483,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         train_state_path: Path | None = None,
         last_eval_ep: int | str | None = None,
         last_eval_ratios: dict[str, float] | None = None,
-    ) -> float:
+    ) -> tuple[float, bool]:
         """Run training with parallel episode collection via multiprocessing.Pool."""
         import multiprocessing
         import time as _time
@@ -1512,6 +1534,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             initial_eval_ratios=last_eval_ratios,
         )
         tui.start()
+        completed_training = start_episode < cfg.episodes
 
         try:
             for ep_batch_start in range(
@@ -1615,7 +1638,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     tui.stop()
                     eval_pool.terminate()
                     eval_pool.join()
-                    return best_eval_ratio
+                    return best_eval_ratio, False
                 results = async_result.get()
 
                 # Update obs_norm in main process from worker-collected raw observations
@@ -1869,6 +1892,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         f"Checkpoint saved at episode {last_ep}. "
                         f"Resume with --resume --episodes {cfg.episodes}"
                     )
+                    completed_training = False
                     break
 
             # Drain any pending background eval before returning
@@ -1917,12 +1941,13 @@ class LocalMappoBackend(AsceTrainerBackend):
             pool.join()
             eval_pool.terminate()
             eval_pool.join()
-        return best_eval_ratio
+        return best_eval_ratio, completed_training
 
     def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,
                          action_dims, n_actions, ordered_agents, train_ep,
                          eval_seed: int | None = None,
-                         route_files: list[str] | None = None):
+                         route_files: list[str] | None = None,
+                         interrupt_requested_ref=None):
         """Run one-episode eval for MAPPO vs baselines on the training scenario(s).
 
         When route_files is provided, evaluates on ALL scenarios and returns the
@@ -1935,15 +1960,27 @@ class LocalMappoBackend(AsceTrainerBackend):
         per_scenario_results: list[dict] = []
 
         for eval_route in eval_routes:
+            if interrupt_requested_ref is not None and interrupt_requested_ref():
+                logger.warning(f"  Final eval interrupted before scenario {eval_route}")
+                break
             scenario_name = Path(eval_route).stem.removesuffix(".rou")
             ratio = self._run_single_eval(
                 cfg, trainer, obs_dim, global_obs_dim, action_dims, n_actions,
                 ordered_agents, train_ep, eval_route, scenario_name,
                 eval_seed=eval_seed,
+                interrupt_requested_ref=interrupt_requested_ref,
             )
+            if ratio is None:
+                break
             per_scenario_results.append(
                 {"scenario_name": scenario_name, "ratio": ratio}
             )
+
+        if not per_scenario_results:
+            return {
+                "worst_ratio": None,
+                "per_scenario": [],
+            }
 
         if len(per_scenario_results) > 1:
             parts = ", ".join(
@@ -1963,7 +2000,8 @@ class LocalMappoBackend(AsceTrainerBackend):
     def _run_single_eval(self, cfg, trainer, obs_dim, global_obs_dim,
                          action_dims, n_actions, ordered_agents, train_ep,
                          route_file: str, scenario_name: str,
-                         eval_seed: int | None = None):
+                         eval_seed: int | None = None,
+                         interrupt_requested_ref=None):
         """Run one-episode eval on a single scenario for MAPPO vs baselines."""
         import torch
         from ece324_tango.sumo_rl.environment.env import SumoEnvironment
@@ -1971,6 +2009,12 @@ class LocalMappoBackend(AsceTrainerBackend):
         seed = eval_seed if eval_seed is not None else cfg.seed
         results = {}
         for controller_name in _eval_controller_sequence(cfg.eval_baselines):
+            if interrupt_requested_ref is not None and interrupt_requested_ref():
+                logger.warning(
+                    f"  Final eval interrupted before controller "
+                    f"{controller_name} on [{scenario_name}]"
+                )
+                return None
             if controller_name == "nema":
                 eval_env = SumoEnvironment(
                     net_file=cfg.net_file,
@@ -2009,6 +2053,12 @@ class LocalMappoBackend(AsceTrainerBackend):
                 done = False
 
                 while not done:
+                    if interrupt_requested_ref is not None and interrupt_requested_ref():
+                        logger.warning(
+                            f"  Final eval interrupted during [{scenario_name}] "
+                            f"{controller_name}"
+                        )
+                        return None
                     active = sorted(obs.keys())
                     if controller_name == "mappo":
                         gobs = flatten_obs_by_agent(obs, active)
