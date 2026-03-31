@@ -96,6 +96,20 @@ def _format_eval_summary(
     return ratio, log_line
 
 
+def _sanitize_scenario_name(name: str) -> str:
+    safe = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in name)
+    return safe.strip("_") or "scenario"
+
+
+def _build_scenario_best_paths(model_path: Path, scenario_names: list[str]) -> dict[str, Path]:
+    return {
+        scenario_name: model_path.with_name(
+            f"{model_path.stem}_best_{_sanitize_scenario_name(scenario_name)}{model_path.suffix}"
+        )
+        for scenario_name in scenario_names
+    }
+
+
 def _run_episode_worker(args: dict) -> dict:
     """Run a single SUMO episode in a subprocess for parallel collection.
 
@@ -597,6 +611,37 @@ class LocalMappoBackend(AsceTrainerBackend):
             return "cuda" if torch.cuda.is_available() else "cpu"
         return device
 
+    def _update_best_eval_checkpoints(
+        self,
+        trainer,
+        per_scenario_results: list[dict],
+        best_eval_ratio: float,
+        best_model_path: str,
+        scenario_best_ratios: dict[str, float],
+        scenario_best_paths: dict[str, Path],
+    ) -> float:
+        worst = max(res["ratio"] for res in per_scenario_results)
+        if worst < best_eval_ratio:
+            best_eval_ratio = worst
+            trainer.save(str(best_model_path))
+            logger.info(
+                f"  New overall best model: MAPPO/MP={worst:.3f} → {best_model_path}"
+            )
+
+        for res in per_scenario_results:
+            scenario_name = res["scenario_name"]
+            ratio = res["ratio"]
+            if ratio < scenario_best_ratios.get(scenario_name, float("inf")):
+                scenario_best_ratios[scenario_name] = ratio
+                scenario_best_path = scenario_best_paths[scenario_name]
+                trainer.save(str(scenario_best_path))
+                logger.info(
+                    f"  New best for [{scenario_name}]: MAPPO/MP={ratio:.3f} → "
+                    f"{scenario_best_path}"
+                )
+
+        return best_eval_ratio
+
     def train(self, cfg: TrainConfig) -> None:
         cfg.model_path.parent.mkdir(parents=True, exist_ok=True)
         cfg.rollout_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -706,6 +751,17 @@ class LocalMappoBackend(AsceTrainerBackend):
             best_model_path = cfg.model_path.with_name(
                 cfg.model_path.stem + "_best" + cfg.model_path.suffix
             )
+            eval_scenario_names = (
+                [Path(rf).stem.removesuffix(".rou") for rf in cfg.route_files]
+                if cfg.route_files
+                else [Path(cfg.route_file).stem.removesuffix(".rou")]
+            )
+            scenario_best_paths = _build_scenario_best_paths(
+                cfg.model_path, eval_scenario_names
+            )
+            scenario_best_ratios = {
+                scenario_name: float("inf") for scenario_name in eval_scenario_names
+            }
 
             # Resolve effective reward mode: action_gate supersedes residual_mp
             if cfg.residual_mode == "action_gate" and cfg.reward_mode == "residual_mp":
@@ -1030,18 +1086,19 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Periodic baseline evaluation
                 if cfg.eval_every > 0 and (ep + 1) % cfg.eval_every == 0:
-                    eval_ratio = self._run_inline_eval(
+                    eval_res = self._run_inline_eval(
                         cfg, env, trainer, obs_dim, global_obs_dim, action_dims,
                         n_actions, ordered_agents, ep,
                         route_files=cfg.route_files if cfg.route_files else None,
                     )
-                    if eval_ratio < best_eval_ratio:
-                        best_eval_ratio = eval_ratio
-                        trainer.save(str(best_model_path))
-                        logger.info(
-                            f"  New best model: MAPPO/MP={eval_ratio:.3f} → "
-                            f"{best_model_path}"
-                        )
+                    best_eval_ratio = self._update_best_eval_checkpoints(
+                        trainer=trainer,
+                        per_scenario_results=eval_res["per_scenario"],
+                        best_eval_ratio=best_eval_ratio,
+                        best_model_path=str(best_model_path),
+                        scenario_best_ratios=scenario_best_ratios,
+                        scenario_best_paths=scenario_best_paths,
+                    )
 
                 # Graceful exit on interrupt
                 if _interrupt_requested:
@@ -1083,14 +1140,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                 final_ratios = []
                 for s in range(cfg.final_eval_seeds):
                     eval_seed = cfg.seed + 1000 + s
-                    ratio = self._run_inline_eval(
+                    eval_res = self._run_inline_eval(
                         cfg, env, trainer, obs_dim, global_obs_dim,
                         action_dims, n_actions, ordered_agents,
                         train_ep=f"final-s{s}",
                         eval_seed=eval_seed,
                         route_files=cfg.route_files if cfg.route_files else None,
                     )
-                    final_ratios.append(ratio)
+                    final_ratios.append(eval_res["worst_ratio"])
                 mean_ratio = float(np.mean(final_ratios))
                 std_ratio = float(np.std(final_ratios))
                 logger.success(
@@ -1376,13 +1433,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 f"  EVAL ep {ev_res['train_ep']}: {parts} | "
                                 f"worst={worst:.3f} ({ev_res['elapsed']:.0f}s)"
                             )
-                        if worst < best_eval_ratio:
-                            best_eval_ratio = worst
-                            trainer.save(str(best_model_path))
-                            logger.info(
-                                f"  New best model: MAPPO/MP={worst:.3f} → "
-                                f"{best_model_path}"
-                            )
+                        best_eval_ratio = self._update_best_eval_checkpoints(
+                            trainer=trainer,
+                            per_scenario_results=ev_res["per_scenario"],
+                            best_eval_ratio=best_eval_ratio,
+                            best_model_path=str(best_model_path),
+                            scenario_best_ratios=scenario_best_ratios,
+                            scenario_best_paths=scenario_best_paths,
+                        )
                         tui.update_eval_results(
                             eval_ep=ev_res["train_ep"],
                             ratios={
@@ -1491,16 +1549,16 @@ class LocalMappoBackend(AsceTrainerBackend):
                             ],
                             "elapsed": max(res["elapsed"] for res in worker_eval_results),
                         }
-                        worst = max(res["ratio"] for res in ev_res["per_scenario"])
                         for res in ev_res["per_scenario"]:
                             logger.info(res["log_line"])
-                        if worst < best_eval_ratio:
-                            best_eval_ratio = worst
-                            trainer.save(str(best_model_path))
-                            logger.info(
-                                f"  New best model: MAPPO/MP={worst:.3f} → "
-                                f"{best_model_path}"
-                            )
+                        best_eval_ratio = self._update_best_eval_checkpoints(
+                            trainer=trainer,
+                            per_scenario_results=ev_res["per_scenario"],
+                            best_eval_ratio=best_eval_ratio,
+                            best_model_path=str(best_model_path),
+                            scenario_best_ratios=scenario_best_ratios,
+                            scenario_best_paths=scenario_best_paths,
+                        )
                     else:
                         logger.info("  Background eval still running — skipping final drain")
                 except Exception:
@@ -1526,7 +1584,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         max_pressure because model selection uses the MAPPO/MP ratio.
         """
         eval_routes = route_files if route_files else [cfg.route_file]
-        per_scenario_ratios: list[tuple[str, float]] = []
+        per_scenario_results: list[dict] = []
 
         for eval_route in eval_routes:
             scenario_name = Path(eval_route).stem.removesuffix(".rou")
@@ -1535,17 +1593,24 @@ class LocalMappoBackend(AsceTrainerBackend):
                 ordered_agents, train_ep, eval_route, scenario_name,
                 eval_seed=eval_seed,
             )
-            per_scenario_ratios.append((scenario_name, ratio))
-
-        if len(per_scenario_ratios) > 1:
-            parts = ", ".join(
-                f"{name} MAPPO/MP={r:.3f}" for name, r in per_scenario_ratios
+            per_scenario_results.append(
+                {"scenario_name": scenario_name, "ratio": ratio}
             )
-            worst = max(r for _, r in per_scenario_ratios)
+
+        if len(per_scenario_results) > 1:
+            parts = ", ".join(
+                f"{res['scenario_name']} MAPPO/MP={res['ratio']:.3f}"
+                for res in per_scenario_results
+            )
+            worst = max(res["ratio"] for res in per_scenario_results)
             logger.info(f"  EVAL ep {train_ep}: {parts} | worst={worst:.3f}")
-            return worst
         else:
-            return per_scenario_ratios[0][1]
+            worst = per_scenario_results[0]["ratio"]
+
+        return {
+            "worst_ratio": worst,
+            "per_scenario": per_scenario_results,
+        }
 
     def _run_single_eval(self, cfg, trainer, obs_dim, global_obs_dim,
                          action_dims, n_actions, ordered_agents, train_ep,
