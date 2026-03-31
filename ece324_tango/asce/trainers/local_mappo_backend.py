@@ -489,7 +489,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             prev_sigterm = signal.signal(signal.SIGTERM, _handle_interrupt)
 
             if cfg.num_workers > 1:
-                self._train_parallel(
+                best_eval_ratio = self._train_parallel(
                     cfg=cfg,
                     trainer=trainer,
                     obs_dim=obs_dim,
@@ -504,6 +504,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                     ep_metrics=ep_metrics,
                     env=env,
                     _interrupt_requested_ref=lambda: _interrupt_requested,
+                    best_eval_ratio=best_eval_ratio,
+                    best_model_path=str(best_model_path),
                 )
 
             for ep in range(start_episode, cfg.episodes):
@@ -801,6 +803,29 @@ class LocalMappoBackend(AsceTrainerBackend):
 
             logger.success(f"Saved rollout samples: {cfg.rollout_csv}")
             logger.success(f"Saved episode metrics: {cfg.episode_metrics_csv}")
+
+            # Post-training multi-seed evaluation
+            if cfg.final_eval_seeds > 0:
+                logger.info(
+                    f"Running {cfg.final_eval_seeds}-seed final evaluation ..."
+                )
+                final_ratios = []
+                for s in range(cfg.final_eval_seeds):
+                    eval_seed = cfg.seed + 1000 + s
+                    ratio = self._run_inline_eval(
+                        cfg, env, trainer, obs_dim, global_obs_dim,
+                        action_dims, n_actions, ordered_agents,
+                        train_ep=f"final-s{s}",
+                        eval_seed=eval_seed,
+                    )
+                    final_ratios.append(ratio)
+                mean_ratio = float(np.mean(final_ratios))
+                std_ratio = float(np.std(final_ratios))
+                logger.success(
+                    f"Final eval ({cfg.final_eval_seeds} seeds): "
+                    f"MAPPO/MP = {mean_ratio:.3f} +/- {std_ratio:.3f}  "
+                    f"(seeds: {[f'{r:.3f}' for r in final_ratios]})"
+                )
         finally:
             env.close()
 
@@ -820,7 +845,9 @@ class LocalMappoBackend(AsceTrainerBackend):
         ep_metrics: list,
         env,
         _interrupt_requested_ref,
-    ) -> None:
+        best_eval_ratio: float = float("inf"),
+        best_model_path: str = "",
+    ) -> float:
         """Run training with parallel episode collection via multiprocessing.Pool."""
         import multiprocessing
         import time as _time
@@ -1011,9 +1038,11 @@ class LocalMappoBackend(AsceTrainerBackend):
         finally:
             pool.close()
             pool.join()
+        return best_eval_ratio
 
     def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,
-                         action_dims, n_actions, ordered_agents, train_ep):
+                         action_dims, n_actions, ordered_agents, train_ep,
+                         eval_seed: int | None = None):
         """Run one-episode eval for MAPPO vs baselines on the training scenario.
 
         Baselines:
@@ -1024,6 +1053,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         import torch
         from ece324_tango.sumo_rl.environment.env import SumoEnvironment
 
+        seed = eval_seed if eval_seed is not None else cfg.seed
         results = {}
         for controller_name in ["mappo", "max_pressure", "fixed_time", "nema"]:
             if controller_name == "nema":
@@ -1034,7 +1064,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     use_gui=False,
                     num_seconds=cfg.seconds,
                     delta_time=cfg.delta_time,
-                    sumo_seed=cfg.seed,
+                    sumo_seed=seed,
                     single_agent=False,
                     sumo_warnings=False,
                     fixed_ts=True,
@@ -1044,14 +1074,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                 eval_env = create_parallel_env(
                     net_file=cfg.net_file,
                     route_file=cfg.route_file,
-                    seed=cfg.seed,
+                    seed=seed,
                     use_gui=False,
                     seconds=cfg.seconds,
                     delta_time=cfg.delta_time,
                     quiet_sumo=True,
                 )
             try:
-                obs_raw = eval_env.reset(seed=cfg.seed)
+                obs_raw = eval_env.reset(seed=seed)
                 obs = extract_reset_obs(obs_raw)
                 if not obs:
                     continue

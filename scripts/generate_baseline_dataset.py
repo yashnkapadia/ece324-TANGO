@@ -166,7 +166,7 @@ def main(
             )
 
     # Also produce a single merged file for convenience
-    parts = list(OUT_DIR.glob("*.parquet"))
+    parts = [p for p in OUT_DIR.glob("*.parquet") if p.name != "baseline_dataset.parquet"]
     if parts:
         merged = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
         merged_path = OUT_DIR / "baseline_dataset.parquet"

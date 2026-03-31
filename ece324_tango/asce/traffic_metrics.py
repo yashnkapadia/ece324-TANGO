@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Sequence
 import numpy as np
 
 from ece324_tango.asce.env import split_ns_ew_from_obs
+from ece324_tango.asce.kpi import occupancy_for_vehicle_type
 from ece324_tango.asce.runtime import jain_index
 from ece324_tango.error_reporting import report_exception
 
@@ -28,6 +29,10 @@ class IntersectionMetrics:
     delay: float
     queue_total: int
     throughput: int
+    person_delay: float
+    person_throughput: float
+    person_delay_ns: float
+    person_delay_ew: float
     scenario_id: str
 
     def to_row(self) -> dict:
@@ -47,6 +52,10 @@ class IntersectionMetrics:
             "delay": self.delay,
             "queue_total": self.queue_total,
             "throughput": self.throughput,
+            "person_delay": self.person_delay,
+            "person_throughput": self.person_throughput,
+            "person_delay_ns": self.person_delay_ns,
+            "person_delay_ew": self.person_delay_ew,
             "scenario_id": self.scenario_id,
         }
 
@@ -132,6 +141,32 @@ def _mean_edge_speed(env, edge_ids: Sequence[str]) -> float:
     return float(np.mean(vals)) if vals else 0.0
 
 
+def _person_weighted_edge_metrics(env, edge_ids: Sequence[str]) -> tuple[float, float]:
+    """Return (person_delay, person_throughput) for vehicles on *edge_ids*.
+
+    person_delay  = sum(waiting_time_i * occupancy_i)
+    person_throughput = sum(occupancy_i)
+    """
+    person_delay = 0.0
+    person_throughput = 0.0
+    for edge_id in edge_ids:
+        try:
+            veh_ids = env.sumo.edge.getLastStepVehicleIDs(edge_id)
+        except Exception:
+            continue
+        for vid in veh_ids:
+            try:
+                wt = max(0.0, float(env.sumo.vehicle.getWaitingTime(vid)))
+                vtype = env.sumo.vehicle.getTypeID(vid)
+            except Exception:
+                wt = 0.0
+                vtype = ""
+            occ = occupancy_for_vehicle_type(vtype)
+            person_delay += wt * occ
+            person_throughput += occ
+    return person_delay, person_throughput
+
+
 def _is_expected_metric_fallback_error(exc: BaseException) -> bool:
     if isinstance(exc, (AttributeError, KeyError, RuntimeError)):
         return True
@@ -184,6 +219,12 @@ def compute_metrics_for_agent(
         throughput = int(
             round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber"))
         )
+        pd_ns, pt_ns = _person_weighted_edge_metrics(env, ns_edges)
+        pd_ew, pt_ew = _person_weighted_edge_metrics(env, ew_edges)
+        person_delay = pd_ns + pd_ew
+        person_throughput = pt_ns + pt_ew
+        person_delay_ns = pd_ns
+        person_delay_ew = pd_ew
         current_phase = int(env.sumo.trafficlight.getPhase(agent_id))
     except Exception as exc:
         if not _is_expected_metric_fallback_error(exc):
@@ -213,6 +254,11 @@ def compute_metrics_for_agent(
         delay = float(max(0.0, queue_ns + queue_ew))
         queue_total = int(round(queue_ns + queue_ew))
         throughput = int(round(arrivals_ns + arrivals_ew))
+        # Fallback: assume all cars (1.3 occupancy)
+        person_delay = delay * 1.3
+        person_throughput = float(throughput) * 1.3
+        person_delay_ns = float(max(0.0, queue_ns)) * 1.3
+        person_delay_ew = float(max(0.0, queue_ew)) * 1.3
         current_phase = -1
 
     time_of_day = float((start_hour * 3600.0 + float(time_step)) / 86400.0)
@@ -232,6 +278,10 @@ def compute_metrics_for_agent(
         delay=float(delay),
         queue_total=queue_total,
         throughput=throughput,
+        person_delay=float(person_delay),
+        person_throughput=float(person_throughput),
+        person_delay_ns=float(person_delay_ns),
+        person_delay_ew=float(person_delay_ew),
         scenario_id=scenario_id,
     )
 
@@ -271,35 +321,53 @@ def rewards_from_metrics(
     reward_mode = str(mode).strip().lower()
     if reward_mode == "sumo":
         return {}
-    if reward_mode not in {"objective", "time_loss", "residual_mp"}:
+    valid_modes = {"objective", "person_objective", "time_loss", "residual_mp"}
+    if reward_mode not in valid_modes:
         raise ValueError(
-            f"Unsupported reward mode: {mode!r}. Expected one of: objective, sumo, time_loss, residual_mp."
+            f"Unsupported reward mode: {mode!r}. Expected one of: {', '.join(sorted(valid_modes))}."
         )
 
-    throughputs = [float(m.throughput) for m in metrics_by_agent.values()]
-    fairness = jain_index(throughputs)
     rewards: Dict[str, float] = {}
     for agent_id, m in metrics_by_agent.items():
         delay = max(0.0, float(m.delay))
         if reward_mode == "time_loss":
-            # Normalize delay scale for PPO stability while keeping monotonicity with time loss.
             rewards[agent_id] = float(-weights.delay * math.log1p(delay))
             continue
 
-        delay_term = math.log1p(delay)
-        throughput_term = math.log1p(max(0.0, float(m.throughput)))
-        reward = (
-            -weights.delay * delay_term
-            + weights.throughput * throughput_term
-            + weights.fairness * float(fairness)
-        )
+        if reward_mode == "objective":
+            # Original reward: raw delay + throughput + global throughput fairness.
+            throughputs = [float(mm.throughput) for mm in metrics_by_agent.values()]
+            delay_term = math.log1p(delay)
+            throughput_term = math.log1p(max(0.0, float(m.throughput)))
+            reward = (
+                -weights.delay * delay_term
+                + weights.throughput * throughput_term
+                + weights.fairness * jain_index(throughputs)
+            )
+        else:
+            # person_objective: person-weighted per-person-normalized delay
+            # + local approach fairness. No throughput term.
+            p_delay = max(0.0, float(m.person_delay))
+            p_tp = max(1.0, float(m.person_throughput))
+            delay_term = math.log1p(p_delay / p_tp)
+
+            ns_d = max(0.0, float(m.person_delay_ns))
+            ew_d = max(0.0, float(m.person_delay_ew))
+            if ns_d + ew_d == 0.0:
+                local_fairness = 1.0
+            else:
+                local_fairness = jain_index([ns_d, ew_d])
+
+            reward = (
+                -weights.delay * delay_term
+                + weights.fairness * float(local_fairness)
+            )
+
         if reward_mode == "residual_mp":
             if mp_deviation_by_agent is None:
                 raise ValueError(
                     "residual_mp reward mode requires mp_deviation_by_agent values."
                 )
-            # Penalize deviations from max-pressure so RL learns residual corrections only
-            # when they improve downstream objective terms.
             reward -= weights.residual * float(mp_deviation_by_agent.get(agent_id, 0.0))
         rewards[agent_id] = float(reward)
     return rewards

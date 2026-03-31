@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import numpy as np
 
+from ece324_tango.asce.runtime import jain_index
 from ece324_tango.error_reporting import report_exception
 
 
@@ -13,16 +14,6 @@ def occupancy_for_vehicle_type(type_id: str) -> float:
     if any(token in tid for token in ("bus", "tram", "streetcar", "ttc")):
         return 30.0
     return 1.3
-
-
-def _jain_index(values: List[float]) -> float:
-    arr = np.asarray(values, dtype=np.float64)
-    if arr.size == 0:
-        return 0.0
-    den = arr.size * np.square(arr).sum()
-    if den <= 0:
-        return 0.0
-    return float(np.square(arr.sum()) / den)
 
 
 @dataclass
@@ -115,5 +106,5 @@ class KPITracker:
             person_time_loss_s=float(self.total_person_time_loss_s),
             avg_trip_time_s=float(avg_trip),
             arrived_vehicles=int(self.arrived_vehicles),
-            vehicle_delay_jain=_jain_index(self._arrived_time_losses),
+            vehicle_delay_jain=jain_index(self._arrived_time_losses),
         )

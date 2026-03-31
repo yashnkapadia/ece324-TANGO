@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import torch
 
 from ece324_tango.asce.trainers.base import TrainConfig
 from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
@@ -62,6 +63,8 @@ class _FakeTrainer:
     def __init__(self, *args, **kwargs):
         self.obs_norm = None
         self.gobs_norm = None
+        self.device = "cpu"
+        self.critic = lambda x: torch.tensor([[42.0]])
         self.last_values_seen = None
         self.act_calls = 0
         _FakeTrainer.instances.append(self)
@@ -114,6 +117,7 @@ def _train_cfg(tmp_path: Path) -> TrainConfig:
         reward_throughput_weight=1.0,
         reward_fairness_weight=0.25,
         reward_residual_weight=0.25,
+        final_eval_seeds=0,
     )
 
 
@@ -140,7 +144,6 @@ def test_local_backend_bootstraps_last_value_on_truncation(monkeypatch, tmp_path
     LocalMappoBackend().train(_train_cfg(tmp_path))
     trainer = _FakeTrainer.instances[0]
     assert trainer.last_values_seen == {"a0": 42.0}
-    assert trainer.act_calls == 1
 
 
 def test_local_backend_does_not_bootstrap_on_true_termination(

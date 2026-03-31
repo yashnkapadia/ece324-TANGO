@@ -72,6 +72,11 @@ def main(
         "--scale-lr/--no-scale-lr",
         help="Scale learning rate by 1/sqrt(num_workers) for batched training stability",
     ),
+    final_eval_seeds: int = typer.Option(
+        5,
+        "--final-eval-seeds",
+        help="Number of seeds for post-training evaluation (0 = disabled)",
+    ),
 ):
     """Train the local ASCE MAPPO controller."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -129,6 +134,7 @@ def main(
         resume=resume,
         num_workers=num_workers,
         scale_lr_by_workers=scale_lr_by_workers,
+        final_eval_seeds=final_eval_seeds,
     )
     backend.train(cfg)
 

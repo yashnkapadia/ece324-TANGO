@@ -10,7 +10,7 @@ from ece324_tango.asce.trainers.local_mappo_backend import LocalMappoBackend
 from ece324_tango.config import MODELS_DIR, RESULTS_DIR
 
 app = typer.Typer(add_completion=False)
-_VALID_REWARD_MODES = {"objective", "sumo", "time_loss", "residual_mp"}
+_VALID_REWARD_MODES = {"objective", "person_objective", "sumo", "time_loss", "residual_mp"}
 _VALID_RESIDUAL_MODES = {"none", "action_gate"}
 
 

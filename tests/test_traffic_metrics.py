@@ -9,7 +9,15 @@ from ece324_tango.asce.traffic_metrics import (
 )
 
 
-def _metric(agent_id: str, delay: float, throughput: int) -> IntersectionMetrics:
+def _metric(
+    agent_id: str,
+    delay: float,
+    throughput: int,
+    person_delay: float | None = None,
+    person_throughput: float | None = None,
+    person_delay_ns: float | None = None,
+    person_delay_ew: float | None = None,
+) -> IntersectionMetrics:
     return IntersectionMetrics(
         intersection_id=agent_id,
         time_step=5.0,
@@ -26,14 +34,18 @@ def _metric(agent_id: str, delay: float, throughput: int) -> IntersectionMetrics
         delay=delay,
         queue_total=2,
         throughput=throughput,
+        person_delay=person_delay if person_delay is not None else delay * 1.3,
+        person_throughput=person_throughput if person_throughput is not None else throughput * 1.3,
+        person_delay_ns=person_delay_ns if person_delay_ns is not None else delay * 0.65,
+        person_delay_ew=person_delay_ew if person_delay_ew is not None else delay * 0.65,
         scenario_id="baseline",
     )
 
 
-def test_rewards_from_metrics_objective_prefers_higher_throughput_lower_delay():
+def test_rewards_from_metrics_objective_prefers_lower_per_person_delay():
     metrics = {
-        "a": _metric("a", delay=1.0, throughput=8),
-        "b": _metric("b", delay=10.0, throughput=2),
+        "a": _metric("a", delay=1.0, throughput=8),  # low per-person delay
+        "b": _metric("b", delay=10.0, throughput=2),  # high per-person delay
     }
     rewards = rewards_from_metrics(
         metrics_by_agent=metrics,
@@ -121,6 +133,14 @@ class _DummyLaneDomain:
         return self.shape_by_lane[lane_id]
 
 
+class _DummyVehicleDomain:
+    def getWaitingTime(self, veh_id: str) -> float:
+        return 3.0
+
+    def getTypeID(self, veh_id: str) -> str:
+        return "car"
+
+
 class _DummyEdgeDomain:
     def __init__(self, fail_waiting_time: bool = False):
         self.fail_waiting_time = fail_waiting_time
@@ -139,6 +159,9 @@ class _DummyEdgeDomain:
             raise TypeError("unexpected metric type failure")
         return 3.0
 
+    def getLastStepVehicleIDs(self, edge_id: str):
+        return ["veh_0", "veh_1"]
+
 
 class _DummyTrafficLightDomain:
     def getControlledLinks(self, ts_id: str):
@@ -155,6 +178,7 @@ class _DummySumo:
     def __init__(self, fail_waiting_time: bool = False):
         self.lane = _DummyLaneDomain()
         self.edge = _DummyEdgeDomain(fail_waiting_time=fail_waiting_time)
+        self.vehicle = _DummyVehicleDomain()
         self.trafficlight = _DummyTrafficLightDomain()
 
 

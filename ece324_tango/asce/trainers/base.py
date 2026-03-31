@@ -33,6 +33,7 @@ class TrainConfig:
     resume: bool = False  # resume from model_path if it exists
     num_workers: int = 1  # parallel SUMO workers for episode collection (1=sequential)
     scale_lr_by_workers: bool = True  # scale LR by 1/sqrt(num_workers) for batched training
+    final_eval_seeds: int = 5  # multi-seed eval after training (0 = disabled)
 
 
 @dataclass
