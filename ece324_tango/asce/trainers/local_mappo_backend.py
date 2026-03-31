@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import signal
 from pathlib import Path
 from typing import Dict, List
@@ -108,6 +109,10 @@ def _build_scenario_best_paths(model_path: Path, scenario_names: list[str]) -> d
         )
         for scenario_name in scenario_names
     }
+
+
+def _build_train_state_path(model_path: Path) -> Path:
+    return model_path.with_name(f"{model_path.stem}_train_state.json")
 
 
 def _run_episode_worker(args: dict) -> dict:
@@ -642,6 +647,44 @@ class LocalMappoBackend(AsceTrainerBackend):
 
         return best_eval_ratio
 
+    def _save_train_state(
+        self,
+        state_path: Path,
+        start_episode: int,
+        best_eval_ratio: float,
+        scenario_best_ratios: dict[str, float],
+        last_eval_ep: int | str | None,
+        last_eval_ratios: dict[str, float],
+    ) -> None:
+        worst_scenario = (
+            max(last_eval_ratios, key=last_eval_ratios.get)
+            if last_eval_ratios
+            else ""
+        )
+        payload = {
+            "start_episode": int(start_episode),
+            "best_eval_ratio": float(best_eval_ratio)
+            if best_eval_ratio != float("inf")
+            else None,
+            "scenario_best_ratios": {
+                k: (float(v) if v != float("inf") else None)
+                for k, v in scenario_best_ratios.items()
+            },
+            "last_eval_ep": last_eval_ep,
+            "last_eval_ratios": {k: float(v) for k, v in last_eval_ratios.items()},
+            "best_eval_scenario": worst_scenario,
+        }
+        state_path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+
+    def _load_train_state(self, state_path: Path) -> dict:
+        if not state_path.exists():
+            return {}
+        try:
+            return json.loads(state_path.read_text())
+        except Exception as exc:
+            logger.warning(f"Failed to load train state from {state_path}: {exc}")
+            return {}
+
     def train(self, cfg: TrainConfig) -> None:
         cfg.model_path.parent.mkdir(parents=True, exist_ok=True)
         cfg.rollout_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -714,6 +757,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     **lr_kwargs,
                 )
 
+            train_state_path = _build_train_state_path(cfg.model_path)
+            train_state = self._load_train_state(train_state_path)
+
             # Resume from checkpoint if requested
             start_episode = 0
             if cfg.resume and cfg.model_path.exists():
@@ -762,6 +808,44 @@ class LocalMappoBackend(AsceTrainerBackend):
             scenario_best_ratios = {
                 scenario_name: float("inf") for scenario_name in eval_scenario_names
             }
+            last_eval_ep = None
+            last_eval_ratios: dict[str, float] = {}
+
+            if cfg.resume:
+                if cfg.episode_metrics_csv.exists():
+                    try:
+                        ep_metrics_df = pd.read_csv(cfg.episode_metrics_csv)
+                        ep_metrics = ep_metrics_df.to_dict("records")
+                    except Exception as exc:
+                        logger.warning(
+                            f"Failed to restore episode metrics from {cfg.episode_metrics_csv}: {exc}"
+                        )
+                if cfg.rollout_csv.exists():
+                    try:
+                        rollout_df = pd.read_csv(cfg.rollout_csv)
+                        all_rows = rollout_df.to_dict("records")
+                    except Exception as exc:
+                        logger.warning(
+                            f"Failed to restore rollout rows from {cfg.rollout_csv}: {exc}"
+                        )
+                if train_state:
+                    if train_state.get("start_episode") is not None:
+                        start_episode = max(start_episode, int(train_state["start_episode"]))
+                    if train_state.get("best_eval_ratio") is not None:
+                        best_eval_ratio = float(train_state["best_eval_ratio"])
+                    for scenario_name, ratio in train_state.get(
+                        "scenario_best_ratios", {}
+                    ).items():
+                        if (
+                            scenario_name in scenario_best_ratios
+                            and ratio is not None
+                        ):
+                            scenario_best_ratios[scenario_name] = float(ratio)
+                    last_eval_ep = train_state.get("last_eval_ep")
+                    last_eval_ratios = {
+                        k: float(v)
+                        for k, v in train_state.get("last_eval_ratios", {}).items()
+                    }
 
             # Resolve effective reward mode: action_gate supersedes residual_mp
             if cfg.residual_mode == "action_gate" and cfg.reward_mode == "residual_mp":
@@ -810,7 +894,25 @@ class LocalMappoBackend(AsceTrainerBackend):
                     _interrupt_requested_ref=lambda: _interrupt_requested,
                     best_eval_ratio=best_eval_ratio,
                     best_model_path=str(best_model_path),
+                    scenario_best_ratios=scenario_best_ratios,
+                    scenario_best_paths=scenario_best_paths,
+                    train_state_path=train_state_path,
+                    last_eval_ep=last_eval_ep,
+                    last_eval_ratios=last_eval_ratios,
                 )
+                train_state = self._load_train_state(train_state_path)
+                if train_state.get("best_eval_ratio") is not None:
+                    best_eval_ratio = float(train_state["best_eval_ratio"])
+                last_eval_ep = train_state.get("last_eval_ep")
+                last_eval_ratios = {
+                    k: float(v)
+                    for k, v in train_state.get("last_eval_ratios", {}).items()
+                }
+                for scenario_name, ratio in train_state.get(
+                    "scenario_best_ratios", {}
+                ).items():
+                    if scenario_name in scenario_best_ratios and ratio is not None:
+                        scenario_best_ratios[scenario_name] = float(ratio)
 
             for ep in range(start_episode, cfg.episodes):
                 if cfg.num_workers > 1:
@@ -1082,6 +1184,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                 if cfg.checkpoint_every > 0 and (ep + 1) % cfg.checkpoint_every == 0:
                     trainer.save(str(cfg.model_path))
                     pd.DataFrame(ep_metrics).to_csv(cfg.episode_metrics_csv, index=False)
+                    self._save_train_state(
+                        state_path=train_state_path,
+                        start_episode=ep + 1,
+                        best_eval_ratio=best_eval_ratio,
+                        scenario_best_ratios=scenario_best_ratios,
+                        last_eval_ep=last_eval_ep,
+                        last_eval_ratios=last_eval_ratios,
+                    )
                     logger.info(f"  Checkpoint saved at episode {ep}")
 
                 # Periodic baseline evaluation
@@ -1099,6 +1209,19 @@ class LocalMappoBackend(AsceTrainerBackend):
                         scenario_best_ratios=scenario_best_ratios,
                         scenario_best_paths=scenario_best_paths,
                     )
+                    last_eval_ep = ep
+                    last_eval_ratios = {
+                        res["scenario_name"]: res["ratio"]
+                        for res in eval_res["per_scenario"]
+                    }
+                    self._save_train_state(
+                        state_path=train_state_path,
+                        start_episode=ep + 1,
+                        best_eval_ratio=best_eval_ratio,
+                        scenario_best_ratios=scenario_best_ratios,
+                        last_eval_ep=last_eval_ep,
+                        last_eval_ratios=last_eval_ratios,
+                    )
 
                 # Graceful exit on interrupt
                 if _interrupt_requested:
@@ -1111,6 +1234,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                     if not rollout_df.empty:
                         rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
                     rollout_df.to_csv(cfg.rollout_csv, index=False)
+                    self._save_train_state(
+                        state_path=train_state_path,
+                        start_episode=ep + 1,
+                        best_eval_ratio=best_eval_ratio,
+                        scenario_best_ratios=scenario_best_ratios,
+                        last_eval_ep=last_eval_ep,
+                        last_eval_ratios=last_eval_ratios,
+                    )
                     logger.success(
                         f"Checkpoint saved at episode {ep}. "
                         f"Resume with --resume --episodes {cfg.episodes}"
@@ -1128,6 +1259,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                 rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
             rollout_df.to_csv(cfg.rollout_csv, index=False)
             pd.DataFrame(ep_metrics).to_csv(cfg.episode_metrics_csv, index=False)
+            self._save_train_state(
+                state_path=train_state_path,
+                start_episode=cfg.episodes,
+                best_eval_ratio=best_eval_ratio,
+                scenario_best_ratios=scenario_best_ratios,
+                last_eval_ep=last_eval_ep,
+                last_eval_ratios=last_eval_ratios,
+            )
 
             logger.success(f"Saved rollout samples: {cfg.rollout_csv}")
             logger.success(f"Saved episode metrics: {cfg.episode_metrics_csv}")
@@ -1176,6 +1315,11 @@ class LocalMappoBackend(AsceTrainerBackend):
         _interrupt_requested_ref,
         best_eval_ratio: float = float("inf"),
         best_model_path: str = "",
+        scenario_best_ratios: dict[str, float] | None = None,
+        scenario_best_paths: dict[str, Path] | None = None,
+        train_state_path: Path | None = None,
+        last_eval_ep: int | str | None = None,
+        last_eval_ratios: dict[str, float] | None = None,
     ) -> float:
         """Run training with parallel episode collection via multiprocessing.Pool."""
         import multiprocessing
@@ -1183,6 +1327,9 @@ class LocalMappoBackend(AsceTrainerBackend):
 
         import torch
 
+        scenario_best_ratios = scenario_best_ratios or {}
+        scenario_best_paths = scenario_best_paths or {}
+        last_eval_ratios = last_eval_ratios or {}
         reward_weights_dict = {
             "delay": reward_weights.delay,
             "throughput": reward_weights.throughput,
@@ -1217,6 +1364,11 @@ class LocalMappoBackend(AsceTrainerBackend):
             scenario_id=cfg.scenario_id,
             start_episode=start_episode,
             initial_best_ratio=best_eval_ratio,
+            initial_best_scenario=(
+                max(last_eval_ratios, key=last_eval_ratios.get) if last_eval_ratios else ""
+            ),
+            initial_eval_ep=last_eval_ep,
+            initial_eval_ratios=last_eval_ratios,
         )
         tui.start()
 
@@ -1306,6 +1458,15 @@ class LocalMappoBackend(AsceTrainerBackend):
                     pd.DataFrame(ep_metrics).to_csv(
                         cfg.episode_metrics_csv, index=False
                     )
+                    if train_state_path is not None:
+                        self._save_train_state(
+                            state_path=train_state_path,
+                            start_episode=ep_batch_start,
+                            best_eval_ratio=best_eval_ratio,
+                            scenario_best_ratios=scenario_best_ratios,
+                            last_eval_ep=last_eval_ep,
+                            last_eval_ratios=last_eval_ratios,
+                        )
                     logger.success(
                         f"Checkpoint saved. "
                         f"Resume with --resume --episodes {cfg.episodes}"
@@ -1408,6 +1569,15 @@ class LocalMappoBackend(AsceTrainerBackend):
                     pd.DataFrame(ep_metrics).to_csv(
                         cfg.episode_metrics_csv, index=False
                     )
+                    if train_state_path is not None:
+                        self._save_train_state(
+                            state_path=train_state_path,
+                            start_episode=last_ep + 1,
+                            best_eval_ratio=best_eval_ratio,
+                            scenario_best_ratios=scenario_best_ratios,
+                            last_eval_ep=last_eval_ep,
+                            last_eval_ratios=last_eval_ratios,
+                        )
                     logger.info(f"  Checkpoint saved at episode {last_ep}")
 
                 # Collect background eval results (if any finished)
@@ -1441,6 +1611,20 @@ class LocalMappoBackend(AsceTrainerBackend):
                             scenario_best_ratios=scenario_best_ratios,
                             scenario_best_paths=scenario_best_paths,
                         )
+                        last_eval_ep = ev_res["train_ep"]
+                        last_eval_ratios = {
+                            res["scenario_name"]: res["ratio"]
+                            for res in ev_res["per_scenario"]
+                        }
+                        if train_state_path is not None:
+                            self._save_train_state(
+                                state_path=train_state_path,
+                                start_episode=last_ep + 1,
+                                best_eval_ratio=best_eval_ratio,
+                                scenario_best_ratios=scenario_best_ratios,
+                                last_eval_ep=last_eval_ep,
+                                last_eval_ratios=last_eval_ratios,
+                            )
                         tui.update_eval_results(
                             eval_ep=ev_res["train_ep"],
                             ratios={
@@ -1531,6 +1715,15 @@ class LocalMappoBackend(AsceTrainerBackend):
                     if not rollout_df.empty:
                         rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
                     rollout_df.to_csv(cfg.rollout_csv, index=False)
+                    if train_state_path is not None:
+                        self._save_train_state(
+                            state_path=train_state_path,
+                            start_episode=last_ep + 1,
+                            best_eval_ratio=best_eval_ratio,
+                            scenario_best_ratios=scenario_best_ratios,
+                            last_eval_ep=last_eval_ep,
+                            last_eval_ratios=last_eval_ratios,
+                        )
                     logger.success(
                         f"Checkpoint saved at episode {last_ep}. "
                         f"Resume with --resume --episodes {cfg.episodes}"
@@ -1559,6 +1752,20 @@ class LocalMappoBackend(AsceTrainerBackend):
                             scenario_best_ratios=scenario_best_ratios,
                             scenario_best_paths=scenario_best_paths,
                         )
+                        last_eval_ep = ev_res["train_ep"]
+                        last_eval_ratios = {
+                            res["scenario_name"]: res["ratio"]
+                            for res in ev_res["per_scenario"]
+                        }
+                        if train_state_path is not None:
+                            self._save_train_state(
+                                state_path=train_state_path,
+                                start_episode=cfg.episodes,
+                                best_eval_ratio=best_eval_ratio,
+                                scenario_best_ratios=scenario_best_ratios,
+                                last_eval_ep=last_eval_ep,
+                                last_eval_ratios=last_eval_ratios,
+                            )
                     else:
                         logger.info("  Background eval still running — skipping final drain")
                 except Exception:

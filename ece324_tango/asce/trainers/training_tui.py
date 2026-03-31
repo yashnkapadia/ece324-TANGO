@@ -29,6 +29,9 @@ class TrainingStatus:
         scenario_id: str = "curriculum",
         start_episode: int = 0,
         initial_best_ratio: float = float("inf"),
+        initial_best_scenario: str = "",
+        initial_eval_ep: int | None = None,
+        initial_eval_ratios: dict[str, float] | None = None,
     ):
         self.total_episodes = total_episodes
         self.num_workers = num_workers
@@ -42,12 +45,13 @@ class TrainingStatus:
         self.avg_gate_frac = 0.0
         self.avg_reward = 0.0
         self.eval_ep: int | None = None
-        self.eval_ratios: dict[str, float] = {}
+        self.eval_ratios: dict[str, float] = initial_eval_ratios or {}
         self.best_ratio = initial_best_ratio
-        self.best_scenario = ""
+        self.best_scenario = initial_best_scenario
         self.eval_running = False
         self._ema_batch_wall_s: float | None = None
         self.start_time = _time.time()
+        self.eval_ep = initial_eval_ep
 
         self._is_tty = sys.stderr.isatty()
         self._live = None
@@ -156,8 +160,8 @@ class TrainingStatus:
         self.eval_ratios = ratios
         self.eval_running = False
         if ratios:
-            worst = min(ratios.values())
-            best_name = min(ratios, key=ratios.get)
+            worst = max(ratios.values())
+            best_name = max(ratios, key=ratios.get)
             if worst < self.best_ratio:
                 self.best_ratio = worst
                 self.best_scenario = best_name
