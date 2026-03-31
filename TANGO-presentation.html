@@ -56,26 +56,12 @@
       isolation: isolate;
     }
 
-    .deck::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(180deg, rgba(6, 10, 15, 0.26) 0%, rgba(6, 10, 15, 0) 24%),
-        radial-gradient(880px 420px at 50% 106%, rgba(0, 0, 0, 0.28), transparent 78%);
-      pointer-events: none;
-      z-index: 0;
-      display: none;
-    }
-
     .ambient {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      z-index: 1;
+      z-index: 0;
       overflow: hidden;
-      opacity: 1;
-      display: none;
     }
 
     .ambient::before {
@@ -83,9 +69,9 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-      background-size: 92px 92px;
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 44px 44px;
       opacity: 0.2;
     }
 
@@ -94,69 +80,202 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(680px 340px at 12% -4%, rgba(136, 167, 201, 0.16), transparent 78%),
-        radial-gradient(740px 360px at 88% 102%, rgba(217, 187, 109, 0.1), transparent 80%);
-      opacity: 0.68;
+        radial-gradient(460px 460px at 50% 50%, rgba(244, 211, 111, 0.06), transparent 75%);
+      opacity: 0.34;
     }
 
-    .ambient-map {
+    .road {
       position: absolute;
-      inset: -8%;
-      width: 116%;
-      height: 116%;
-      opacity: 0.48;
-      filter: saturate(0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--road-surface);
+      backdrop-filter: blur(1px);
     }
 
-    .ambient-map path,
-    .ambient-map circle {
-      vector-effect: non-scaling-stroke;
+    .road-h {
+      left: -8%;
+      right: -8%;
+      top: 50%;
+      height: min(21vw, 210px);
+      transform: translateY(-50%);
     }
 
-    .ambient-map .arterial {
-      fill: none;
-      stroke: rgba(148, 169, 194, 0.3);
-      stroke-width: 84;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+    .road-v {
+      top: -14%;
+      bottom: -14%;
+      left: 50%;
+      width: min(23vw, 230px);
+      transform: translateX(-50%);
     }
 
-    .ambient-map .arterial-mark {
-      fill: none;
-      stroke: rgba(244, 248, 255, 0.2);
-      stroke-width: 4;
-      stroke-linecap: round;
-      stroke-dasharray: 12 24;
+    .flow {
+      position: absolute;
+      opacity: 0.44;
     }
 
-    .ambient-map .collector {
-      fill: none;
-      stroke: rgba(120, 141, 164, 0.24);
-      stroke-width: 48;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .ambient-map .collector-mark {
-      fill: none;
-      stroke: rgba(238, 245, 255, 0.14);
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-dasharray: 8 18;
-    }
-
-    .ambient-map .node {
-      fill: rgba(217, 187, 109, 0.12);
-      stroke: rgba(240, 247, 255, 0.16);
-      stroke-width: 2;
-    }
-
-    .ambient-center-mask {
+    .flow::before {
+      content: "";
       position: absolute;
       inset: 0;
+    }
+
+    .flow-h {
+      left: -8%;
+      right: -8%;
+      top: 50%;
+      height: 3px;
+      transform: translateY(-50%);
+    }
+
+    .flow-h::before {
+      background: repeating-linear-gradient(
+        90deg,
+        var(--road-marking) 0 20px,
+        transparent 20px 40px
+      );
+    }
+
+    .flow-v {
+      position: absolute;
+      top: -12%;
+      bottom: -12%;
+      left: 50%;
+      width: 3px;
+      transform: translateX(-50%);
+    }
+
+    .flow-v::before {
+      background: repeating-linear-gradient(
+        180deg,
+        var(--road-marking) 0 20px,
+        transparent 20px 40px
+      );
+    }
+
+    .intersection-core {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(23vw, 230px);
+      height: min(21vw, 210px);
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.14));
+      z-index: 1;
+    }
+
+    .traffic-layer {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .ambient-car {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 36px;
+      height: 17px;
+      border-radius: 7px;
       background:
-        radial-gradient(980px 560px at 50% 52%, rgba(8, 12, 17, 0.9) 0%, rgba(8, 12, 17, 0.78) 32%, rgba(8, 12, 17, 0) 74%);
-      z-index: 2;
+        linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 22%, rgba(255, 255, 255, 0) 35%, rgba(0, 0, 0, 0.18) 100%),
+        linear-gradient(180deg, var(--car-body-top, #d0d9e4) 0%, var(--car-body, #9db3c8) 72%);
+      border: 1px solid rgba(6, 11, 17, 0.58);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.24),
+        0 4px 10px rgba(0, 0, 0, 0.24);
+      opacity: 0.78;
+      transform-origin: center;
+    }
+
+    .ambient-car::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      top: 2px;
+      height: 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(7, 13, 20, 0.56);
+      background:
+        linear-gradient(
+          90deg,
+          rgba(195, 218, 241, 0.9) 0 43%,
+          rgba(34, 52, 72, 0.92) 43% 57%,
+          rgba(195, 218, 241, 0.9) 57% 100%
+        ),
+        linear-gradient(180deg, rgba(151, 176, 203, 0.92), rgba(96, 121, 147, 0.86));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    .ambient-car::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 7px;
+      background:
+        radial-gradient(circle at 4px 4px, rgba(255, 86, 86, 0.82) 0 1.3px, transparent 1.4px),
+        radial-gradient(circle at 32px 4px, rgba(255, 245, 178, 0.92) 0 1.3px, transparent 1.4px),
+        radial-gradient(circle at 5px 13px, rgba(5, 9, 14, 0.95) 0 2.5px, transparent 2.6px),
+        radial-gradient(circle at 31px 13px, rgba(5, 9, 14, 0.95) 0 2.5px, transparent 2.6px);
+      pointer-events: none;
+    }
+
+    .ambient-signal {
+      position: absolute;
+      width: 20px;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(7, 12, 17, 0.86);
+      display: grid;
+      gap: 3px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 4;
+    }
+
+    .sig-west {
+      left: calc(50% - (min(23vw, 230px) / 2) - 28px);
+      top: calc(50% - 58px);
+    }
+
+    .sig-east {
+      left: calc(50% + (min(23vw, 230px) / 2) + 8px);
+      top: calc(50% + 18px);
+    }
+
+    .sig-north {
+      top: calc(50% - (min(21vw, 210px) / 2) - 28px);
+      left: calc(50% + 18px);
+    }
+
+    .sig-south {
+      top: calc(50% + (min(21vw, 210px) / 2) + 8px);
+      left: calc(50% - 58px);
+    }
+
+    .ambient-signal-light {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 999px;
+      background: rgba(214, 223, 235, 0.14);
+      transition: background 220ms ease, box-shadow 220ms ease;
+    }
+
+    .ambient-signal-light.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 10px rgba(255, 95, 83, 0.72);
+    }
+
+    .ambient-signal-light.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 10px rgba(255, 179, 71, 0.72);
+    }
+
+    .ambient-signal-light.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 10px rgba(49, 201, 138, 0.72);
     }
 
     .topbar {
@@ -349,6 +468,29 @@
     .frame.dual {
       grid-template-columns: 1fr 1fr;
       gap: 34px;
+    }
+
+    .thankyou-frame {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      min-height: min(64vh, 620px);
+      place-items: center;
+      text-align: center;
+    }
+
+    .thankyou-frame h1 {
+      margin: 0;
+      font-size: clamp(3.4rem, 9vw, 7.2rem);
+    }
+
+    .thankyou-note {
+      margin-top: 10px;
+      color: var(--ink-high);
+      font-size: clamp(1rem, 1.9vw, 1.4rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .eyebrow {
@@ -1030,14 +1172,14 @@
 
     .pipeline-flowchart-head small {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.75rem;
+      font-size: calc(0.75rem + 2pt);
       color: var(--lane);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .pipeline-flowchart-head strong {
-      font-size: 0.96rem;
+      font-size: calc(0.96rem + 2pt);
       letter-spacing: 0.03em;
       color: var(--ink-high);
       line-height: 1.35;
@@ -1066,7 +1208,7 @@
 
     .pipeline-flow-step small {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: 0.72rem;
+      font-size: calc(0.72rem + 2pt);
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--lane);
@@ -1074,7 +1216,7 @@
 
     .pipeline-flow-step p {
       margin: 0;
-      font-size: 0.86rem;
+      font-size: calc(0.86rem + 5pt);
       line-height: 1.38;
       color: var(--ink-high);
     }
@@ -1859,29 +2001,34 @@
 <body>
   <main class="deck" aria-label="TANGO project presentation">
     <div class="ambient" aria-hidden="true">
-      <svg class="ambient-map" viewBox="0 0 1600 980" preserveAspectRatio="xMidYMid slice">
-        <path class="arterial" d="M -120 220 C 170 120, 470 110, 760 190 C 1010 258, 1260 242, 1700 112" />
-        <path class="arterial-mark" d="M -120 220 C 170 120, 470 110, 760 190 C 1010 258, 1260 242, 1700 112" />
+      <span class="road road-h"></span>
+      <span class="road road-v"></span>
+      <span class="flow flow-h"></span>
+      <span class="flow flow-v"></span>
+      <span class="intersection-core"></span>
 
-        <path class="arterial" d="M -160 840 C 180 700, 430 702, 690 792 C 930 874, 1160 886, 1760 720" />
-        <path class="arterial-mark" d="M -160 840 C 180 700, 430 702, 690 792 C 930 874, 1160 886, 1760 720" />
+      <span class="ambient-signal sig-west" data-axis="ew">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-east" data-axis="ew">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-north" data-axis="ns">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-south" data-axis="ns">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
 
-        <path class="collector" d="M 220 -160 C 300 120, 280 330, 190 560 C 110 760, 130 940, 230 1120" />
-        <path class="collector-mark" d="M 220 -160 C 300 120, 280 330, 190 560 C 110 760, 130 940, 230 1120" />
-
-        <path class="collector" d="M 1370 -130 C 1260 130, 1220 344, 1300 560 C 1380 774, 1410 940, 1330 1140" />
-        <path class="collector-mark" d="M 1370 -130 C 1260 130, 1220 344, 1300 560 C 1380 774, 1410 940, 1330 1140" />
-
-        <path class="collector" d="M 590 1030 C 700 860, 760 730, 820 580 C 870 450, 990 354, 1170 300" />
-        <path class="collector-mark" d="M 590 1030 C 700 860, 760 730, 820 580 C 870 450, 990 354, 1170 300" />
-
-        <circle class="node" cx="310" cy="165" r="18" />
-        <circle class="node" cx="1270" cy="178" r="16" />
-        <circle class="node" cx="198" cy="554" r="15" />
-        <circle class="node" cx="1298" cy="548" r="17" />
-        <circle class="node" cx="824" cy="576" r="13" />
-      </svg>
-      <div class="ambient-center-mask"></div>
+      <div class="traffic-layer" id="ambientTraffic"></div>
     </div>
 
     <header class="topbar">
@@ -1902,7 +2049,7 @@
           <div class="progress-track">
             <span id="progressFill"></span>
           </div>
-          <div class="progress-label" id="progressLabel">1 / 7</div>
+          <div class="progress-label" id="progressLabel">1 / 8</div>
         </div>
       </div>
     </header>
@@ -2005,10 +2152,6 @@
           <section class="pipeline-head">
             <div class="eyebrow">Data and Simulation Pipeline</div>
             <h2>Visual flow from Toronto TMC records to controlled SUMO generation</h2>
-            <p class="pipeline-lead">
-              Demand Studio is the master control interface. It replaces manual SUMO demand setup and generates demand,
-              signal, and scenario outputs directly from <strong>PROJECT_ROOT/data/processed/tmc_parsed.csv</strong> plus mapped junctions.
-            </p>
           </section>
 
           <section class="pipeline-layout" aria-label="Interactive data pipeline walkthrough">
@@ -2055,7 +2198,7 @@
               <div class="pipeline-shot-wrap pipeline-stage-visual is-missing" id="pipelineShotWrap" hidden>
                 <img id="pipelineInterfaceImage" src="pictures/demand_studio.png" alt="Demand Studio interface screenshot">
                 <div class="pipeline-image-missing" id="pipelineImageMissing">
-                  Add Demand Studio screenshot into PROJECT_ROOT/pictures (for example demand_studio.png)
+                  Add Demand Studio screenshot into /pictures (for example demand_studio.png)
                 </div>
               </div>
             </article>
@@ -2272,6 +2415,16 @@
           </aside>
         </article>
       </li>
+
+      <li class="slide" data-title="Thank You" data-phase="green">
+        <article class="frame thankyou-frame">
+          <section>
+            <div class="eyebrow">Get Set tanGO</div>
+            <h1>Thank You</h1>
+            <p class="thankyou-note">Questions?</p>
+          </section>
+        </article>
+      </li>
     </ol>
 
     <nav class="jump-nav" id="jumpRail" aria-label="Jump to slide"></nav>
@@ -2468,59 +2621,59 @@
 
       const pipelineStageInfo = {
         1: {
-          caption: "Raw turning movement CSVs are ingested from PROJECT_ROOT/data/raw/tmc for Dundas corridor intersections.",
+          caption: "Raw turning movement CSVs are ingested for Dundas corridor intersections.",
           mode: "flow",
           flowTitle: "Raw TMC CSV ingest",
           flowNodes: [
             {
               label: "Input",
-              text: "PROJECT_ROOT/data/raw/tmc/*.csv files per intersection"
+              text: "TMC CSV files per intersection from 1980-present"
             },
             {
               label: "Process",
-              text: "Raw turning movement CSVs are ingested from PROJECT_ROOT/data/raw/tmc for Dundas corridor intersections."
+              text: "Raw turning movement CSVs are ingested for Dundas corridor intersections."
             },
             {
               label: "Output",
-              text: "Raw movement records prepared for PROJECT_ROOT/scripts/02_parse_tmc.py"
+              text: "Raw movement records are prepared for parsing and standardizing"
             }
           ]
         },
         2: {
-          caption: "PROJECT_ROOT/scripts/02_parse_tmc.py standardizes column formats and writes PROJECT_ROOT/data/processed/tmc_parsed.csv.",
+          caption: "/scripts/02_parse_tmc.py standardizes column formats and writes /data/processed/tmc_parsed.csv.",
           mode: "flow",
           flowTitle: "Parse and normalize TMC data",
           flowNodes: [
             {
               label: "Input",
-              text: "PROJECT_ROOT/scripts/02_parse_tmc.py consumes raw corridor CSVs"
+              text: "Consumes raw corridor CSVs"
             },
             {
               label: "Process",
-              text: "PROJECT_ROOT/scripts/02_parse_tmc.py standardizes column formats and writes PROJECT_ROOT/data/processed/tmc_parsed.csv."
+              text: "Standardize column formats and write tmc_parsed.csv."
             },
             {
               label: "Output",
-              text: "PROJECT_ROOT/data/processed/tmc_parsed.csv"
+              text: "Parsed TMC data in standardized format"
             }
           ]
         },
         3: {
-          caption: "PROJECT_ROOT/scripts/03_map_intersections.py links corridor locations to nearest SUMO junction IDs in PROJECT_ROOT/data/processed/intersection_map.csv.",
+          caption: "/scripts/03_map_intersections.py links corridor locations to nearest SUMO junction IDs in /data/processed/intersection_map.csv.",
           mode: "flow",
           flowTitle: "Map parsed records to SUMO network",
           flowNodes: [
             {
               label: "Input",
-              text: "PROJECT_ROOT/data/processed/tmc_parsed.csv plus corridor geospatial references"
+              text: "Parsed TMC data in standardized format"
             },
             {
               label: "Process",
-              text: "PROJECT_ROOT/scripts/03_map_intersections.py links corridor locations to nearest SUMO junction IDs in PROJECT_ROOT/data/processed/intersection_map.csv."
+              text: "Link corridor locations to nearest SUMO junction IDs in intersection_map.csv."
             },
             {
               label: "Output",
-              text: "PROJECT_ROOT/data/processed/intersection_map.csv for simulation node mapping"
+              text: "Intersection mapping file linking TMC records to SUMO junctions"
             }
           ]
         },
@@ -2531,7 +2684,7 @@
           flowNodes: [
             {
               label: "Input",
-              text: "PROJECT_ROOT/data/processed/intersection_map.csv plus operator scenario selections"
+              text: "Intersection mapping file and parsed TMC data from previous stages"
             },
             {
               label: "Process",
@@ -2539,31 +2692,31 @@
             },
             {
               label: "Output",
-              text: "Validated generation directives for PROJECT_ROOT/sumo outputs"
+              text: "Validated generation directives for /sumo outputs"
             }
           ]
         },
         5: {
-          caption: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in PROJECT_ROOT/sumo/*/generated, with optional short SUMO validation.",
+          caption: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in /sumo/*/generated, with optional short SUMO validation.",
           mode: "flow",
           flowTitle: "Export simulation artifacts",
           flowNodes: [
             {
               label: "Input",
-              text: "Demand Studio generation command from PROJECT_ROOT/apps/demand_studio"
+              text: "Demand Studio generation command from Demand Studio configuration stage"
             },
             {
               label: "Process",
-              text: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in PROJECT_ROOT/sumo/*/generated, with optional short SUMO validation."
+              text: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in /sumo/*/generated, with optional short SUMO validation."
             },
             {
               label: "Output",
-              text: "PROJECT_ROOT/sumo/config/generated, PROJECT_ROOT/sumo/demand/generated, and PROJECT_ROOT/sumo/scenarios/generated"
+              text: "Generated SUMO configuration and scenario files ready for training and evaluation"
             }
           ]
         },
         6: {
-          caption: "Demand Studio interface view from PROJECT_ROOT/pictures for final verification.",
+          caption: "Demand Studio interface view from /pictures for final verification.",
           mode: "image"
         }
       };
@@ -2695,6 +2848,256 @@
         }
 
         tryPipelineImage();
+      }
+
+      const ambientTraffic = document.getElementById("ambientTraffic");
+      const ambientSignalHeads = Array.from(document.querySelectorAll(".ambient-signal"));
+      const ambientSignalProgram = [
+        { mode: "ew-green", duration: 7.4 },
+        { mode: "ew-amber", duration: 2.0 },
+        { mode: "ns-green", duration: 7.4 },
+        { mode: "ns-amber", duration: 2.0 }
+      ];
+
+      const ambientState = {
+        cars: [],
+        signalIndex: 0,
+        signalElapsed: 0,
+        lastFrame: 0
+      };
+
+      function getAmbientGeometry() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const hRoad = Math.min(width * 0.21, 210);
+        const vRoad = Math.min(width * 0.23, 230);
+
+        return {
+          width: width,
+          height: height,
+          centerX: centerX,
+          centerY: centerY,
+          hLaneOffset: Math.max(22, hRoad * 0.24),
+          vLaneOffset: Math.max(22, vRoad * 0.24),
+          stopEast: centerX - (vRoad / 2) - 20,
+          stopWest: centerX + (vRoad / 2) + 20,
+          stopSouth: centerY - (hRoad / 2) - 20,
+          stopNorth: centerY + (hRoad / 2) + 20
+        };
+      }
+
+      function ambientSignalForAxis(axis) {
+        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
+        if (mode === axis + "-green") {
+          return "green";
+        }
+        if (mode === axis + "-amber") {
+          return "amber";
+        }
+        return "red";
+      }
+
+      function setAmbientSignalHeads() {
+        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
+        ambientSignalHeads.forEach(function (head) {
+          const axis = head.dataset.axis;
+          const red = head.querySelector(".ambient-signal-light.red");
+          const amber = head.querySelector(".ambient-signal-light.amber");
+          const green = head.querySelector(".ambient-signal-light.green");
+
+          red.classList.remove("is-on");
+          amber.classList.remove("is-on");
+          green.classList.remove("is-on");
+
+          if (mode === axis + "-green") {
+            green.classList.add("is-on");
+          } else if (mode === axis + "-amber") {
+            amber.classList.add("is-on");
+          } else {
+            red.classList.add("is-on");
+          }
+        });
+      }
+
+      function buildAmbientCars() {
+        if (!ambientTraffic) {
+          return;
+        }
+
+        ambientTraffic.innerHTML = "";
+        ambientState.cars = [];
+
+        const palette = [
+          { body: "#d84a43", top: "#ef736d" },
+          { body: "#2f6ed8", top: "#5f97f0" },
+          { body: "#d9a528", top: "#efc85e" },
+          { body: "#208f57", top: "#49b976" },
+          { body: "#e26c2a", top: "#f19458" },
+          { body: "#7a8797", top: "#aab4c1" },
+          { body: "#2f3640", top: "#586270" },
+          { body: "#cfd6df", top: "#eff3f7" }
+        ];
+        const laneTemplates = [
+          { direction: "east", axis: "ew", rotation: 0, count: 3 },
+          { direction: "west", axis: "ew", rotation: 180, count: 3 },
+          { direction: "south", axis: "ns", rotation: 90, count: 3 },
+          { direction: "north", axis: "ns", rotation: -90, count: 3 }
+        ];
+        const geo = getAmbientGeometry();
+
+        laneTemplates.forEach(function (lane, laneIndex) {
+          for (let i = 0; i < lane.count; i += 1) {
+            const carNode = document.createElement("span");
+            carNode.className = "ambient-car";
+            const swatch = palette[(laneIndex * lane.count + i) % palette.length];
+            carNode.style.setProperty("--car-body", swatch.body);
+            carNode.style.setProperty("--car-body-top", swatch.top);
+            ambientTraffic.appendChild(carNode);
+
+            let progress = 0;
+            if (lane.direction === "east") {
+              progress = ((geo.width / lane.count) * i) - 140 - (Math.random() * 36);
+            } else if (lane.direction === "west") {
+              progress = geo.width - ((geo.width / lane.count) * i) + 140 + (Math.random() * 36);
+            } else if (lane.direction === "south") {
+              progress = ((geo.height / lane.count) * i) - 140 - (Math.random() * 36);
+            } else {
+              progress = geo.height - ((geo.height / lane.count) * i) + 140 + (Math.random() * 36);
+            }
+
+            ambientState.cars.push({
+              el: carNode,
+              axis: lane.axis,
+              direction: lane.direction,
+              rotation: lane.rotation,
+              progress: progress,
+              speed: 0,
+              maxSpeed: 50 + (Math.random() * 20)
+            });
+          }
+        });
+      }
+
+      function ambientDirectionSign(direction) {
+        return direction === "east" || direction === "south" ? 1 : -1;
+      }
+
+      function ambientDistanceToStop(car, geo) {
+        if (car.direction === "east") {
+          return geo.stopEast - car.progress;
+        }
+        if (car.direction === "west") {
+          return car.progress - geo.stopWest;
+        }
+        if (car.direction === "south") {
+          return geo.stopSouth - car.progress;
+        }
+        return car.progress - geo.stopNorth;
+      }
+
+      function ambientPassedStop(car, geo) {
+        if (car.direction === "east") {
+          return car.progress >= geo.stopEast + 14;
+        }
+        if (car.direction === "west") {
+          return car.progress <= geo.stopWest - 14;
+        }
+        if (car.direction === "south") {
+          return car.progress >= geo.stopSouth + 14;
+        }
+        return car.progress <= geo.stopNorth - 14;
+      }
+
+      function placeAmbientCar(car, geo) {
+        let x = geo.centerX;
+        let y = geo.centerY;
+
+        if (car.direction === "east") {
+          x = car.progress;
+          y = geo.centerY - geo.hLaneOffset;
+        } else if (car.direction === "west") {
+          x = car.progress;
+          y = geo.centerY + geo.hLaneOffset;
+        } else if (car.direction === "south") {
+          x = geo.centerX - geo.vLaneOffset;
+          y = car.progress;
+        } else {
+          x = geo.centerX + geo.vLaneOffset;
+          y = car.progress;
+        }
+
+        car.el.style.left = x.toFixed(1) + "px";
+        car.el.style.top = y.toFixed(1) + "px";
+        car.el.style.transform = "translate(-50%, -50%) rotate(" + car.rotation + "deg)";
+      }
+
+      function updateAmbientCars(deltaSeconds) {
+        const geo = getAmbientGeometry();
+
+        ambientState.cars.forEach(function (car) {
+          const signal = ambientSignalForAxis(car.axis);
+          const distanceToStop = ambientDistanceToStop(car, geo);
+          const passedStop = ambientPassedStop(car, geo);
+
+          let targetSpeed = car.maxSpeed;
+          if (!passedStop && signal === "red" && distanceToStop < 120) {
+            targetSpeed = 0;
+          } else if (!passedStop && signal === "amber" && distanceToStop < 110) {
+            targetSpeed = car.maxSpeed * 0.28;
+          }
+
+          car.speed += (targetSpeed - car.speed) * Math.min(1, deltaSeconds * 3.6);
+          car.progress += ambientDirectionSign(car.direction) * car.speed * deltaSeconds;
+
+          if (car.direction === "east" && car.progress > geo.width + 110) {
+            car.progress = -110 - (Math.random() * 260);
+          } else if (car.direction === "west" && car.progress < -110) {
+            car.progress = geo.width + 110 + (Math.random() * 260);
+          } else if (car.direction === "south" && car.progress > geo.height + 110) {
+            car.progress = -110 - (Math.random() * 240);
+          } else if (car.direction === "north" && car.progress < -110) {
+            car.progress = geo.height + 110 + (Math.random() * 240);
+          }
+
+          placeAmbientCar(car, geo);
+        });
+      }
+
+      function runAmbientScene(timestamp) {
+        if (!ambientTraffic) {
+          return;
+        }
+
+        if (!ambientState.lastFrame) {
+          ambientState.lastFrame = timestamp;
+        }
+
+        const deltaSeconds = Math.min(0.05, (timestamp - ambientState.lastFrame) / 1000);
+        ambientState.lastFrame = timestamp;
+        ambientState.signalElapsed += deltaSeconds;
+
+        if (ambientState.signalElapsed >= ambientSignalProgram[ambientState.signalIndex].duration) {
+          ambientState.signalElapsed = 0;
+          ambientState.signalIndex = (ambientState.signalIndex + 1) % ambientSignalProgram.length;
+          setAmbientSignalHeads();
+        }
+
+        updateAmbientCars(deltaSeconds);
+        window.requestAnimationFrame(runAmbientScene);
+      }
+
+      buildAmbientCars();
+      setAmbientSignalHeads();
+      updateAmbientCars(0.016);
+
+      if (!reduceMotion) {
+        window.requestAnimationFrame(runAmbientScene);
+      } else {
+        window.addEventListener("resize", function () {
+          updateAmbientCars(0.016);
+        });
       }
 
       function clamp(value, min, max) {
