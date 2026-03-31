@@ -559,6 +559,25 @@
       background: rgba(244, 211, 111, 0.08);
     }
 
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border: 1px solid rgba(59, 166, 109, 0.52);
+      background: rgba(39, 128, 84, 0.22);
+      color: var(--signal-green);
+      font-size: 0.62em;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .metric strong.has-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .note {
       margin-top: 16px;
       font-family: "JetBrains Mono", "Consolas", monospace;
@@ -1145,9 +1164,11 @@
       border: 1px solid var(--line);
       border-radius: 0;
       min-height: min(64vh, 600px);
+      height: 100%;
       background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
       overflow: hidden;
       box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+      display: grid;
     }
 
     .pipeline-flowchart-wrap {
@@ -1238,8 +1259,10 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
+      object-position: center;
       background: rgba(8, 13, 19, 0.88);
       display: block;
+      cursor: zoom-in;
       transition: opacity 220ms ease, filter 220ms ease;
     }
 
@@ -1269,6 +1292,110 @@
 
     .pipeline-stage-visual[hidden] {
       display: none;
+    }
+
+    body.is-stage6-gallery-open {
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .stage6-gallery-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2200;
+      background: rgba(4, 8, 13, 0.98);
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    .stage6-gallery-overlay[hidden] {
+      display: none;
+    }
+
+    .stage6-gallery-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .stage6-gallery-tile {
+      position: relative;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid rgba(230, 237, 248, 0.12);
+      background: #060c13;
+    }
+
+    .stage6-gallery-image {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      background: #060c13;
+    }
+
+    .stage6-gallery-label {
+      position: absolute;
+      left: 14px;
+      bottom: 12px;
+      z-index: 1;
+      padding: 4px 8px;
+      border: 1px solid rgba(230, 237, 248, 0.24);
+      background: rgba(6, 12, 19, 0.68);
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+    }
+
+    .stage6-gallery-missing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      background: rgba(5, 10, 16, 0.76);
+    }
+
+    .stage6-gallery-tile.is-missing .stage6-gallery-image {
+      opacity: 0.12;
+      filter: grayscale(1);
+    }
+
+    .stage6-gallery-tile.is-missing .stage6-gallery-missing {
+      display: grid;
+    }
+
+    .stage6-gallery-back {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 2210;
+      border: 1px solid var(--line-strong);
+      background: rgba(11, 17, 26, 0.9);
+      color: var(--ink-high);
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 13px;
+      cursor: pointer;
+    }
+
+    .stage6-gallery-back:focus-visible {
+      outline: 2px solid rgba(244, 211, 111, 0.82);
+      outline-offset: 2px;
     }
 
     .module-grid {
@@ -1344,6 +1471,239 @@
       padding: 11px 12px;
       border-left: 2px solid rgba(125, 181, 244, 0.75);
       background: linear-gradient(90deg, rgba(125, 181, 244, 0.11), transparent 78%);
+    }
+
+    .pira-layout {
+      width: min(1520px, 98vw);
+      min-height: min(74vh, 760px);
+      grid-template-columns: 0.74fr 1.26fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .pira-text-panel,
+    .pira-media-panel {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+      padding: clamp(14px, 1.8vw, 22px);
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .pira-text-panel::before,
+    .pira-media-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(300px 180px at 0% 0%, rgba(125, 181, 244, 0.12), transparent 74%),
+        radial-gradient(360px 210px at 100% 100%, rgba(244, 211, 111, 0.1), transparent 76%);
+      pointer-events: none;
+    }
+
+    .pira-text-panel > *,
+    .pira-media-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .pira-text-panel h2 {
+      margin-bottom: 2px;
+      font-size: clamp(1.66rem, 2.8vw, 2.72rem);
+    }
+
+    .pira-brief {
+      margin: 0;
+      color: var(--ink-high);
+      max-width: 56ch;
+      line-height: 1.5;
+      font-size: clamp(0.92rem, 1vw, 1rem);
+    }
+
+    .pira-quick-points {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 5px;
+      max-width: 58ch;
+    }
+
+    .pira-quick-points li {
+      color: var(--ink-high);
+      font-size: clamp(0.88rem, 0.95vw, 0.96rem);
+      line-height: 1.42;
+    }
+
+    .pira-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .pira-pill {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.13);
+      color: var(--ink-high);
+      padding: 5px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-size: 0.69rem;
+      line-height: 1;
+    }
+
+    .pira-arch {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pira-arch-node {
+      border: 1px solid var(--line);
+      background: linear-gradient(170deg, rgba(10, 16, 24, 0.95), rgba(16, 24, 35, 0.86));
+      min-height: 88px;
+      padding: 9px 10px;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+
+    .pira-arch-node small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--lane);
+      font-size: 0.7rem;
+      line-height: 1;
+    }
+
+    .pira-arch-node b {
+      display: block;
+      color: var(--ink-high);
+      font-size: 0.79rem;
+      line-height: 1.35;
+      letter-spacing: 0.01em;
+    }
+
+    .pira-arch-arrow {
+      width: 12px;
+      height: 12px;
+      border-top: 2px solid rgba(244, 211, 111, 0.82);
+      border-right: 2px solid rgba(244, 211, 111, 0.82);
+      transform: rotate(45deg);
+      opacity: 0.9;
+    }
+
+    .pira-fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pira-fact {
+      border-left: 2px solid rgba(125, 181, 244, 0.84);
+      background: linear-gradient(90deg, rgba(125, 181, 244, 0.12), transparent 86%);
+      padding: 8px 10px;
+      display: grid;
+      gap: 5px;
+    }
+
+    .pira-fact small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      color: var(--ink-high);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.68rem;
+      line-height: 1;
+    }
+
+    .pira-fact p {
+      margin: 0;
+      font-size: 0.83rem;
+      line-height: 1.38;
+      color: var(--ink-mid);
+    }
+
+    .pira-fact ul {
+      margin: 0;
+      padding-left: 14px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .pira-fact li {
+      margin: 0;
+      font-size: 0.78rem;
+      line-height: 1.33;
+      color: var(--ink-mid);
+    }
+
+    .pira-media-panel {
+      align-content: stretch;
+      gap: 10px;
+      padding: clamp(10px, 1.6vw, 18px);
+    }
+
+    .pira-gif-shell {
+      position: relative;
+      margin: 0;
+      height: 100%;
+      min-height: min(64vh, 660px);
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(170deg, rgba(8, 13, 20, 0.98), rgba(16, 24, 35, 0.92));
+      display: grid;
+      grid-template-rows: 1fr auto;
+      overflow: hidden;
+    }
+
+    .pira-gif-shell img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      background: rgba(7, 12, 19, 0.92);
+      transition: opacity 220ms ease, filter 220ms ease;
+    }
+
+    .pira-gif-shell figcaption {
+      border-top: 1px solid var(--line);
+      padding: 8px 10px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      background: rgba(7, 12, 19, 0.9);
+    }
+
+    .pira-gif-missing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      background: rgba(7, 12, 19, 0.78);
+    }
+
+    .pira-gif-shell.is-missing img {
+      opacity: 0.1;
+      filter: grayscale(1);
+    }
+
+    .pira-gif-shell.is-missing .pira-gif-missing {
+      display: grid;
     }
 
     .demo-layout,
@@ -1882,6 +2242,24 @@
         grid-template-columns: 1fr;
       }
 
+      .pira-layout {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+
+      .pira-arch {
+        grid-template-columns: 1fr;
+      }
+
+      .pira-arch-arrow {
+        justify-self: center;
+        transform: rotate(135deg);
+      }
+
+      .pira-gif-shell {
+        min-height: min(50vh, 460px);
+      }
+
       .pipeline-node-grid {
         grid-template-columns: 1fr;
       }
@@ -1957,12 +2335,21 @@
       .pipeline-node-grid {
         grid-template-columns: 1fr;
       }
+
+      .stage6-gallery-back {
+        top: 10px;
+        right: 10px;
+      }
     }
 
     @media (max-width: 620px) {
       .metric-grid,
       .mini-metrics,
       .process {
+        grid-template-columns: 1fr;
+      }
+
+      .pira-fact-grid {
         grid-template-columns: 1fr;
       }
 
@@ -2049,13 +2436,64 @@
           <div class="progress-track">
             <span id="progressFill"></span>
           </div>
-          <div class="progress-label" id="progressLabel">1 / 8</div>
+          <div class="progress-label" id="progressLabel">1 / 9</div>
         </div>
       </div>
     </header>
 
     <ol class="slides" id="slides">
       <li class="slide is-active" data-title="Introduction" data-phase="red">
+        <article class="frame split">
+          <section class="title-plate">
+            <div class="eyebrow">Scoping and Context</div>
+            <h2>Transit signal priority for a growing Toronto corridor</h2>
+            <div class="flow-list">
+              <article class="flow-item">
+                <strong>What We Are Solving</strong>
+                <p>TANGO builds adaptive traffic-signal control so transit vehicles are delayed less at intersections while keeping corridor traffic stable.</p>
+              </article>
+              <article class="flow-item">
+                <strong>ASCE + PIRA Roles</strong>
+                <p>ASCE is the real-time controller; PIRA is the fast scenario-planning model for disruption what-if studies and policy support.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Simulation Backbone</strong>
+                <p>SUMO provides the city-scale testbed where we replay Toronto demand and evaluate control decisions safely before deployment.</p>
+              </article>
+            </div>
+            <div class="metric-grid">
+              <div class="metric">
+                <small>Main Control Metric</small>
+                <strong>Person-time-loss</strong>
+              </div>
+              <div class="metric">
+                <small>ASCE Target</small>
+                <strong>&lt;= 0.90x vs MP</strong>
+              </div>
+              <div class="metric">
+                <small>PIRA Targets</small>
+                <strong>MAPE &lt;= 10%, &lt;= 5s</strong>
+              </div>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Motivation</div>
+            <h3>Why now, and why this matters</h3>
+            <div class="inline-list">
+              <div class="inline-item">Car dependency is harmful for climate outcomes, public health, and long-term urban design quality.</div>
+              <div class="inline-item">Toronto is a leading North American city actively improving transit, and our team anchored the project around that direction from day one.</div>
+              <div class="inline-item">TTC Lines 5 and 6 opened just before this project. Transit signal priority was being considered, and much of the hardware was already in place.</div>
+              <div class="inline-item">If the technical path is demonstrably feasible, the decision bottleneck shifts away from implementation uncertainty.</div>
+            </div>
+            <div class="flow-item">
+              <strong>Project Thesis</strong>
+              <p>Build a reproducible evidence pipeline that accelerates serious consideration of corridor-scale transit signal priority in Toronto.</p>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Overview" data-phase="red">
         <article class="frame hero-frame">
           <section class="hero-head">
             <div class="eyebrow">ECE324 Final Presentation</div>
@@ -2206,50 +2644,54 @@
         </article>
       </li>
 
-      <li class="slide" data-title="ASCE Model" data-phase="amber">
-        <article class="frame dual">
+      <li class="slide" data-title="ASCE Model" data-phase="green">
+        <article class="frame split">
           <section>
-            <div class="eyebrow">ASCE Architecture</div>
-            <h2>MAPPO with shared policy and centralized critic</h2>
+            <div class="eyebrow">ASCE Model</div>
+            <h2>Action-gate residual MAPPO for person-priority signal control</h2>
             <div class="module-grid">
               <div class="module-row">
                 <b>Agents</b>
-                <p>8 signalized intersections in the current benchmark, each acting from local observations.</p>
+                <p>12 traffic light controllers, each observing local queue lengths, speeds, phase state, and time-of-day.</p>
               </div>
               <div class="module-row">
                 <b>Policy Net</b>
-                <p>2-layer ReLU MLP, 128 hidden units, parameter sharing across all intersections.</p>
+                <p>Action-Gate Residual MAPPO: GatedActor with binary gate head (follow/override MP) + phase selection head. 2-layer ReLU MLP, 128 hidden units, shared across all intersections.</p>
               </div>
               <div class="module-row">
                 <b>Critic</b>
-                <p>Centralized critic sees concatenated observations during training only.</p>
+                <p>Centralized critic (global obs dim 309) during training only. Per-feature Welford normalization.</p>
               </div>
               <div class="module-row">
                 <b>Run Setup</b>
-                <p>5s decision interval, episodes up to 300s, 30 training episodes, 10-seed evaluation.</p>
+                <p>5s decision interval, 900s episodes, 200+ training episodes, 8 parallel SUMO workers via libsumo (3.4x speedup).</p>
+              </div>
+              <div class="module-row">
+                <b>Reward</b>
+                <p>Person-weighted per-person-normalized delay + local approach fairness. Directly optimizes proposal's person-time-loss metric.</p>
               </div>
             </div>
           </section>
           <section class="detail-panel">
-            <div class="eyebrow">Success Criteria and Status</div>
+            <div class="eyebrow">Targets and Status</div>
             <div class="metric-grid" style="margin-top: 2px;">
               <div class="metric">
-                <small>ASCE Target</small>
-                <strong>&lt;= 0.90x</strong>
+                <small>ASCE Target &lt;= 0.90x</small>
+                <strong class="has-pill">0.897x</strong>
               </div>
               <div class="metric">
-                <small>PIRA MAPE</small>
+                <small>PIRA MAPE Target</small>
                 <strong>&lt;= 10%</strong>
               </div>
               <div class="metric">
-                <small>PIRA Runtime</small>
-                <strong>&lt; 5s</strong>
+                <small>Runtime Target</small>
+                <strong>&lt;= 5s</strong>
               </div>
             </div>
             <div class="inline-list">
-              <div class="inline-item">ASCE is running end to end and beats Fixed-Time in interim tests.</div>
-              <div class="inline-item">PIRA is planned but not yet implemented in the interim report.</div>
-              <div class="inline-item">Reported ASCE compute budget is under 1 GPU-hour on RTX 4070 Laptop GPU.</div>
+              <div class="inline-item">ASCE beats Max-Pressure by 10.3% on person-time-loss with action-gate residual MAPPO.</div>
+              <div class="inline-item">PIRA GAT architecture implemented. Baseline datasets generated in Parquet.</div>
+              <div class="inline-item">~2 GPU-hours for 200-episode parallel training on RTX 4070.</div>
             </div>
           </section>
         </article>
@@ -2258,161 +2700,165 @@
       <li class="slide" data-title="ASCE Evaluation" data-phase="green">
         <article class="frame split">
           <section>
-            <div class="eyebrow">10-Seed Benchmark Results</div>
-            <h2>MAPPO improves over Fixed-Time, but trails Max-Pressure</h2>
+            <div class="eyebrow">Phase 4 Best Checkpoint Results</div>
+            <h2>MAPPO beats all baselines on person-time-loss</h2>
             <div class="result-bars">
               <article class="result-row">
-                <header><span>Person-time-loss improvement vs Fixed-Time</span><strong>-4.7%</strong></header>
-                <div class="result-track"><span style="width: 54%;"></span></div>
+                <header><span>MAPPO vs Max-Pressure: -10.3% person-time-loss</span><strong>387,264s vs 431,590s</strong></header>
+                <div class="result-track"><span style="width: 85%;"></span></div>
               </article>
               <article class="result-row">
-                <header><span>MAPPO gap vs Max-Pressure (person-time-loss)</span><strong>+25.5%</strong></header>
-                <div class="result-track"><span style="width: 29%;"></span></div>
-              </article>
-              <article class="result-row">
-                <header><span>Total delay summary in abstract</span><strong>5405s vs 6185s Fixed-Time</strong></header>
-                <div class="result-track"><span style="width: 62%;"></span></div>
+                <header><span>MAPPO vs Fixed-Time: -10.8% person-time-loss</span><strong>387,264s vs 433,965s</strong></header>
+                <div class="result-track"><span style="width: 83%;"></span></div>
               </article>
             </div>
           </section>
           <section class="detail-panel">
-            <div class="eyebrow">Table 2 Snapshot (mean +/- std)</div>
+            <div class="eyebrow">Phase 4 Best Checkpoint Results</div>
             <div class="module-grid">
               <div class="module-row">
+                <b>MAPPO (person_objective)</b>
+                <p>387,264 s person-time-loss (best checkpoint, ep 127).</p>
+              </div>
+              <div class="module-row">
                 <b>Max-Pressure</b>
-                <p>5659 +/- 190 s person-time-loss, 24.1 +/- 0.6 s avg trip, 119.8 +/- 9.8 arrivals.</p>
+                <p>431,590 s person-time-loss.</p>
               </div>
               <div class="module-row">
-                <b>MAPPO</b>
-                <p>7101 +/- 248 s person-time-loss, 25.2 +/- 0.8 s avg trip, 116.9 +/- 9.8 arrivals.</p>
+                <b>Fixed-Time (30s uniform)</b>
+                <p>433,965 s person-time-loss.</p>
               </div>
-              <div class="module-row">
-                <b>Fixed-Time</b>
-                <p>7452 +/- 320 s person-time-loss, 26.4 +/- 0.8 s avg trip, 112.1 +/- 6.7 arrivals.</p>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="How MAPPO Beat Max-Pressure" data-phase="green">
+        <article class="frame dual">
+          <section>
+            <div class="eyebrow">Key Technical Decisions</div>
+            <h2>Action-gate residual + person-weighted reward closed the gap</h2>
+            <div class="flow-list">
+              <article class="flow-item">
+                <strong>Action-Gate Residual</strong>
+                <p>Binary gate learns WHEN to override Max-Pressure. Gate fraction rises from 1.4% to 22% - agent makes targeted interventions, not blind replacement.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Person-Weighted Reward</strong>
+                <p>Delay normalized per-person (bus=30 people, car=1.3). Local approach fairness replaces global throughput. Directly optimizes proposal's person-time-loss metric.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Curriculum Training</strong>
+                <p>4 demand scenarios: AM peak, PM peak, demand surge, midday multimodal. Round-robin with 8 parallel SUMO workers. Currently running.</p>
+              </article>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Reward Evolution</div>
+            <div class="metric-grid" style="margin-top: 2px;">
+              <div class="metric">
+                <small>v1 Objective (interim)</small>
+                <strong>7,101 s</strong>
               </div>
+              <div class="metric">
+                <small>v3 Person-Objective</small>
+                <strong>387,264 s</strong>
+              </div>
+              <div class="metric">
+                <small>Max-Pressure</small>
+                <strong>431,590 s</strong>
+              </div>
+            </div>
+            <div class="inline-list">
+              <div class="inline-item">Removing the throughput term from the reward was critical - it dominated the gradient and caused the agent to game a proxy instead of reducing delay.</div>
+              <div class="inline-item">Gate fraction trend confirms the agent learns selective overrides, not random exploration.</div>
+              <div class="inline-item">Curriculum across 4 scenarios tests generalization beyond the AM peak regime where we first achieved the target.</div>
             </div>
           </section>
         </article>
       </li>
 
       <li class="slide" data-title="PIRA Model" data-phase="green">
-        <article class="frame split">
-          <section>
-            <div class="eyebrow">Why Max-Pressure Still Leads</div>
-            <h2>Current benchmark is a nominal demand regime</h2>
-            <div class="flow-list">
-              <article class="flow-item">
-                <strong>Benchmark Regime</strong>
-                <p>70 calibrated car flows in a mostly stationary demand setting where Max-Pressure is strong.</p>
+        <article class="frame pira-layout">
+          <section class="pira-text-panel">
+            <div class="eyebrow">Reference Design (Not in Final Control Loop)</div>
+            <h2>PIRA surrogate for fast corridor what-if analysis</h2>
+            <ul class="pira-quick-points">
+              <li>Fast what-if layer for disruptions without rerunning full SUMO.</li>
+              <li>Inputs: scenario context + current traffic state at each intersection.</li>
+              <li>Outputs: corridor impact estimate + recommended signal timing updates.</li>
+            </ul>
+            <div class="pira-pill-row" aria-label="Supported disruption types">
+              <span class="pira-pill">none</span>
+              <span class="pira-pill">construction</span>
+              <span class="pira-pill">lane_closure</span>
+              <span class="pira-pill">transit_line</span>
+              <span class="pira-pill">major_event</span>
+            </div>
+            <div class="pira-arch" aria-label="PIRA architecture overview">
+              <article class="pira-arch-node">
+                <small>Graph Input</small>
+                <b>(scenario, time_step) snapshots with intersections as nodes</b>
               </article>
-              <article class="flow-item">
-                <strong>Training Depth</strong>
-                <p>MAPPO currently trains for 30 episodes; learning trend is improving but not yet converged.</p>
+              <span class="pira-arch-arrow" aria-hidden="true"></span>
+              <article class="pira-arch-node">
+                <small>Backbone</small>
+                <b>Node MLP (128) + 3x GATConv (4 heads) with residual LayerNorm</b>
               </article>
-              <article class="flow-item">
-                <strong>Demand Coverage</strong>
-                <p>Current setup is vehicle-only and does not yet include bus, pedestrian, or transit interactions.</p>
+              <span class="pira-arch-arrow" aria-hidden="true"></span>
+              <article class="pira-arch-node">
+                <small>Dual Heads</small>
+                <b>Impact (delay, throughput, queue_total) + timing (green_ns_s, green_ew_s)</b>
+              </article>
+            </div>
+            <div class="pira-fact-grid">
+              <article class="pira-fact">
+                <small>Required Inputs</small>
+                <ul>
+                  <li>Needs osm.net.xml, dataset.parquet, and trained checkpoint.</li>
+                  <li>intersection_map.csv is optional.</li>
+                </ul>
+              </article>
+              <article class="pira-fact">
+                <small>Features and Topology</small>
+                <ul>
+                  <li>17 node features: 10 traffic + 7 scenario features.</li>
+                  <li>capacity = 0 removes affected edges.</li>
+                </ul>
+              </article>
+              <article class="pira-fact">
+                <small>Training Protocol</small>
+                <ul>
+                  <li>MSE + Adam (1e-3), gradient clip 1.0.</li>
+                  <li>Curriculum default, early stop patience 15, split by scenario_id.</li>
+                </ul>
+              </article>
+              <article class="pira-fact">
+                <small>Proposal Targets</small>
+                <ul>
+                  <li>MAPE &lt;= 10% and R^2 &gt;= 0.85.</li>
+                  <li>Inference under 5 seconds per scenario.</li>
+                </ul>
               </article>
             </div>
           </section>
-          <section class="detail-panel">
-            <div class="eyebrow">Reward Evolution</div>
-            <div class="metric-grid">
-              <div class="metric">
-                <small>Time-loss Only</small>
-                <strong>8434 s</strong>
-              </div>
-              <div class="metric">
-                <small>Multi-objective</small>
-                <strong>7101 s</strong>
-              </div>
-              <div class="metric">
-                <small>Max-Pressure</small>
-                <strong>5659 s</strong>
-              </div>
-            </div>
-            <div class="inline-list">
-              <div class="inline-item">Switching to a multi-objective reward substantially improved MAPPO stability.</div>
-              <div class="inline-item">No controller currently reaches the proposal fairness target of Jain index 0.8.</div>
-              <div class="inline-item">Interim conclusion: ASCE is operational, but still below Max-Pressure in this setting.</div>
-            </div>
+          <section class="pira-media-panel">
+            <div class="eyebrow">Looping Scenario Visual</div>
+            <figure class="pira-gif-shell is-missing" id="piraGifWrap">
+              <img id="piraGifImage" alt="Looping PIRA what-if scenario animation">
+              <figcaption>Drop a GIF in pictures/ to autoplay in this panel.</figcaption>
+              <div class="pira-gif-missing">Expected names: pira.gif, pira_loop.gif, pira_demo.gif</div>
+            </figure>
           </section>
         </article>
       </li>
 
       <li class="slide" data-title="PIRA Evaluation" data-phase="green">
-        <article class="frame">
+        <article class="frame thankyou-frame">
           <section>
-            <div class="eyebrow">Remaining Work to Full Scope</div>
-            <h2>Path from interim benchmark to full TANGO system</h2>
-            <p>
-              Next milestones follow directly from the proposal and interim report gap analysis.
-            </p>
+            <div class="eyebrow">PIRA Evaluation</div>
+            <h2>This page has been unintentionally left blank</h2>
           </section>
-          <section class="process">
-            <article class="process-step">
-              <b>Step 1</b>
-              <h3>Implement PIRA</h3>
-              <p>Train the planned message-passing GNN surrogate on scenario-outcome pairs.</p>
-            </article>
-            <article class="process-step">
-              <b>Step 2</b>
-              <h3>Expand Scenarios</h3>
-              <p>Add lane closures, construction impacts, transit changes, and major-event demand shifts.</p>
-            </article>
-            <article class="process-step">
-              <b>Step 3</b>
-              <h3>Multimodal Inputs</h3>
-              <p>Extend beyond car-only flows to include transit, pedestrian, and bike effects where possible.</p>
-            </article>
-            <article class="process-step">
-              <b>Step 4</b>
-              <h3>Stronger ASCE Training</h3>
-              <p>Use longer training, curriculum over irregular demand, and imitation warm-start from Max-Pressure.</p>
-            </article>
-            <article class="process-step">
-              <b>Step 5</b>
-              <h3>Robustness Tests</h3>
-              <p>Evaluate distribution shift, sensor dropout, and unseen infrastructure scenario generalization.</p>
-            </article>
-            <article class="process-step">
-              <b>Step 6</b>
-              <h3>Final Delivery</h3>
-              <p>Report delay, throughput, fairness, and scenario summaries for reproducible final evaluation.</p>
-            </article>
-          </section>
-        </article>
-      </li>
-
-      <li class="slide" data-title="Metrics and Further Research" data-phase="green">
-        <article class="frame split">
-          <section>
-            <div class="eyebrow">Closing</div>
-            <h2>Interim status: accurate progress, clear next targets</h2>
-            <div class="inline-list">
-              <div class="inline-item">TANGO full form and scope are now aligned with project reports.</div>
-              <div class="inline-item">ASCE is functioning and currently outperforms Fixed-Time in interim experiments.</div>
-              <div class="inline-item">PIRA implementation and irregular-scenario evaluation are the main remaining milestones.</div>
-            </div>
-          </section>
-          <aside class="title-plate" aria-label="Project details">
-            <p class="plate-city">ECE324 Team</p>
-            <p class="plate-title">TANGO project team contributors</p>
-            <div class="plate-lines">
-              <div>
-                <span>Course</span>
-                <strong>ECE324</strong>
-              </div>
-              <div>
-                <span>Primary Sources</span>
-                <strong>TANGO proposal and interim report</strong>
-              </div>
-              <div>
-                <span>Repository</span>
-                <strong>Public GitHub project repository</strong>
-              </div>
-            </div>
-          </aside>
         </article>
       </li>
 
@@ -2439,6 +2885,34 @@
     <div class="transition-lane" id="transitionLane" aria-hidden="true"></div>
   </main>
 
+  <div class="stage6-gallery-overlay" id="stage6GalleryOverlay" hidden aria-hidden="true">
+    <button class="stage6-gallery-back" id="stage6GalleryBack" type="button" aria-label="Back to presentation">
+      Back to presentation
+    </button>
+    <div class="stage6-gallery-grid" role="dialog" aria-modal="true" aria-label="Demand Studio detailed screenshots">
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="1">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 1">
+        <figcaption class="stage6-gallery-label">Demand Studio 1</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_1.png</div>
+      </figure>
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="2">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 2">
+        <figcaption class="stage6-gallery-label">Demand Studio 2</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_2.png</div>
+      </figure>
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="3">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 3">
+        <figcaption class="stage6-gallery-label">Demand Studio 3</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_3.png</div>
+      </figure>
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="4">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 4">
+        <figcaption class="stage6-gallery-label">Demand Studio 4</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_4.png</div>
+      </figure>
+    </div>
+  </div>
+
   <script>
     (function () {
       const slides = Array.from(document.querySelectorAll(".slide"));
@@ -2457,6 +2931,21 @@
       let current = 0;
       const total = slides.length;
       const jumpButtons = [];
+
+      function setStage6GalleryState(isOpen) {
+        const stage6GalleryOverlay = document.getElementById("stage6GalleryOverlay");
+        if (!stage6GalleryOverlay) {
+          return;
+        }
+
+        stage6GalleryOverlay.hidden = !isOpen;
+        stage6GalleryOverlay.setAttribute("aria-hidden", isOpen ? "false" : "true");
+        document.body.classList.toggle("is-stage6-gallery-open", isOpen);
+      }
+
+      function closeStage6Gallery() {
+        setStage6GalleryState(false);
+      }
 
       function cleanupSlideClasses(slide) {
         slide.classList.remove(
@@ -2553,6 +3042,27 @@
       });
 
       document.addEventListener("keydown", function (event) {
+        const stage6GalleryOpen = document.body.classList.contains("is-stage6-gallery-open");
+        if (stage6GalleryOpen && event.key === "Escape") {
+          event.preventDefault();
+          closeStage6Gallery();
+          return;
+        }
+
+        if (stage6GalleryOpen) {
+          if (
+            event.key === "ArrowRight" ||
+            event.key === "PageDown" ||
+            event.key === "ArrowLeft" ||
+            event.key === "PageUp" ||
+            event.key === "Home" ||
+            event.key === "End"
+          ) {
+            event.preventDefault();
+          }
+          return;
+        }
+
         const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
         if (tag === "input" || tag === "select" || tag === "textarea") {
           return;
@@ -2584,6 +3094,10 @@
       document.addEventListener(
         "touchstart",
         function (event) {
+          if (document.body.classList.contains("is-stage6-gallery-open")) {
+            return;
+          }
+
           if (event.changedTouches.length > 0) {
             touchStartX = event.changedTouches[0].clientX;
           }
@@ -2594,6 +3108,10 @@
       document.addEventListener(
         "touchend",
         function (event) {
+          if (document.body.classList.contains("is-stage6-gallery-open")) {
+            return;
+          }
+
           if (touchStartX === null || event.changedTouches.length === 0) {
             return;
           }
@@ -2618,6 +3136,10 @@
       const pipelineFlowchartStage = document.getElementById("pipelineFlowchartStage");
       const pipelineFlowchartTitle = document.getElementById("pipelineFlowchartTitle");
       const pipelineFlowRail = document.getElementById("pipelineFlowRail");
+      const stage6GalleryBack = document.getElementById("stage6GalleryBack");
+      const stage6GalleryTiles = Array.from(document.querySelectorAll(".stage6-gallery-tile"));
+      const piraGifWrap = document.getElementById("piraGifWrap");
+      const piraGifImage = document.getElementById("piraGifImage");
 
       const pipelineStageInfo = {
         1: {
@@ -2793,6 +3315,7 @@
         }
 
         if (!useImagePanel) {
+          closeStage6Gallery();
           renderPipelineFlowchart(stage, info);
         }
       }
@@ -2824,7 +3347,108 @@
         "pictures/interface.jpg"
       ];
 
+      const piraGifCandidates = [
+        "pictures/pira.gif",
+        "pictures/pira_loop.gif",
+        "pictures/pira-model.gif",
+        "pictures/pira_model.gif",
+        "pictures/pira-demo.gif",
+        "pictures/pira_demo.gif",
+        "pictures/pira-scenario.gif",
+        "pictures/pira_scenario.gif"
+      ];
+
+      function getStage6ImageCandidates(slot) {
+        return [
+          "pictures/demand_studio_" + slot + ".png",
+          "pictures/demand_studio_" + slot + ".jpg",
+          "pictures/demand_studio_" + slot + ".jpeg",
+          "pictures/demand-studio-" + slot + ".png",
+          "pictures/demand-studio-" + slot + ".jpg",
+          "pictures/demand-studio-" + slot + ".jpeg",
+          "pictures/deamnd_studio_" + slot + ".png",
+          "pictures/deamnd_studio_" + slot + ".jpg",
+          "pictures/deamnd_studio_" + slot + ".jpeg",
+          "pictures/deamnd-studio-" + slot + ".png",
+          "pictures/deamnd-studio-" + slot + ".jpg",
+          "pictures/deamnd-studio-" + slot + ".jpeg"
+        ];
+      }
+
+      function loadStage6GalleryTile(tile) {
+        if (!tile) {
+          return;
+        }
+
+        const slot = tile.dataset.stage6Tile;
+        const image = tile.querySelector(".stage6-gallery-image");
+        if (!slot || !image) {
+          return;
+        }
+
+        const candidates = getStage6ImageCandidates(slot);
+        let index = 0;
+
+        function tryStage6Candidate() {
+          if (index >= candidates.length) {
+            tile.classList.add("is-missing");
+            return;
+          }
+
+          const nextSrc = candidates[index];
+          index += 1;
+
+          image.onload = function () {
+            tile.classList.remove("is-missing");
+          };
+
+          image.onerror = function () {
+            tryStage6Candidate();
+          };
+
+          image.src = nextSrc;
+        }
+
+        tryStage6Candidate();
+      }
+
+      function openStage6Gallery() {
+        if (!pipelineShotWrap || pipelineShotWrap.hidden || pipelineShotWrap.classList.contains("is-missing")) {
+          return;
+        }
+
+        setStage6GalleryState(true);
+      }
+
+      if (stage6GalleryBack) {
+        stage6GalleryBack.addEventListener("click", function () {
+          closeStage6Gallery();
+        });
+      }
+
+      if (stage6GalleryTiles.length) {
+        stage6GalleryTiles.forEach(function (tile) {
+          loadStage6GalleryTile(tile);
+        });
+      }
+
       if (pipelineImage && pipelineShotWrap) {
+        pipelineImage.setAttribute("role", "button");
+        pipelineImage.setAttribute("tabindex", "0");
+        pipelineImage.setAttribute("aria-haspopup", "dialog");
+        pipelineImage.setAttribute("aria-label", "Open full-screen Demand Studio gallery");
+
+        pipelineImage.addEventListener("click", function () {
+          openStage6Gallery();
+        });
+
+        pipelineImage.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openStage6Gallery();
+          }
+        });
+
         let candidateIndex = 0;
 
         function tryPipelineImage() {
@@ -2848,6 +3472,32 @@
         }
 
         tryPipelineImage();
+      }
+
+      if (piraGifWrap && piraGifImage) {
+        let piraGifIndex = 0;
+
+        function tryPiraGif() {
+          if (piraGifIndex >= piraGifCandidates.length) {
+            piraGifWrap.classList.add("is-missing");
+            return;
+          }
+
+          const nextSrc = piraGifCandidates[piraGifIndex];
+          piraGifIndex += 1;
+
+          piraGifImage.onload = function () {
+            piraGifWrap.classList.remove("is-missing");
+          };
+
+          piraGifImage.onerror = function () {
+            tryPiraGif();
+          };
+
+          piraGifImage.src = nextSrc;
+        }
+
+        tryPiraGif();
       }
 
       const ambientTraffic = document.getElementById("ambientTraffic");
