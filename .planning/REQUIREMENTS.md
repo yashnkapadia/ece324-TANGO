@@ -29,8 +29,8 @@
 
 ### Curriculum Training
 
-- [ ] **CUR-01**: TrainConfig accepts list of route files for curriculum training
-- [ ] **CUR-02**: Training loop cycles through route files across episodes (round-robin or scheduled)
+- [x] **CUR-01**: TrainConfig accepts list of route files for curriculum training
+- [x] **CUR-02**: Training loop cycles through route files across episodes (round-robin or scheduled)
 - [ ] **CUR-03**: Residual MAPPO trained on curriculum achieves person-time-loss(MAPPO) <= 0.90 * person-time-loss(Max-Pressure) on at least one evaluation scenario
 
 ### Dataset Logging

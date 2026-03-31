@@ -121,7 +121,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — TrainConfig route_files, CLI --route-files, round-robin training loop, multi-scenario inline eval
+- [x] 05-01-PLAN.md — TrainConfig route_files, CLI --route-files, round-robin training loop, multi-scenario inline eval
 - [ ] 05-02-PLAN.md — Launch curriculum training run, verify CUR-03 target (MAPPO/MP <= 0.90)
 
 ### Phase 6: Eval Loop + Dataset Logging

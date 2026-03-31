@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: Ready to execute
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-31T01:46:14.563Z"
+progress:
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 6
+  completed_plans: 4
+---
+
 # Project State
 
 ## Project Reference
@@ -5,20 +19,17 @@
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** MAPPO must match or beat Max-Pressure on person-time-loss under nominal conditions and generalize better under irregular demand
-**Current focus:** Reward tuning + parallel training; v1 MAPPO/MP=0.961 at ep 74, v3 person_objective at 0.981 at ep 23
+**Current focus:** Phase 05 — curriculum-training-integration
 
 ## Current Position
 
-Phase: 4 of 6 (Baseline Convergence Validation) -- IN PROGRESS
-Plan: Reward tuning experiments + parallel training infrastructure
-Status: Two reward variants being compared; parallel training (8 workers) deployed
-Last activity: 2026-03-30 — Reward tuning (v3 person_objective), parallel SUMO training, graceful checkpoint
-
-Progress: [███████░░░] ~65%
+Phase: 05 (curriculum-training-integration) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 5 (across phases 2-3)
 - Average duration: ~7 min/plan
 - Total execution time: ~35 min plans + ~4 hours debugging/fixing Phase 4 infra
@@ -30,6 +41,7 @@ Progress: [███████░░░] ~65%
 | 02 | 4 | ~20 min | ~5 min |
 | 03 | 1 | ~10 min | ~10 min |
 | 04 | 0 (direct) | ~4 hrs | N/A (infra fixes) |
+| Phase 05 P01 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -44,6 +56,8 @@ Progress: [███████░░░] ~65%
 - [Phase 4]: NEMA baseline is the truest FT comparison — it's what Toronto actually runs on these intersections
 - [Phase 4]: Streetcars skipped until network gets tram lanes via netconvert
 - [Phase 4]: --ignore-route-errors removed — scenarios are clean after demand studio fixes + strict_route_check=True
+- [Phase 05]: Scenario ID from route filename stem minus .rou suffix for clean labeling
+- [Phase 05]: Inline eval returns worst-case MAPPO/MP ratio across curriculum scenarios for conservative checkpointing
 
 ### Pending Todos
 
@@ -67,6 +81,6 @@ Progress: [███████░░░] ~65%
 
 ## Session Continuity
 
-Last session: 2026-03-30
-Stopped at: v3 person_objective 200ep restarted with parallel fixes; baseline datasets generating
+Last session: 2026-03-31T01:46:14.560Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
