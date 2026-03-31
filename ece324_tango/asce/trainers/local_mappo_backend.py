@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import signal
+import tempfile
 from pathlib import Path
 from typing import Dict, List
 
@@ -674,7 +676,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         worst = max(res["ratio"] for res in per_scenario_results)
         if worst < best_eval_ratio:
             best_eval_ratio = worst
-            trainer.save(str(best_model_path))
+            self._save_model_atomic(trainer, best_model_path)
             logger.info(
                 f"  New overall best model: MAPPO/MP={worst:.3f} → {best_model_path}"
             )
@@ -685,13 +687,47 @@ class LocalMappoBackend(AsceTrainerBackend):
             if ratio < scenario_best_ratios.get(scenario_name, float("inf")):
                 scenario_best_ratios[scenario_name] = ratio
                 scenario_best_path = scenario_best_paths[scenario_name]
-                trainer.save(str(scenario_best_path))
+                self._save_model_atomic(trainer, scenario_best_path)
                 logger.info(
                     f"  New best for [{scenario_name}]: MAPPO/MP={ratio:.3f} → "
                     f"{scenario_best_path}"
                 )
 
         return best_eval_ratio
+
+    def _atomic_replace_bytes(self, out_path: Path, writer) -> None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=f".{out_path.name}.",
+            suffix=".tmp",
+            dir=str(out_path.parent),
+        )
+        os.close(fd)
+        tmp_path = Path(tmp_name)
+        try:
+            writer(tmp_path)
+            os.replace(tmp_path, out_path)
+        except Exception:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            raise
+
+    def _save_model_atomic(self, trainer, out_path: Path | str) -> None:
+        path = Path(out_path)
+        self._atomic_replace_bytes(path, lambda tmp_path: trainer.save(str(tmp_path)))
+
+    def _save_dataframe_atomic(self, df: pd.DataFrame, out_path: Path | str) -> None:
+        path = Path(out_path)
+        self._atomic_replace_bytes(path, lambda tmp_path: df.to_csv(tmp_path, index=False))
+
+    def _save_json_atomic(self, payload: dict, out_path: Path | str) -> None:
+        path = Path(out_path)
+        self._atomic_replace_bytes(
+            path,
+            lambda tmp_path: tmp_path.write_text(json.dumps(payload, indent=2, sort_keys=True)),
+        )
 
     def _save_train_state(
         self,
@@ -720,7 +756,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             "last_eval_ratios": {k: float(v) for k, v in last_eval_ratios.items()},
             "best_eval_scenario": worst_scenario,
         }
-        state_path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+        self._save_json_atomic(payload, state_path)
 
     def _load_train_state(self, state_path: Path) -> dict:
         if not state_path.exists():
@@ -1283,8 +1319,10 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Periodic checkpoint
                 if cfg.checkpoint_every > 0 and (ep + 1) % cfg.checkpoint_every == 0:
-                    trainer.save(str(cfg.model_path))
-                    pd.DataFrame(ep_metrics).to_csv(cfg.episode_metrics_csv, index=False)
+                    self._save_model_atomic(trainer, cfg.model_path)
+                    self._save_dataframe_atomic(
+                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
+                    )
                     self._save_train_state(
                         state_path=train_state_path,
                         start_episode=ep + 1,
@@ -1329,12 +1367,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                     logger.warning(
                         f"Interrupted after episode {ep} — saving checkpoint ..."
                     )
-                    trainer.save(str(cfg.model_path))
-                    pd.DataFrame(ep_metrics).to_csv(cfg.episode_metrics_csv, index=False)
+                    self._save_model_atomic(trainer, cfg.model_path)
+                    self._save_dataframe_atomic(
+                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
+                    )
                     rollout_df = pd.DataFrame(all_rows)
                     if not rollout_df.empty:
                         rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
-                    rollout_df.to_csv(cfg.rollout_csv, index=False)
+                    self._save_dataframe_atomic(rollout_df, cfg.rollout_csv)
                     self._save_train_state(
                         state_path=train_state_path,
                         start_episode=ep + 1,
@@ -1352,14 +1392,14 @@ class LocalMappoBackend(AsceTrainerBackend):
             signal.signal(signal.SIGINT, prev_sigint)
             signal.signal(signal.SIGTERM, prev_sigterm)
 
-            trainer.save(str(cfg.model_path))
+            self._save_model_atomic(trainer, cfg.model_path)
             logger.success(f"Saved MAPPO model: {cfg.model_path}")
 
             rollout_df = pd.DataFrame(all_rows)
             if not rollout_df.empty:
                 rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
-            rollout_df.to_csv(cfg.rollout_csv, index=False)
-            pd.DataFrame(ep_metrics).to_csv(cfg.episode_metrics_csv, index=False)
+            self._save_dataframe_atomic(rollout_df, cfg.rollout_csv)
+            self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
             self._save_train_state(
                 state_path=train_state_path,
                 start_episode=cfg.episodes,
@@ -1555,9 +1595,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                         f"Interrupted during batch ep {ep_batch_start} "
                         f"— saving checkpoint ..."
                     )
-                    trainer.save(str(cfg.model_path))
-                    pd.DataFrame(ep_metrics).to_csv(
-                        cfg.episode_metrics_csv, index=False
+                    self._save_model_atomic(trainer, cfg.model_path)
+                    self._save_dataframe_atomic(
+                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
                     )
                     if train_state_path is not None:
                         self._save_train_state(
@@ -1666,9 +1706,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     if first_ep > 0
                     else (last_ep + 1) >= cfg.checkpoint_every
                 ):
-                    trainer.save(str(cfg.model_path))
-                    pd.DataFrame(ep_metrics).to_csv(
-                        cfg.episode_metrics_csv, index=False
+                    self._save_model_atomic(trainer, cfg.model_path)
+                    self._save_dataframe_atomic(
+                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
                     )
                     if train_state_path is not None:
                         self._save_train_state(
@@ -1808,14 +1848,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                             initializer=_worker_init,
                         )
                         bg_eval_result = None
-                    trainer.save(str(cfg.model_path))
-                    pd.DataFrame(ep_metrics).to_csv(
-                        cfg.episode_metrics_csv, index=False
+                    self._save_model_atomic(trainer, cfg.model_path)
+                    self._save_dataframe_atomic(
+                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
                     )
                     rollout_df = pd.DataFrame(all_rows)
                     if not rollout_df.empty:
                         rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
-                    rollout_df.to_csv(cfg.rollout_csv, index=False)
+                    self._save_dataframe_atomic(rollout_df, cfg.rollout_csv)
                     if train_state_path is not None:
                         self._save_train_state(
                             state_path=train_state_path,
@@ -2272,5 +2312,5 @@ class LocalMappoBackend(AsceTrainerBackend):
             finally:
                 env.close()
 
-        pd.DataFrame(records).to_csv(cfg.out_csv, index=False)
+        self._save_dataframe_atomic(pd.DataFrame(records), cfg.out_csv)
         logger.success(f"Saved evaluation metrics: {cfg.out_csv}")
