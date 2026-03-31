@@ -8,6 +8,7 @@ Use --log-file to write logs to a file directly and skip tee so the TUI works.
 """
 from __future__ import annotations
 
+import math
 import sys
 import time as _time
 
@@ -45,6 +46,7 @@ class TrainingStatus:
         self.best_ratio = initial_best_ratio
         self.best_scenario = ""
         self.eval_running = False
+        self._ema_batch_wall_s: float | None = None
         self.start_time = _time.time()
 
         self._is_tty = sys.stderr.isatty()
@@ -132,6 +134,13 @@ class TrainingStatus:
         self.batch_wall_s = batch_wall_s
         self.avg_gate_frac = avg_gate_frac
         self.avg_reward = avg_reward
+        if self._ema_batch_wall_s is None:
+            self._ema_batch_wall_s = batch_wall_s
+        else:
+            # Smooth the batch duration so ETA stays stable across updates.
+            self._ema_batch_wall_s = (
+                0.7 * self._ema_batch_wall_s + 0.3 * batch_wall_s
+            )
         self._refresh()
 
     def update_eval_started(self):
@@ -179,10 +188,14 @@ class TrainingStatus:
         pct = self.current_ep / max(self.total_episodes, 1)
         filled = int(pct * 30)
         bar = "\u2588" * filled + "\u2591" * (30 - filled)
-        elapsed = _time.time() - self.start_time
-        if pct > 0.01:
-            eta_s = elapsed / pct * (1 - pct)
-            eta_str = _fmt_duration(eta_s)
+        remaining_episodes = max(self.total_episodes - self.current_ep, 0)
+        if remaining_episodes == 0:
+            eta_str = "0s"
+        elif self._ema_batch_wall_s is not None:
+            remaining_batches = math.ceil(
+                remaining_episodes / max(self.num_workers, 1)
+            )
+            eta_str = _fmt_duration(self._ema_batch_wall_s * remaining_batches)
         else:
             eta_str = "\u2014"
         grid.add_row(
