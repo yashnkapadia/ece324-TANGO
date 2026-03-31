@@ -2446,19 +2446,19 @@
         <article class="frame split">
           <section class="title-plate">
             <div class="eyebrow">Scoping and Context</div>
-            <h2>Transit signal priority for a growing Toronto corridor</h2>
+            <h2>Transit signal priority for Toronto's growing corridor</h2>
             <div class="flow-list">
               <article class="flow-item">
                 <strong>What We Are Solving</strong>
-                <p>TANGO builds adaptive traffic-signal control so transit vehicles are delayed less at intersections while keeping corridor traffic stable.</p>
+                <p>Adaptive signal control that cuts transit delay and preserves corridor stability.</p>
               </article>
               <article class="flow-item">
-                <strong>ASCE + PIRA Roles</strong>
-                <p>ASCE is the real-time controller; PIRA is the fast scenario-planning model for disruption what-if studies and policy support.</p>
+                <strong>ASCE and PIRA Roles</strong>
+                <p>ASCE controls signals in real time. PIRA handles rapid disruption and policy what-if analysis.</p>
               </article>
               <article class="flow-item">
                 <strong>Simulation Backbone</strong>
-                <p>SUMO provides the city-scale testbed where we replay Toronto demand and evaluate control decisions safely before deployment.</p>
+                <p>SUMO replays Toronto demand in a city-scale testbed for safe pre-deployment testing.</p>
               </article>
             </div>
             <div class="metric-grid">
@@ -2468,26 +2468,26 @@
               </div>
               <div class="metric">
                 <small>ASCE Target</small>
-                <strong>&lt;= 0.90x vs MP</strong>
+                <strong>At most 0.90x vs MP</strong>
               </div>
               <div class="metric">
                 <small>PIRA Targets</small>
-                <strong>MAPE &lt;= 10%, &lt;= 5s</strong>
+                <strong>MAPE at most 10 percent, runtime at most 5 s</strong>
               </div>
             </div>
           </section>
           <section class="detail-panel">
             <div class="eyebrow">Motivation</div>
-            <h3>Why now, and why this matters</h3>
+            <h3>Why now and why it matters</h3>
             <div class="inline-list">
-              <div class="inline-item">Car dependency is harmful for climate outcomes, public health, and long-term urban design quality.</div>
-              <div class="inline-item">Toronto is a leading North American city actively improving transit, and our team anchored the project around that direction from day one.</div>
-              <div class="inline-item">TTC Lines 5 and 6 opened just before this project. Transit signal priority was being considered, and much of the hardware was already in place.</div>
-              <div class="inline-item">If the technical path is demonstrably feasible, the decision bottleneck shifts away from implementation uncertainty.</div>
+              <div class="inline-item">Car dependence harms climate, health, and urban design.</div>
+              <div class="inline-item">Toronto is improving transit and we aligned from day one.</div>
+              <div class="inline-item">TTC Lines 5 and 6 opened pre-project, with TSP under discussion and hardware largely in place.</div>
+              <div class="inline-item">Proven feasibility shifts the bottleneck away from implementation uncertainty.</div>
             </div>
             <div class="flow-item">
               <strong>Project Thesis</strong>
-              <p>Build a reproducible evidence pipeline that accelerates serious consideration of corridor-scale transit signal priority in Toronto.</p>
+              <p>Reproducible evidence pipeline to accelerate Toronto corridor-scale TSP decisions.</p>
             </div>
           </section>
         </article>
@@ -2652,45 +2652,45 @@
             <div class="module-grid">
               <div class="module-row">
                 <b>Agents</b>
-                <p>12 traffic light controllers, each observing local queue lengths, speeds, phase state, and time-of-day.</p>
+                <p>12 signal agents observe local queue, speed, phase, and time-of-day.</p>
               </div>
               <div class="module-row">
                 <b>Policy Net</b>
-                <p>Action-Gate Residual MAPPO: GatedActor with binary gate head (follow/override MP) + phase selection head. 2-layer ReLU MLP, 128 hidden units, shared across all intersections.</p>
+                <p>Action-Gate Residual MAPPO with binary follow-or-override MP gate and phase head. Shared 2-layer ReLU MLP, 128 hidden.</p>
               </div>
               <div class="module-row">
                 <b>Critic</b>
-                <p>Centralized critic (global obs dim 309) during training only. Per-feature Welford normalization.</p>
+                <p>Training-only centralized critic, global observation dimension 309, with per-feature Welford normalization.</p>
               </div>
               <div class="module-row">
                 <b>Run Setup</b>
-                <p>5s decision interval, 900s episodes, 200+ training episodes, 8 parallel SUMO workers via libsumo (3.4x speedup).</p>
+                <p>5 s decisions, 900 s episodes, over 200 episodes, 8 parallel libsumo workers, 3.4x speedup.</p>
               </div>
               <div class="module-row">
                 <b>Reward</b>
-                <p>Person-weighted per-person-normalized delay + local approach fairness. Directly optimizes proposal's person-time-loss metric.</p>
+                <p>Person-weighted per-person delay with local fairness. Objective is person-time-loss.</p>
               </div>
             </div>
           </section>
           <section class="detail-panel">
             <div class="eyebrow">Targets and Status</div>
-            <div class="metric-grid" style="margin-top: 2px;">
+            <div class="metric-grid" style="margin-top: 2px">
               <div class="metric">
-                <small>ASCE Target &lt;= 0.90x</small>
+                <small>ASCE Target at most 0.90x</small>
                 <strong class="has-pill">0.897x</strong>
               </div>
               <div class="metric">
                 <small>PIRA MAPE Target</small>
-                <strong>&lt;= 10%</strong>
+                <strong>At most 10 percent</strong>
               </div>
               <div class="metric">
                 <small>Runtime Target</small>
-                <strong>&lt;= 5s</strong>
+                <strong>At most 5 s</strong>
               </div>
             </div>
             <div class="inline-list">
               <div class="inline-item">ASCE beats Max-Pressure by 10.3% on person-time-loss with action-gate residual MAPPO.</div>
-              <div class="inline-item">PIRA GAT architecture implemented. Baseline datasets generated in Parquet.</div>
+              <div class="inline-item">PIRA GAT is implemented. Baseline datasets are in Parquet.</div>
               <div class="inline-item">~2 GPU-hours for 200-episode parallel training on RTX 4070.</div>
             </div>
           </section>
@@ -2737,25 +2737,25 @@
         <article class="frame dual">
           <section>
             <div class="eyebrow">Key Technical Decisions</div>
-            <h2>Action-gate residual + person-weighted reward closed the gap</h2>
+            <h2>Action-gate residual with person-weighted reward closed the gap</h2>
             <div class="flow-list">
               <article class="flow-item">
                 <strong>Action-Gate Residual</strong>
-                <p>Binary gate learns WHEN to override Max-Pressure. Gate fraction rises from 1.4% to 22% - agent makes targeted interventions, not blind replacement.</p>
+                <p>Override gate learned selectively: gate fraction rose from 1.4% to 22%.</p>
               </article>
               <article class="flow-item">
                 <strong>Person-Weighted Reward</strong>
-                <p>Delay normalized per-person (bus=30 people, car=1.3). Local approach fairness replaces global throughput. Directly optimizes proposal's person-time-loss metric.</p>
+                <p>Per-person delay weights bus at 30 and car at 1.3. Local approach fairness replaced global throughput. Objective is person-time-loss.</p>
               </article>
               <article class="flow-item">
                 <strong>Curriculum Training</strong>
-                <p>4 demand scenarios: AM peak, PM peak, demand surge, midday multimodal. Round-robin with 8 parallel SUMO workers. Currently running.</p>
+                <p>Round-robin over 4 scenarios, AM, PM, surge, midday multimodal, with 8 parallel SUMO workers. Training is active.</p>
               </article>
             </div>
           </section>
           <section class="detail-panel">
             <div class="eyebrow">Reward Evolution</div>
-            <div class="metric-grid" style="margin-top: 2px;">
+            <div class="metric-grid" style="margin-top: 2px">
               <div class="metric">
                 <small>v1 Objective (interim)</small>
                 <strong>7,101 s</strong>
@@ -2770,9 +2770,9 @@
               </div>
             </div>
             <div class="inline-list">
-              <div class="inline-item">Removing the throughput term from the reward was critical - it dominated the gradient and caused the agent to game a proxy instead of reducing delay.</div>
-              <div class="inline-item">Gate fraction trend confirms the agent learns selective overrides, not random exploration.</div>
-              <div class="inline-item">Curriculum across 4 scenarios tests generalization beyond the AM peak regime where we first achieved the target.</div>
+              <div class="inline-item">Removing throughput was critical. It dominated gradients and encouraged proxy gaming over delay reduction.</div>
+              <div class="inline-item">Gate-fraction trend confirms selective overrides, not random exploration.</div>
+              <div class="inline-item">The 4-scenario curriculum tests generalization beyond AM peak, where the target was first achieved.</div>
             </div>
           </section>
         </article>
@@ -2782,11 +2782,11 @@
         <article class="frame pira-layout">
           <section class="pira-text-panel">
             <div class="eyebrow">Reference Design (Not in Final Control Loop)</div>
-            <h2>PIRA surrogate for fast corridor what-if analysis</h2>
+            <h2>PIRA surrogate for fast corridor what-if planning</h2>
             <ul class="pira-quick-points">
-              <li>Fast what-if layer for disruptions without rerunning full SUMO.</li>
-              <li>Inputs: scenario context + current traffic state at each intersection.</li>
-              <li>Outputs: corridor impact estimate + recommended signal timing updates.</li>
+              <li>Fast disruption what-if layer without full SUMO reruns.</li>
+              <li>Input is scenario context and per-intersection traffic state.</li>
+              <li>Output is corridor impact estimate and signal timing recommendations.</li>
             </ul>
             <div class="pira-pill-row" aria-label="Supported disruption types">
               <span class="pira-pill">none</span>
@@ -2798,46 +2798,46 @@
             <div class="pira-arch" aria-label="PIRA architecture overview">
               <article class="pira-arch-node">
                 <small>Graph Input</small>
-                <b>(scenario, time_step) snapshots with intersections as nodes</b>
+                <b>(scenario, time_step) graph snapshots with intersections as nodes</b>
               </article>
               <span class="pira-arch-arrow" aria-hidden="true"></span>
               <article class="pira-arch-node">
                 <small>Backbone</small>
-                <b>Node MLP (128) + 3x GATConv (4 heads) with residual LayerNorm</b>
+                <b>Node MLP (128), 3 GATConv layers with 4 heads, residual LayerNorm</b>
               </article>
               <span class="pira-arch-arrow" aria-hidden="true"></span>
               <article class="pira-arch-node">
                 <small>Dual Heads</small>
-                <b>Impact (delay, throughput, queue_total) + timing (green_ns_s, green_ew_s)</b>
+                <b>Impact head for delay, throughput, queue_total. Timing head for green_ns_s and green_ew_s.</b>
               </article>
             </div>
             <div class="pira-fact-grid">
               <article class="pira-fact">
                 <small>Required Inputs</small>
                 <ul>
-                  <li>Needs osm.net.xml, dataset.parquet, and trained checkpoint.</li>
+                  <li>Requires osm.net.xml, dataset.parquet, and a trained checkpoint.</li>
                   <li>intersection_map.csv is optional.</li>
                 </ul>
               </article>
               <article class="pira-fact">
                 <small>Features and Topology</small>
                 <ul>
-                  <li>17 node features: 10 traffic + 7 scenario features.</li>
-                  <li>capacity = 0 removes affected edges.</li>
+                  <li>17 node features: 10 traffic, 7 scenario.</li>
+                  <li>Capacity set to 0 removes affected edges.</li>
                 </ul>
               </article>
               <article class="pira-fact">
                 <small>Training Protocol</small>
                 <ul>
-                  <li>MSE + Adam (1e-3), gradient clip 1.0.</li>
-                  <li>Curriculum default, early stop patience 15, split by scenario_id.</li>
+                  <li>MSE with Adam (1e-3), gradient clip 1.0.</li>
+                  <li>Default curriculum, early stop patience 15, split by scenario_id.</li>
                 </ul>
               </article>
               <article class="pira-fact">
                 <small>Proposal Targets</small>
                 <ul>
-                  <li>MAPE &lt;= 10% and R^2 &gt;= 0.85.</li>
-                  <li>Inference under 5 seconds per scenario.</li>
+                  <li>MAPE at most 10 percent and R^2 at least 0.85.</li>
+                  <li>Inference under 5 s per scenario.</li>
                 </ul>
               </article>
             </div>
