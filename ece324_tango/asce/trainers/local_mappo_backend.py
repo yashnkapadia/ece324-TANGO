@@ -64,6 +64,38 @@ def _worker_init():
     _logger.remove()
 
 
+def _eval_controller_sequence(eval_baselines: list[str]) -> list[str]:
+    return ["mappo", *eval_baselines]
+
+
+def _format_eval_summary(
+    scenario_name: str,
+    train_ep: int,
+    results: dict[str, float],
+) -> tuple[float, str]:
+    mappo_ptl = results.get("mappo", 0.0)
+    mp_ptl = results.get("max_pressure", 1.0)
+    ratio = mappo_ptl / max(mp_ptl, 1.0)
+
+    metric_parts = [f"MAPPO={mappo_ptl:.0f}s", f"MP={mp_ptl:.0f}s"]
+    if "fixed_time" in results:
+        metric_parts.append(f"FT={results['fixed_time']:.0f}s")
+    if "nema" in results:
+        metric_parts.append(f"NEMA={results['nema']:.0f}s")
+
+    ratio_parts = [f"MAPPO/MP={ratio:.3f}"]
+    if "nema" in results:
+        ratio_parts.append(
+            f"MAPPO/NEMA={mappo_ptl / max(results['nema'], 1.0):.3f}"
+        )
+
+    log_line = (
+        f"  EVAL ep {train_ep} [{scenario_name}]: person-time-loss -> "
+        f"{', '.join(metric_parts)} | {', '.join(ratio_parts)}"
+    )
+    return ratio, log_line
+
+
 def _run_episode_worker(args: dict) -> dict:
     """Run a single SUMO episode in a subprocess for parallel collection.
 
@@ -428,6 +460,7 @@ def _run_eval_worker(args: dict) -> dict:
     seed = args["seed"]
     residual_mode = args["residual_mode"]
     use_obs_norm = args["use_obs_norm"]
+    eval_baselines = args["eval_baselines"]
 
     # Build a throwaway trainer with the snapshotted weights
     trainer = _RMT(
@@ -452,7 +485,7 @@ def _run_eval_worker(args: dict) -> dict:
     scenario_name = _P(eval_route).stem.removesuffix(".rou")
     results = {}
 
-    for ctrl in ["mappo", "max_pressure", "fixed_time", "nema"]:
+    for ctrl in _eval_controller_sequence(eval_baselines):
         try:
             if ctrl == "nema":
                 ev = _SE(
@@ -538,16 +571,17 @@ def _run_eval_worker(args: dict) -> dict:
             except Exception:
                 pass
 
-    mappo_ptl = results.get("mappo", 0.0)
-    mp_ptl = results.get("max_pressure", 1.0)
-    ratio = mappo_ptl / max(mp_ptl, 1.0)
-    ft_ptl = results.get("fixed_time", 1.0)
-    nema_ptl = results.get("nema", 1.0)
+    ratio, log_line = _format_eval_summary(scenario_name, train_ep, results)
 
     elapsed = _time.time() - t0
     return {
         "train_ep": train_ep,
-        "scenario_result": (scenario_name, ratio, mappo_ptl, mp_ptl, ft_ptl, nema_ptl),
+        "scenario_result": {
+            "scenario_name": scenario_name,
+            "ratio": ratio,
+            "results": results,
+            "log_line": log_line,
+        },
         "elapsed": elapsed,
     }
 
@@ -1099,7 +1133,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             "residual": reward_weights.residual,
         }
 
-        eval_workers = 2
+        eval_workers = max(1, cfg.eval_workers)
         mp_ctx = multiprocessing.get_context("spawn")
         pool = mp_ctx.Pool(
             processes=cfg.num_workers, maxtasksperchild=1,
@@ -1331,17 +1365,12 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "elapsed": max(res["elapsed"] for res in worker_eval_results),
                         }
                         parts = ", ".join(
-                            f"{name} MAPPO/MP={r:.3f}"
-                            for name, r, *_ in ev_res["per_scenario"]
+                            f"{res['scenario_name']} MAPPO/MP={res['ratio']:.3f}"
+                            for res in ev_res["per_scenario"]
                         )
-                        for name, ratio, m_ptl, mp_ptl, ft_ptl, nema_ptl in ev_res["per_scenario"]:
-                            logger.info(
-                                f"  EVAL ep {ev_res['train_ep']} [{name}]: "
-                                f"person-time-loss -> MAPPO={m_ptl:.0f}s, MP={mp_ptl:.0f}s, "
-                                f"FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
-                                f"MAPPO/MP={ratio:.3f}"
-                            )
-                        worst = max(r for _, r, *_ in ev_res["per_scenario"])
+                        for res in ev_res["per_scenario"]:
+                            logger.info(res["log_line"])
+                        worst = max(res["ratio"] for res in ev_res["per_scenario"])
                         if len(ev_res["per_scenario"]) > 1:
                             logger.info(
                                 f"  EVAL ep {ev_res['train_ep']}: {parts} | "
@@ -1357,8 +1386,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                         tui.update_eval_results(
                             eval_ep=ev_res["train_ep"],
                             ratios={
-                                name: r
-                                for name, r, *_ in ev_res["per_scenario"]
+                                res["scenario_name"]: res["ratio"]
+                                for res in ev_res["per_scenario"]
                             },
                         )
                     except Exception as e:
@@ -1407,6 +1436,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 "seed": cfg.seed,
                                 "residual_mode": cfg.residual_mode,
                                 "use_obs_norm": cfg.use_obs_norm,
+                                "eval_baselines": cfg.eval_baselines,
                             }
                             for eval_route in eval_routes
                         ]
@@ -1461,14 +1491,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                             ],
                             "elapsed": max(res["elapsed"] for res in worker_eval_results),
                         }
-                        worst = max(r for _, r, *_ in ev_res["per_scenario"])
-                        for name, ratio, m_ptl, mp_ptl, ft_ptl, nema_ptl in ev_res["per_scenario"]:
-                            logger.info(
-                                f"  EVAL ep {ev_res['train_ep']} [{name}]: "
-                                f"person-time-loss -> MAPPO={m_ptl:.0f}s, MP={mp_ptl:.0f}s, "
-                                f"FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
-                                f"MAPPO/MP={ratio:.3f}"
-                            )
+                        worst = max(res["ratio"] for res in ev_res["per_scenario"])
+                        for res in ev_res["per_scenario"]:
+                            logger.info(res["log_line"])
                         if worst < best_eval_ratio:
                             best_eval_ratio = worst
                             trainer.save(str(best_model_path))
@@ -1497,10 +1522,8 @@ class LocalMappoBackend(AsceTrainerBackend):
         When route_files is provided, evaluates on ALL scenarios and returns the
         worst-case MAPPO/MP ratio (highest ratio = worst performance).
 
-        Baselines:
-        - max_pressure: queue-differential greedy (sumo-rl TLS override)
-        - fixed_time: uniform 30s phase cycling (sumo-rl TLS override)
-        - nema: native NEMA program from osm.net.xml (real Toronto timing)
+        Configured baselines come from cfg.eval_baselines and must include
+        max_pressure because model selection uses the MAPPO/MP ratio.
         """
         eval_routes = route_files if route_files else [cfg.route_file]
         per_scenario_ratios: list[tuple[str, float]] = []
@@ -1534,7 +1557,7 @@ class LocalMappoBackend(AsceTrainerBackend):
 
         seed = eval_seed if eval_seed is not None else cfg.seed
         results = {}
-        for controller_name in ["mappo", "max_pressure", "fixed_time", "nema"]:
+        for controller_name in _eval_controller_sequence(cfg.eval_baselines):
             if controller_name == "nema":
                 eval_env = SumoEnvironment(
                     net_file=cfg.net_file,
@@ -1619,17 +1642,8 @@ class LocalMappoBackend(AsceTrainerBackend):
             finally:
                 eval_env.close()
 
-        mappo_ptl = results.get("mappo", 0.0)
-        mp_ptl = results.get("max_pressure", 1.0)
-        ft_ptl = results.get("fixed_time", 1.0)
-        nema_ptl = results.get("nema", 1.0)
-        ratio = mappo_ptl / max(mp_ptl, 1.0)
-        logger.info(
-            f"  EVAL ep {train_ep} [{scenario_name}]: person-time-loss -> "
-            f"MAPPO={mappo_ptl:.0f}s, MP={mp_ptl:.0f}s, FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
-            f"MAPPO/MP={ratio:.3f}, "
-            f"MAPPO/NEMA={mappo_ptl / max(nema_ptl, 1.0):.3f}"
-        )
+        ratio, log_line = _format_eval_summary(scenario_name, train_ep, results)
+        logger.info(log_line)
         return ratio
 
     def evaluate(self, cfg: EvalConfig) -> None:

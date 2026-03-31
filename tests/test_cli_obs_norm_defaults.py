@@ -17,6 +17,15 @@ def test_predict_cli_defaults_obs_norm_enabled():
     assert default.default is True
 
 
+def test_train_cli_defaults_eval_workers_and_baselines():
+    eval_workers = inspect.signature(train.main).parameters["eval_workers"].default
+    eval_baselines = inspect.signature(train.main).parameters["eval_baselines"].default
+    assert isinstance(eval_workers, typer.models.OptionInfo)
+    assert isinstance(eval_baselines, typer.models.OptionInfo)
+    assert eval_workers.default == 2
+    assert eval_baselines.default == "max_pressure"
+
+
 def test_cli_reward_modes_include_time_loss_and_residual_mp():
     train_default = inspect.signature(train.main).parameters["reward_mode"].default
     predict_default = inspect.signature(predict.main).parameters["reward_mode"].default
@@ -28,3 +37,9 @@ def test_cli_reward_modes_include_time_loss_and_residual_mp():
     assert "time_loss" in predict._VALID_REWARD_MODES
     assert "residual_mp" in train._VALID_REWARD_MODES
     assert "residual_mp" in predict._VALID_REWARD_MODES
+
+
+def test_cli_eval_baselines_include_supported_baselines():
+    assert "max_pressure" in train._VALID_EVAL_BASELINES
+    assert "fixed_time" in train._VALID_EVAL_BASELINES
+    assert "nema" in train._VALID_EVAL_BASELINES

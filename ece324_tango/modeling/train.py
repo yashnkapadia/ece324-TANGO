@@ -13,6 +13,7 @@ from ece324_tango.config import MODELS_DIR, PROCESSED_DATA_DIR, RESULTS_DIR
 app = typer.Typer(add_completion=False)
 _VALID_REWARD_MODES = {"objective", "person_objective", "sumo", "time_loss", "residual_mp"}
 _VALID_RESIDUAL_MODES = {"none", "action_gate"}
+_VALID_EVAL_BASELINES = {"max_pressure", "fixed_time", "nema"}
 
 
 @app.command()
@@ -66,6 +67,16 @@ def main(
         1,
         "--num-workers",
         help="Number of parallel SUMO workers for episode collection (1=sequential)",
+    ),
+    eval_workers: int = typer.Option(
+        2,
+        "--eval-workers",
+        help="Number of background eval workers for scenario-parallel train-time eval",
+    ),
+    eval_baselines: str = typer.Option(
+        "max_pressure",
+        "--eval-baselines",
+        help="Comma-separated baselines for train-time eval: max_pressure,fixed_time,nema",
     ),
     scale_lr_by_workers: bool = typer.Option(
         True,
@@ -140,6 +151,33 @@ def main(
             f"--num-workers must be >= 1, got {num_workers}."
         )
 
+    if eval_workers < 1:
+        raise typer.BadParameter(
+            f"--eval-workers must be >= 1, got {eval_workers}."
+        )
+
+    parsed_eval_baselines = [
+        b.strip().lower() for b in eval_baselines.split(",") if b.strip()
+    ]
+    if not parsed_eval_baselines:
+        raise typer.BadParameter(
+            "--eval-baselines must include at least one baseline."
+        )
+    invalid_eval_baselines = [
+        b for b in parsed_eval_baselines if b not in _VALID_EVAL_BASELINES
+    ]
+    if invalid_eval_baselines:
+        raise typer.BadParameter(
+            f"Unsupported eval baselines: {', '.join(invalid_eval_baselines)}. "
+            f"Expected subset of: {', '.join(sorted(_VALID_EVAL_BASELINES))}."
+        )
+    parsed_eval_baselines = list(dict.fromkeys(parsed_eval_baselines))
+    if "max_pressure" not in parsed_eval_baselines:
+        raise typer.BadParameter(
+            "--eval-baselines must include max_pressure because train-time model "
+            "selection uses the MAPPO/MP ratio."
+        )
+
     if warm_start_model and not Path(warm_start_model).exists():
         raise typer.BadParameter(
             f"--warm-start-model path does not exist: {warm_start_model}"
@@ -185,6 +223,8 @@ def main(
         warm_start_model=warm_start_model,
         reset_obs_norm=reset_obs_norm,
         num_workers=num_workers,
+        eval_workers=eval_workers,
+        eval_baselines=parsed_eval_baselines,
         scale_lr_by_workers=scale_lr_by_workers,
         final_eval_seeds=final_eval_seeds,
         route_files=parsed_route_files,
