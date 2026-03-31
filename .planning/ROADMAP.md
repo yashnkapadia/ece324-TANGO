@@ -118,7 +118,11 @@ Plans:
   2. The environment is rebuilt per episode with the selected scenario's route file
   3. Per-scenario person-time-loss ratios are tracked and logged across the curriculum pool
   4. Residual MAPPO achieves person-time-loss(MAPPO) <= 0.90 * person-time-loss(Max-Pressure) on at least one evaluation scenario
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — TrainConfig route_files, CLI --route-files, round-robin training loop, multi-scenario inline eval
+- [ ] 05-02-PLAN.md — Launch curriculum training run, verify CUR-03 target (MAPPO/MP <= 0.90)
 
 ### Phase 6: Eval Loop + Dataset Logging
 **Goal**: All three controllers are evaluated across all scenarios and their outputs are logged to a PIRA-compatible Parquet dataset
@@ -150,5 +154,5 @@ Phase 2 (Action-Gate MAPPO) ─┘                                  │
 | 3. Simulation Alignment + Headless Demand CLI | 1/1 | Complete | 2026-03-30 |
 | 4. Baseline Convergence Validation | 0/? | Not started | - |
 | 4.5 Expansion Scenarios | 0/? | Conditional — after Phase 4 | - |
-| 5. Curriculum Training Integration | 0/? | Not started | - |
+| 5. Curriculum Training Integration | 0/2 | Planned | - |
 | 6. Eval Loop + Dataset Logging | 0/? | Not started | - |
