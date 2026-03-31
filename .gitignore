@@ -26,6 +26,7 @@
 
 # Mac OS-specific storage files
 .DS_Store
+*Zone.Identifier
 
 # vim
 *.swp
