@@ -108,7 +108,8 @@ class TestRoundRobinAssignment:
         assert selected == scenario_pool[expected_idx]
 
     def test_scenario_id_derived_from_filename(self):
-        """Scenario IDs should be derived from route file stems."""
+        """Scenario IDs should be derived from route file stems (stripping all extensions)."""
         scenario_pool = self.SCENARIOS
-        scenario_ids = [Path(rf).stem for rf in scenario_pool]
+        # Path.stem only strips last extension; for .rou.xml we need to strip twice
+        scenario_ids = [Path(rf).stem.removesuffix(".rou") for rf in scenario_pool]
         assert scenario_ids == ["am_peak", "pm_peak", "demand_surge", "midday_multimodal"]

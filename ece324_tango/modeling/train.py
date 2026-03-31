@@ -77,14 +77,28 @@ def main(
         "--final-eval-seeds",
         help="Number of seeds for post-training evaluation (0 = disabled)",
     ),
+    route_files: str = typer.Option(
+        "",
+        "--route-files",
+        help="Comma-separated list of route files for curriculum training",
+    ),
 ):
     """Train the local ASCE MAPPO controller."""
     model_path.parent.mkdir(parents=True, exist_ok=True)
     rollout_csv.parent.mkdir(parents=True, exist_ok=True)
     episode_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
 
+    parsed_route_files = (
+        [f.strip() for f in route_files.split(",") if f.strip()] if route_files else []
+    )
+
     if not net_file or not route_file:
         net_file, route_file = get_default_sumo_files()
+
+    if parsed_route_files:
+        logger.info(f"Curriculum mode: {len(parsed_route_files)} scenarios")
+        for rf in parsed_route_files:
+            logger.info(f"  - {rf}")
     reward_mode = str(reward_mode).strip().lower()
     if reward_mode not in _VALID_REWARD_MODES:
         raise typer.BadParameter(
@@ -135,6 +149,7 @@ def main(
         num_workers=num_workers,
         scale_lr_by_workers=scale_lr_by_workers,
         final_eval_seeds=final_eval_seeds,
+        route_files=parsed_route_files,
     )
     backend.train(cfg)
 
