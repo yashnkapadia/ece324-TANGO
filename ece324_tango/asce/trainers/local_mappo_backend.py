@@ -1054,6 +1054,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 completed_training = False
 
             ran_training_episode = False
+            next_episode_to_run = start_episode
             for ep in range(start_episode, cfg.episodes):
                 if cfg.num_workers > 1:
                     break  # parallel path already handled all episodes
@@ -1320,6 +1321,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     f"actor_loss={losses['actor_loss']:.4f}, critic_loss={losses['critic_loss']:.4f}, "
                     f"gate_fraction={gate_fraction:.3f}"
                 )
+                next_episode_to_run = ep + 1
 
                 # Periodic checkpoint
                 if cfg.checkpoint_every > 0 and (ep + 1) % cfg.checkpoint_every == 0:
@@ -1408,7 +1410,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
             self._save_train_state(
                 state_path=train_state_path,
-                start_episode=cfg.episodes,
+                start_episode=cfg.episodes if completed_training else next_episode_to_run,
                 best_eval_ratio=best_eval_ratio,
                 scenario_best_ratios=scenario_best_ratios,
                 last_eval_ep=last_eval_ep,
@@ -1535,6 +1537,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         )
         tui.start()
         completed_training = start_episode < cfg.episodes
+        next_episode_to_run = start_episode
 
         try:
             for ep_batch_start in range(
@@ -1724,6 +1727,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 # Periodic checkpoint — trigger if any episode in batch crosses boundary
                 last_ep = ep_batch_start + batch_size - 1
                 first_ep = ep_batch_start
+                next_episode_to_run = last_ep + 1
                 if cfg.checkpoint_every > 0 and (
                     last_ep // cfg.checkpoint_every > (first_ep - 1) // cfg.checkpoint_every
                     if first_ep > 0
@@ -1925,7 +1929,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                         if train_state_path is not None:
                             self._save_train_state(
                                 state_path=train_state_path,
-                                start_episode=cfg.episodes,
+                                start_episode=(
+                                    cfg.episodes if completed_training else next_episode_to_run
+                                ),
                                 best_eval_ratio=best_eval_ratio,
                                 scenario_best_ratios=scenario_best_ratios,
                                 last_eval_ep=last_eval_ep,
