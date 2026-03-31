@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import signal
+from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
@@ -117,6 +118,7 @@ def _run_episode_worker(args: dict) -> dict:
                 "ep_steps": 0,
                 "gate_fraction": 0.0,
                 "episode_num": episode_num,
+                "scenario_id": scenario_id,
                 "raw_obs_for_norm": [],
                 "raw_gobs_for_norm": [],
                 "elapsed": _time.time() - ep_t0,
@@ -349,6 +351,7 @@ def _run_episode_worker(args: dict) -> dict:
         "ep_steps": ep_steps,
         "gate_fraction": gate_fraction,
         "episode_num": episode_num,
+        "scenario_id": scenario_id,
         "raw_obs_for_norm": raw_obs_for_norm,
         "raw_gobs_for_norm": raw_gobs_for_norm,
         "elapsed": elapsed,
@@ -511,6 +514,28 @@ class LocalMappoBackend(AsceTrainerBackend):
             for ep in range(start_episode, cfg.episodes):
                 if cfg.num_workers > 1:
                     break  # parallel path already handled all episodes
+
+                # Curriculum: select scenario for this episode
+                if cfg.route_files:
+                    scenario_pool_seq = cfg.route_files
+                    scenario_ids_seq = [
+                        Path(rf).stem.removesuffix(".rou") for rf in scenario_pool_seq
+                    ]
+                    current_route = scenario_pool_seq[ep % len(scenario_pool_seq)]
+                    current_scenario_id = scenario_ids_seq[ep % len(scenario_pool_seq)]
+                    env.close()
+                    env = create_parallel_env(
+                        net_file=cfg.net_file,
+                        route_file=current_route,
+                        seed=cfg.seed + ep,
+                        use_gui=cfg.use_gui,
+                        seconds=cfg.seconds,
+                        delta_time=cfg.delta_time,
+                        quiet_sumo=not cfg.backend_verbose,
+                    )
+                else:
+                    current_scenario_id = cfg.scenario_id
+
                 ep_t0 = _time.time()
                 logger.info(f"Episode {ep}: resetting env ...")
                 obs = extract_reset_obs(env.reset(seed=cfg.seed + ep))
@@ -737,7 +762,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     {
                         "episode": ep,
                         "seed": cfg.seed + ep,
-                        "scenario_id": cfg.scenario_id,
+                        "scenario_id": current_scenario_id,
                         "mean_global_reward": ep_reward / max(1, ep_steps),
                         "steps": ep_steps,
                         "actor_loss": losses["actor_loss"],
@@ -763,6 +788,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     eval_ratio = self._run_inline_eval(
                         cfg, env, trainer, obs_dim, global_obs_dim, action_dims,
                         n_actions, ordered_agents, ep,
+                        route_files=cfg.route_files if cfg.route_files else None,
                     )
                     if eval_ratio < best_eval_ratio:
                         best_eval_ratio = eval_ratio
@@ -817,6 +843,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         action_dims, n_actions, ordered_agents,
                         train_ep=f"final-s{s}",
                         eval_seed=eval_seed,
+                        route_files=cfg.route_files if cfg.route_files else None,
                     )
                     final_ratios.append(ratio)
                 mean_ratio = float(np.mean(final_ratios))
@@ -887,14 +914,24 @@ class LocalMappoBackend(AsceTrainerBackend):
                     else None,
                 }
 
+                # Determine scenario pool for curriculum round-robin
+                scenario_pool = cfg.route_files if cfg.route_files else [cfg.route_file]
+                scenario_ids = [
+                    Path(rf).stem.removesuffix(".rou") for rf in scenario_pool
+                ]
+
                 worker_args = [
                     {
                         "net_file": cfg.net_file,
-                        "route_file": cfg.route_file,
+                        "route_file": scenario_pool[
+                            (ep_batch_start + i) % len(scenario_pool)
+                        ],
                         "seed": cfg.seed + ep_batch_start + i,
                         "seconds": cfg.seconds,
                         "delta_time": cfg.delta_time,
-                        "scenario_id": cfg.scenario_id,
+                        "scenario_id": scenario_ids[
+                            (ep_batch_start + i) % len(scenario_pool)
+                        ],
                         "model_state_dict": model_state_dict,
                         "obs_dim": obs_dim,
                         "global_obs_dim": global_obs_dim,
@@ -961,7 +998,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         {
                             "episode": ep_num,
                             "seed": cfg.seed + ep_num,
-                            "scenario_id": cfg.scenario_id,
+                            "scenario_id": res["scenario_id"],
                             "mean_global_reward": res["ep_reward"]
                             / max(1, res["ep_steps"]),
                             "steps": res["ep_steps"],
@@ -1008,6 +1045,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         n_actions,
                         ordered_agents,
                         last_ep,
+                        route_files=cfg.route_files if cfg.route_files else None,
                     )
                     if eval_ratio < best_eval_ratio:
                         best_eval_ratio = eval_ratio
@@ -1042,14 +1080,45 @@ class LocalMappoBackend(AsceTrainerBackend):
 
     def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,
                          action_dims, n_actions, ordered_agents, train_ep,
-                         eval_seed: int | None = None):
-        """Run one-episode eval for MAPPO vs baselines on the training scenario.
+                         eval_seed: int | None = None,
+                         route_files: list[str] | None = None):
+        """Run one-episode eval for MAPPO vs baselines on the training scenario(s).
+
+        When route_files is provided, evaluates on ALL scenarios and returns the
+        worst-case MAPPO/MP ratio (highest ratio = worst performance).
 
         Baselines:
         - max_pressure: queue-differential greedy (sumo-rl TLS override)
         - fixed_time: uniform 30s phase cycling (sumo-rl TLS override)
         - nema: native NEMA program from osm.net.xml (real Toronto timing)
         """
+        eval_routes = route_files if route_files else [cfg.route_file]
+        per_scenario_ratios: list[tuple[str, float]] = []
+
+        for eval_route in eval_routes:
+            scenario_name = Path(eval_route).stem.removesuffix(".rou")
+            ratio = self._run_single_eval(
+                cfg, trainer, obs_dim, global_obs_dim, action_dims, n_actions,
+                ordered_agents, train_ep, eval_route, scenario_name,
+                eval_seed=eval_seed,
+            )
+            per_scenario_ratios.append((scenario_name, ratio))
+
+        if len(per_scenario_ratios) > 1:
+            parts = ", ".join(
+                f"{name} MAPPO/MP={r:.3f}" for name, r in per_scenario_ratios
+            )
+            worst = max(r for _, r in per_scenario_ratios)
+            logger.info(f"  EVAL ep {train_ep}: {parts} | worst={worst:.3f}")
+            return worst
+        else:
+            return per_scenario_ratios[0][1]
+
+    def _run_single_eval(self, cfg, trainer, obs_dim, global_obs_dim,
+                         action_dims, n_actions, ordered_agents, train_ep,
+                         route_file: str, scenario_name: str,
+                         eval_seed: int | None = None):
+        """Run one-episode eval on a single scenario for MAPPO vs baselines."""
         import torch
         from ece324_tango.sumo_rl.environment.env import SumoEnvironment
 
@@ -1057,10 +1126,9 @@ class LocalMappoBackend(AsceTrainerBackend):
         results = {}
         for controller_name in ["mappo", "max_pressure", "fixed_time", "nema"]:
             if controller_name == "nema":
-                # Native NEMA: use fixed_ts=True so sumo-rl doesn't override TLS
                 eval_env = SumoEnvironment(
                     net_file=cfg.net_file,
-                    route_file=cfg.route_file,
+                    route_file=route_file,
                     use_gui=False,
                     num_seconds=cfg.seconds,
                     delta_time=cfg.delta_time,
@@ -1073,7 +1141,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             else:
                 eval_env = create_parallel_env(
                     net_file=cfg.net_file,
-                    route_file=cfg.route_file,
+                    route_file=route_file,
                     seed=seed,
                     use_gui=False,
                     seconds=cfg.seconds,
@@ -1122,13 +1190,11 @@ class LocalMappoBackend(AsceTrainerBackend):
                     elif controller_name == "fixed_time":
                         actions = ft.actions(obs)
                     else:
-                        # NEMA: no actions needed, env steps with native program
                         actions = {}
 
                     try:
                         result = eval_env.step(actions)
                         if controller_name == "nema":
-                            # fixed_ts returns (obs, rew, dones, info) directly
                             obs, _, dones, _ = result
                             done = dones.get("__all__", False) if isinstance(dones, dict) else dones
                         else:
@@ -1149,7 +1215,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         nema_ptl = results.get("nema", 1.0)
         ratio = mappo_ptl / max(mp_ptl, 1.0)
         logger.info(
-            f"  EVAL ep {train_ep}: person-time-loss → "
+            f"  EVAL ep {train_ep} [{scenario_name}]: person-time-loss -> "
             f"MAPPO={mappo_ptl:.0f}s, MP={mp_ptl:.0f}s, FT={ft_ptl:.0f}s, NEMA={nema_ptl:.0f}s | "
             f"MAPPO/MP={ratio:.3f}, "
             f"MAPPO/NEMA={mappo_ptl / max(nema_ptl, 1.0):.3f}"
