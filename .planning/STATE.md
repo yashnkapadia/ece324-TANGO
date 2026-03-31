@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** MAPPO must match or beat Max-Pressure on person-time-loss under nominal conditions and generalize better under irregular demand
-**Current focus:** Phase 4 training actively running; MAPPO/MP=0.968 at episode 24
+**Current focus:** Reward tuning + parallel training; v1 MAPPO/MP=0.961 at ep 74, v3 person_objective at 0.981 at ep 23
 
 ## Current Position
 
 Phase: 4 of 6 (Baseline Convergence Validation) -- IN PROGRESS
-Plan: Phase 4 running (no formal plan created; direct execution)
-Status: Training running, early convergence signal positive
-Last activity: 2026-03-30 — Phase 4 infrastructure fixes + training launch
+Plan: Reward tuning experiments + parallel training infrastructure
+Status: Two reward variants being compared; parallel training (8 workers) deployed
+Last activity: 2026-03-30 — Reward tuning (v3 person_objective), parallel SUMO training, graceful checkpoint
 
-Progress: [██████░░░░] ~50%
+Progress: [███████░░░] ~65%
 
 ## Performance Metrics
 
@@ -53,12 +53,20 @@ Progress: [██████░░░░] ~50%
 
 ### Blockers/Concerns
 
-- [Phase 4] Wall clock for 200 episodes ~5.5 hours on RTX 4070. Currently running.
-- [Phase 4] MAPPO/MP already at 0.968 at ep 24 — may meet success criteria well before ep 200.
-- [Phase 4] NEMA baseline not yet measured in current run (added after run started). Will appear in next run with --eval-every.
+- [Phase 4] v1 (objective) 200ep run still going in background — at ep 85, MAPPO/MP=0.961 at ep 74
+- [Phase 4] v3 (person_objective) 200ep run with 8 workers just started — ETA ~2 hours
+- [Phase 4] Batched training (N episodes per PPO update) changes training dynamics vs sequential — not directly comparable episode-for-episode
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260330-k3l | Reward tuning: person-occupancy weighting, per-vehicle delay normalization, local approach fairness | 2026-03-30 | pending | [260330-k3l](./quick/260330-k3l-reward-tuning-person-occupancy-weighting/) |
+| 260330-ods | Parallel SUMO training with multiprocessing and libsumo (3.4x speedup) | 2026-03-30 | 3f96c43, f4a4045 | [260330-ods](./quick/260330-ods-parallel-sumo-training-with-multiprocess/) |
+| 260330-ras | Generate MP/FT baseline datasets in Parquet for PIRA, update ASCE schema | 2026-03-30 | pending | [260330-ras](./quick/260330-ras-generate-mp-ft-baseline-datasets-in-parq/) |
 
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Phase 4 training running (~ep 25 of 200), all infra fixes committed
+Stopped at: v3 person_objective 200ep restarted with parallel fixes; baseline datasets generating
 Resume file: None
