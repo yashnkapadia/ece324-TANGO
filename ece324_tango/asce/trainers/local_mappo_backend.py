@@ -386,12 +386,7 @@ def _run_episode_worker(args: dict) -> dict:
 
 
 def _run_eval_worker(args: dict) -> dict:
-    """Run multi-scenario eval in a subprocess so training isn't blocked.
-
-    Receives a snapshot of model weights (CPU tensors).  Creates its own
-    trainer, loads weights, runs MAPPO + baselines on every scenario, and
-    returns per-scenario MAPPO/MP ratios.
-    """
+    """Run one scenario eval in a subprocess so training isn't blocked."""
     import os
     import sys
     import time as _time
@@ -420,7 +415,7 @@ def _run_eval_worker(args: dict) -> dict:
 
     t0 = _time.time()
     net_file = args["net_file"]
-    eval_routes = args["eval_routes"]
+    eval_route = args["eval_route"]
     model_state = args["model_state_dict"]
     obs_dim = args["obs_dim"]
     global_obs_dim = args["global_obs_dim"]
@@ -452,111 +447,107 @@ def _run_eval_worker(args: dict) -> dict:
     trainer.actor.eval()
     trainer.critic.eval()
 
-    per_scenario: list[tuple[str, float]] = []
+    from pathlib import Path as _P
 
-    for eval_route in eval_routes:
-        from pathlib import Path as _P
+    scenario_name = _P(eval_route).stem.removesuffix(".rou")
+    results = {}
 
-        scenario_name = _P(eval_route).stem.removesuffix(".rou")
-        results = {}
+    for ctrl in ["mappo", "max_pressure", "fixed_time", "nema"]:
+        try:
+            if ctrl == "nema":
+                ev = _SE(
+                    net_file=net_file,
+                    route_file=eval_route,
+                    use_gui=False,
+                    num_seconds=seconds,
+                    delta_time=delta_time,
+                    sumo_seed=seed,
+                    single_agent=False,
+                    sumo_warnings=False,
+                    fixed_ts=True,
+                    additional_sumo_cmd="--no-step-log true",
+                )
+            else:
+                ev = _cpe(
+                    net_file=net_file,
+                    route_file=eval_route,
+                    seed=seed,
+                    use_gui=False,
+                    seconds=seconds,
+                    delta_time=delta_time,
+                    quiet_sumo=True,
+                )
+            obs_raw = ev.reset(seed=seed)
+            obs = _ero(obs_raw)
+            if not obs:
+                ev.close()
+                continue
+            agents = sorted(obs.keys())
+            a_dims = {a: int(ev.action_spaces(a).n) for a in agents}
+            mp = MPC(action_size_by_agent=a_dims)
+            ft = FTC(action_size_by_agent=a_dims, green_duration_s=delta_time)
+            kpi = _KPI()
+            done = False
 
-        for ctrl in ["mappo", "max_pressure", "fixed_time", "nema"]:
-            try:
-                if ctrl == "nema":
-                    ev = _SE(
-                        net_file=net_file,
-                        route_file=eval_route,
-                        use_gui=False,
-                        num_seconds=seconds,
-                        delta_time=delta_time,
-                        sumo_seed=seed,
-                        single_agent=False,
-                        sumo_warnings=False,
-                        fixed_ts=True,
-                        additional_sumo_cmd="--no-step-log true",
-                    )
-                else:
-                    ev = _cpe(
-                        net_file=net_file,
-                        route_file=eval_route,
-                        seed=seed,
-                        use_gui=False,
-                        seconds=seconds,
-                        delta_time=delta_time,
-                        quiet_sumo=True,
-                    )
-                obs_raw = ev.reset(seed=seed)
-                obs = _ero(obs_raw)
-                if not obs:
-                    ev.close()
-                    continue
-                agents = sorted(obs.keys())
-                a_dims = {a: int(ev.action_spaces(a).n) for a in agents}
-                mp = MPC(action_size_by_agent=a_dims)
-                ft = FTC(action_size_by_agent=a_dims, green_duration_s=delta_time)
-                kpi = _KPI()
-                done = False
-
-                while not done:
-                    active = sorted(obs.keys())
-                    if ctrl == "mappo":
-                        gobs = _foba(obs, active)
-                        padded = [
-                            _po(np_w.asarray(obs[a], dtype=np_w.float32), target_dim=obs_dim)
-                            for a in active
-                        ]
-                        n_valid = [a_dims[a] for a in active]
-                        if residual_mode == "action_gate":
-                            mp_acts = mp.actions(obs, env=ev)
-                            mp_list = [mp_acts.get(a, 0) for a in active]
-                            batch_out = trainer.act_batch_residual(padded, gobs, n_valid, mp_list)
-                        else:
-                            batch_out = trainer.act_batch(padded, gobs, n_valid)
-                        actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active)}
-                    elif ctrl == "max_pressure":
-                        actions = mp.actions(obs, env=ev)
-                    elif ctrl == "fixed_time":
-                        actions = ft.actions(obs)
+            while not done:
+                active = sorted(obs.keys())
+                if ctrl == "mappo":
+                    gobs = _foba(obs, active)
+                    padded = [
+                        _po(np_w.asarray(obs[a], dtype=np_w.float32), target_dim=obs_dim)
+                        for a in active
+                    ]
+                    n_valid = [a_dims[a] for a in active]
+                    if residual_mode == "action_gate":
+                        mp_acts = mp.actions(obs, env=ev)
+                        mp_list = [mp_acts.get(a, 0) for a in active]
+                        batch_out = trainer.act_batch_residual(padded, gobs, n_valid, mp_list)
                     else:
-                        actions = {}
+                        batch_out = trainer.act_batch(padded, gobs, n_valid)
+                    actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active)}
+                elif ctrl == "max_pressure":
+                    actions = mp.actions(obs, env=ev)
+                elif ctrl == "fixed_time":
+                    actions = ft.actions(obs)
+                else:
+                    actions = {}
 
-                    try:
-                        result = ev.step(actions)
-                        if ctrl == "nema":
-                            obs, _, dones, _ = result
-                            done = dones.get("__all__", False) if isinstance(dones, dict) else dones
-                        else:
-                            obs, _, done_flag, _ = result
-                            done = (
-                                done_flag.get("__all__", False)
-                                if isinstance(done_flag, dict)
-                                else done_flag
-                            )
-                    except Exception:
-                        done = True
-                    kpi.update(ev)
+                try:
+                    result = ev.step(actions)
+                    if ctrl == "nema":
+                        obs, _, dones, _ = result
+                        done = dones.get("__all__", False) if isinstance(dones, dict) else dones
+                    else:
+                        obs, _, done_flag, _ = result
+                        done = (
+                            done_flag.get("__all__", False)
+                            if isinstance(done_flag, dict)
+                            else done_flag
+                        )
+                except Exception:
+                    done = True
+                kpi.update(ev)
 
-                k = kpi.summary()
-                results[ctrl] = k.person_time_loss_s
+            k = kpi.summary()
+            results[ctrl] = k.person_time_loss_s
+        except Exception:
+            pass
+        finally:
+            try:
+                ev.close()
             except Exception:
                 pass
-            finally:
-                try:
-                    ev.close()
-                except Exception:
-                    pass
 
-        mappo_ptl = results.get("mappo", 0.0)
-        mp_ptl = results.get("max_pressure", 1.0)
-        ratio = mappo_ptl / max(mp_ptl, 1.0)
-        ft_ptl = results.get("fixed_time", 1.0)
-        nema_ptl = results.get("nema", 1.0)
-        per_scenario.append((scenario_name, ratio, mappo_ptl, mp_ptl, ft_ptl, nema_ptl))
+    mappo_ptl = results.get("mappo", 0.0)
+    mp_ptl = results.get("max_pressure", 1.0)
+    ratio = mappo_ptl / max(mp_ptl, 1.0)
+    ft_ptl = results.get("fixed_time", 1.0)
+    nema_ptl = results.get("nema", 1.0)
 
     elapsed = _time.time() - t0
     return {
         "train_ep": train_ep,
-        "per_scenario": per_scenario,
+        "scenario_result": (scenario_name, ratio, mappo_ptl, mp_ptl, ft_ptl, nema_ptl),
         "elapsed": elapsed,
     }
 
@@ -1108,13 +1099,14 @@ class LocalMappoBackend(AsceTrainerBackend):
             "residual": reward_weights.residual,
         }
 
+        eval_workers = 2
         mp_ctx = multiprocessing.get_context("spawn")
         pool = mp_ctx.Pool(
             processes=cfg.num_workers, maxtasksperchild=1,
             initializer=_worker_init,
         )
         eval_pool = mp_ctx.Pool(
-            processes=1, maxtasksperchild=1,
+            processes=eval_workers, maxtasksperchild=1,
             initializer=_worker_init,
         )
         bg_eval_result = None
@@ -1330,7 +1322,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                 # Collect background eval results (if any finished)
                 if bg_eval_result is not None and bg_eval_result.ready():
                     try:
-                        ev_res = bg_eval_result.get(timeout=1)
+                        worker_eval_results = bg_eval_result.get(timeout=1)
+                        ev_res = {
+                            "train_ep": worker_eval_results[0]["train_ep"],
+                            "per_scenario": [
+                                res["scenario_result"] for res in worker_eval_results
+                            ],
+                            "elapsed": max(res["elapsed"] for res in worker_eval_results),
+                        }
                         parts = ", ".join(
                             f"{name} MAPPO/MP={r:.3f}"
                             for name, r, *_ in ev_res["per_scenario"]
@@ -1392,28 +1391,31 @@ class LocalMappoBackend(AsceTrainerBackend):
                             if trainer.gobs_norm is not None
                             else None,
                         }
-                        eval_args = {
-                            "net_file": cfg.net_file,
-                            "eval_routes": eval_routes,
-                            "model_state_dict": eval_model_state_dict,
-                            "obs_dim": obs_dim,
-                            "global_obs_dim": global_obs_dim,
-                            "n_actions": n_actions,
-                            "action_dims": action_dims,
-                            "ordered_agents": ordered_agents,
-                            "train_ep": last_ep,
-                            "seconds": cfg.seconds,
-                            "delta_time": cfg.delta_time,
-                            "seed": cfg.seed,
-                            "residual_mode": cfg.residual_mode,
-                            "use_obs_norm": cfg.use_obs_norm,
-                        }
-                        bg_eval_result = eval_pool.apply_async(
-                            _run_eval_worker, (eval_args,)
+                        eval_args = [
+                            {
+                                "net_file": cfg.net_file,
+                                "eval_route": eval_route,
+                                "model_state_dict": eval_model_state_dict,
+                                "obs_dim": obs_dim,
+                                "global_obs_dim": global_obs_dim,
+                                "n_actions": n_actions,
+                                "action_dims": action_dims,
+                                "ordered_agents": ordered_agents,
+                                "train_ep": last_ep,
+                                "seconds": cfg.seconds,
+                                "delta_time": cfg.delta_time,
+                                "seed": cfg.seed,
+                                "residual_mode": cfg.residual_mode,
+                                "use_obs_norm": cfg.use_obs_norm,
+                            }
+                            for eval_route in eval_routes
+                        ]
+                        bg_eval_result = eval_pool.map_async(
+                            _run_eval_worker, eval_args
                         )
                         logger.info(
                             f"  Background eval launched for ep {last_ep} "
-                            f"({len(eval_routes)} scenarios)"
+                            f"({len(eval_routes)} scenarios, {eval_workers} eval workers)"
                         )
                         tui.update_eval_started()
 
@@ -1429,7 +1431,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         eval_pool.join()
                         # Recreate pool so finally block doesn't error
                         eval_pool = mp_ctx.Pool(
-                            processes=1, maxtasksperchild=1,
+                            processes=eval_workers, maxtasksperchild=1,
                             initializer=_worker_init,
                         )
                         bg_eval_result = None
@@ -1451,7 +1453,14 @@ class LocalMappoBackend(AsceTrainerBackend):
             if bg_eval_result is not None:
                 try:
                     if bg_eval_result.ready():
-                        ev_res = bg_eval_result.get(timeout=1)
+                        worker_eval_results = bg_eval_result.get(timeout=1)
+                        ev_res = {
+                            "train_ep": worker_eval_results[0]["train_ep"],
+                            "per_scenario": [
+                                res["scenario_result"] for res in worker_eval_results
+                            ],
+                            "elapsed": max(res["elapsed"] for res in worker_eval_results),
+                        }
                         worst = max(r for _, r, *_ in ev_res["per_scenario"])
                         for name, ratio, m_ptl, mp_ptl, ft_ptl, nema_ptl in ev_res["per_scenario"]:
                             logger.info(
