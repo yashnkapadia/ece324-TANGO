@@ -407,7 +407,7 @@
     .slide {
       position: absolute;
       inset: 0;
-      padding: clamp(74px, 8.6vh, 102px) clamp(14px, 3.8vw, 56px) clamp(102px, 12.8vh, 146px);
+      padding: clamp(56px, 7vh, 80px) clamp(160px, 13vw, 200px) clamp(56px, 7vh, 80px) clamp(14px, 3vw, 40px);
       display: grid;
       align-items: center;
       opacity: 0;
@@ -448,26 +448,28 @@
     }
 
     .frame {
-      width: min(1420px, 97vw);
+      width: min(1280px, 82vw);
+      max-height: calc(100vh - 120px);
+      overflow: hidden;
       margin: 0 auto;
-      padding: clamp(16px, 2vw, 28px);
+      padding: clamp(12px, 1.5vw, 20px);
       border: 1px solid rgba(230, 237, 248, 0.2);
       background: linear-gradient(160deg, rgba(7, 11, 16, 0.7), rgba(12, 18, 26, 0.55));
       box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
       backdrop-filter: blur(2px);
       display: grid;
       align-content: center;
-      gap: 34px;
+      gap: 18px;
     }
 
     .frame.split {
       grid-template-columns: 1.15fr 0.85fr;
-      gap: 36px;
+      gap: 20px;
     }
 
     .frame.dual {
       grid-template-columns: 1fr 1fr;
-      gap: 34px;
+      gap: 20px;
     }
 
     .thankyou-frame {
@@ -475,7 +477,7 @@
       border-color: transparent;
       box-shadow: none;
       backdrop-filter: none;
-      min-height: min(64vh, 620px);
+      min-height: min(50vh, 500px);
       place-items: center;
       text-align: center;
     }
@@ -514,25 +516,25 @@
     }
 
     h1 {
-      font-size: clamp(3.25rem, 8.4vw, 6.8rem);
-      margin-bottom: 14px;
+      font-size: clamp(2.6rem, 5.5vw, 4.8rem);
+      margin-bottom: 10px;
     }
 
     h2 {
-      font-size: clamp(2.1rem, 5.2vw, 4.2rem);
-      margin-bottom: 16px;
+      font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+      margin-bottom: 10px;
     }
 
     h3 {
-      font-size: clamp(1.24rem, 2.3vw, 2.05rem);
-      margin-bottom: 10px;
+      font-size: clamp(1.1rem, 1.8vw, 1.6rem);
+      margin-bottom: 8px;
     }
 
     p,
     li {
       color: var(--ink-mid);
-      line-height: 1.68;
-      font-size: clamp(1.01rem, 1.24vw, 1.14rem);
+      line-height: 1.45;
+      font-size: clamp(0.88rem, 1.1vw, 1rem);
     }
 
     .lead {
@@ -588,13 +590,13 @@
     }
 
     .hero-frame {
-      gap: 18px;
-      padding-top: clamp(16px, 2.2vw, 30px);
+      gap: 10px;
+      padding-top: clamp(10px, 1.5vw, 18px);
     }
 
     .hero-head {
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
 
     .hero-head h1 {
@@ -629,11 +631,12 @@
     .hero-canvas {
       border: 1px solid var(--line-strong);
       background: linear-gradient(162deg, rgba(8, 13, 19, 0.9), rgba(15, 23, 34, 0.72));
-      min-height: min(58vh, 500px);
-      padding: clamp(12px, 2vw, 24px);
+      min-height: 0;
+      padding: clamp(8px, 1.2vw, 14px);
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 18px;
+      grid-template-columns: 1.3fr 0.7fr;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
       align-items: stretch;
     }
 
@@ -643,10 +646,10 @@
       border-radius: 0;
       background: linear-gradient(164deg, rgba(7, 12, 17, 0.96), rgba(15, 23, 34, 0.9));
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
-      padding: 14px;
+      padding: 10px;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      gap: 12px;
+      gap: 6px;
       overflow: hidden;
     }
 
@@ -794,19 +797,19 @@
       border: 1px solid var(--line);
       border-radius: 0;
       background: linear-gradient(170deg, rgba(10, 16, 24, 0.95), rgba(16, 24, 35, 0.85));
-      padding: 14px;
+      padding: 10px;
       display: grid;
       align-content: center;
-      gap: 8px;
+      gap: 4px;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     }
 
     .hero-node {
       border: 1px solid var(--line);
       background: rgba(125, 181, 244, 0.1);
-      padding: 10px;
+      padding: 6px 8px;
       text-transform: uppercase;
-      font-size: 0.8rem;
+      font-size: 0.72rem;
       letter-spacing: 0.05em;
       color: var(--ink-high);
       line-height: 1.46;
@@ -815,7 +818,7 @@
 
     .hero-arrow {
       position: relative;
-      height: 24px;
+      height: 16px;
       display: grid;
       place-items: center;
       opacity: 0.95;
@@ -844,8 +847,8 @@
     .title-plate,
     .detail-panel {
       border: 1px solid var(--line);
-      padding: clamp(16px, 2.4vw, 26px);
-      min-height: 300px;
+      padding: clamp(12px, 1.6vw, 18px);
+      min-height: 0;
       background: linear-gradient(165deg, rgba(10, 16, 22, 0.88), rgba(16, 24, 34, 0.78));
       position: relative;
       overflow: hidden;
@@ -902,41 +905,41 @@
     }
 
     .metric-grid {
-      margin-top: 16px;
+      margin-top: 8px;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 8px;
     }
 
     .metric {
       border-top: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
-      padding: 12px 0;
+      padding: 8px 0;
     }
 
     .metric small {
       display: block;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       color: var(--ink-high);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .metric strong {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: clamp(1.2rem, 2.5vw, 1.9rem);
+      font-size: clamp(1rem, 2vw, 1.5rem);
       line-height: 1;
       color: var(--ink-high);
     }
 
     .flow-list {
       display: grid;
-      gap: 12px;
+      gap: 6px;
     }
 
     .flow-item {
-      padding: 13px 14px;
+      padding: 8px 10px;
       border-left: 2px solid var(--lane-muted);
       background: linear-gradient(90deg, rgba(244, 211, 111, 0.11), transparent 76%);
     }
@@ -979,13 +982,13 @@
     }
 
     .pipeline-frame {
-      gap: 20px;
-      padding-top: clamp(14px, 2vw, 24px);
+      gap: 10px;
+      padding-top: clamp(10px, 1.5vw, 16px);
     }
 
     .pipeline-head {
       display: grid;
-      gap: 9px;
+      gap: 4px;
       max-width: 78ch;
     }
 
@@ -1002,7 +1005,7 @@
       grid-template-columns: 0.86fr 1.14fr;
       gap: 20px;
       align-items: stretch;
-      min-height: min(68vh, 650px);
+      min-height: min(38vh, 380px);
     }
 
     .pipeline-flow-panel,
@@ -1056,7 +1059,7 @@
       z-index: 1;
       display: grid;
       grid-template-columns: 1fr;
-      gap: 9px;
+      gap: 5px;
       align-content: start;
     }
 
@@ -1065,8 +1068,8 @@
       border-radius: 0;
       background: linear-gradient(165deg, rgba(12, 19, 28, 0.94), rgba(18, 28, 39, 0.86));
       color: var(--ink-high);
-      min-height: 70px;
-      padding: 10px 12px;
+      min-height: 46px;
+      padding: 6px 10px;
       display: grid;
       gap: 5px;
       justify-items: start;
@@ -1163,7 +1166,7 @@
       z-index: 1;
       border: 1px solid var(--line);
       border-radius: 0;
-      min-height: min(64vh, 600px);
+      min-height: min(42vh, 400px);
       height: 100%;
       background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
       overflow: hidden;
@@ -1176,7 +1179,7 @@
       z-index: 1;
       border: 1px solid var(--line);
       border-radius: 0;
-      min-height: min(64vh, 600px);
+      min-height: min(42vh, 400px);
       background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
       box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
       padding: 14px;
@@ -1193,14 +1196,14 @@
 
     .pipeline-flowchart-head small {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: calc(0.75rem + 2pt);
+      font-size: 0.75rem;
       color: var(--lane);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .pipeline-flowchart-head strong {
-      font-size: calc(0.96rem + 2pt);
+      font-size: 0.96rem;
       letter-spacing: 0.03em;
       color: var(--ink-high);
       line-height: 1.35;
@@ -1209,7 +1212,7 @@
     .pipeline-flow-rail {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 10px;
+      gap: 6px;
       align-content: stretch;
       min-height: 0;
       overflow: hidden;
@@ -1220,16 +1223,16 @@
       border-radius: 0;
       background: linear-gradient(165deg, rgba(10, 16, 24, 0.94), rgba(17, 25, 36, 0.9));
       min-height: 0;
-      padding: 10px 12px;
+      padding: 6px 10px;
       display: grid;
       align-content: start;
-      gap: 7px;
+      gap: 4px;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     }
 
     .pipeline-flow-step small {
       font-family: "JetBrains Mono", "Consolas", monospace;
-      font-size: calc(0.72rem + 2pt);
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--lane);
@@ -1237,7 +1240,7 @@
 
     .pipeline-flow-step p {
       margin: 0;
-      font-size: calc(0.86rem + 5pt);
+      font-size: 0.88rem;
       line-height: 1.38;
       color: var(--ink-high);
     }
@@ -1400,16 +1403,16 @@
 
     .module-grid {
       display: grid;
-      gap: 12px;
+      gap: 6px;
       margin-top: 2px;
     }
 
     .module-row {
       display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 12px;
+      grid-template-columns: 120px 1fr;
+      gap: 8px;
       border-top: 1px solid var(--line);
-      padding-top: 10px;
+      padding-top: 6px;
     }
 
     .module-row b {
@@ -1462,21 +1465,21 @@
     }
 
     .inline-list {
-      margin-top: 14px;
+      margin-top: 8px;
       display: grid;
-      gap: 11px;
+      gap: 6px;
     }
 
     .inline-item {
-      padding: 11px 12px;
+      padding: 7px 10px;
       border-left: 2px solid rgba(125, 181, 244, 0.75);
       background: linear-gradient(90deg, rgba(125, 181, 244, 0.11), transparent 78%);
     }
 
     .pira-layout {
-      width: min(1520px, 98vw);
-      min-height: min(74vh, 760px);
-      grid-template-columns: 0.74fr 1.26fr;
+      width: min(1520px, 82vw);
+      min-height: 0;
+      grid-template-columns: 1.1fr 0.9fr;
       gap: 18px;
       align-items: stretch;
     }
@@ -1486,10 +1489,10 @@
       border: 1px solid var(--line-strong);
       background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
       box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
-      padding: clamp(14px, 1.8vw, 22px);
+      padding: clamp(10px, 1.4vw, 16px);
       display: grid;
       align-content: start;
-      gap: 12px;
+      gap: 8px;
       position: relative;
       overflow: hidden;
       min-height: 0;
@@ -1514,7 +1517,7 @@
 
     .pira-text-panel h2 {
       margin-bottom: 2px;
-      font-size: clamp(1.66rem, 2.8vw, 2.72rem);
+      font-size: clamp(1.3rem, 2.2vw, 1.9rem);
     }
 
     .pira-brief {
@@ -1527,16 +1530,16 @@
 
     .pira-quick-points {
       margin: 0;
-      padding-left: 18px;
+      padding-left: 14px;
       display: grid;
-      gap: 5px;
+      gap: 2px;
       max-width: 58ch;
     }
 
     .pira-quick-points li {
       color: var(--ink-high);
-      font-size: clamp(0.88rem, 0.95vw, 0.96rem);
-      line-height: 1.42;
+      font-size: 0.82rem;
+      line-height: 1.35;
     }
 
     .pira-pill-row {
@@ -1566,10 +1569,10 @@
     .pira-arch-node {
       border: 1px solid var(--line);
       background: linear-gradient(170deg, rgba(10, 16, 24, 0.95), rgba(16, 24, 35, 0.86));
-      min-height: 88px;
-      padding: 9px 10px;
+      min-height: 0;
+      padding: 6px 8px;
       display: grid;
-      gap: 6px;
+      gap: 3px;
       align-content: start;
     }
 
@@ -1585,8 +1588,8 @@
     .pira-arch-node b {
       display: block;
       color: var(--ink-high);
-      font-size: 0.79rem;
-      line-height: 1.35;
+      font-size: 0.72rem;
+      line-height: 1.28;
       letter-spacing: 0.01em;
     }
 
@@ -1602,15 +1605,15 @@
     .pira-fact-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
+      gap: 4px;
     }
 
     .pira-fact {
       border-left: 2px solid rgba(125, 181, 244, 0.84);
       background: linear-gradient(90deg, rgba(125, 181, 244, 0.12), transparent 86%);
-      padding: 8px 10px;
+      padding: 4px 6px;
       display: grid;
-      gap: 5px;
+      gap: 2px;
     }
 
     .pira-fact small {
@@ -1618,28 +1621,28 @@
       color: var(--ink-high);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       line-height: 1;
     }
 
     .pira-fact p {
       margin: 0;
-      font-size: 0.83rem;
-      line-height: 1.38;
+      font-size: 0.72rem;
+      line-height: 1.3;
       color: var(--ink-mid);
     }
 
     .pira-fact ul {
       margin: 0;
-      padding-left: 14px;
+      padding-left: 12px;
       display: grid;
-      gap: 4px;
+      gap: 1px;
     }
 
     .pira-fact li {
       margin: 0;
-      font-size: 0.78rem;
-      line-height: 1.33;
+      font-size: 0.7rem;
+      line-height: 1.25;
       color: var(--ink-mid);
     }
 
@@ -1653,7 +1656,8 @@
       position: relative;
       margin: 0;
       height: 100%;
-      min-height: min(64vh, 660px);
+      min-height: 0;
+      cursor: zoom-in;
       border: 1px solid var(--line-strong);
       background: linear-gradient(170deg, rgba(8, 13, 20, 0.98), rgba(16, 24, 35, 0.92));
       display: grid;
@@ -1704,6 +1708,26 @@
 
     .pira-gif-shell.is-missing .pira-gif-missing {
       display: grid;
+    }
+
+    .pira-gif-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 2200;
+      background: rgba(4, 8, 13, 0.96);
+      display: none;
+      place-items: center;
+      cursor: zoom-out;
+    }
+
+    .pira-gif-fullscreen.is-open {
+      display: grid;
+    }
+
+    .pira-gif-fullscreen img {
+      max-width: 92vw;
+      max-height: 92vh;
+      object-fit: contain;
     }
 
     .demo-layout,
@@ -2383,6 +2407,221 @@
         transition-duration: 0ms !important;
       }
     }
+    /* ── ASCE slide additions ──────────────────────────────────────────── */
+
+    .arch-frame {
+      gap: 14px;
+      padding-top: clamp(14px, 2vw, 22px);
+    }
+
+    .arch-diagram-wrap {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.96), rgba(15, 23, 33, 0.92));
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      min-height: min(36vh, 360px);
+    }
+
+    .arch-diagram-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      padding: 10px;
+    }
+
+    .def-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .def-box {
+      border-top: 2px solid var(--lane);
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(217, 187, 109, 0.1), transparent 60%);
+    }
+
+    .def-box b {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--lane);
+      margin-bottom: 5px;
+    }
+
+    .def-box p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      color: var(--ink-high);
+    }
+
+    .def-box math {
+      font-size: 1rem;
+      color: var(--signal-green);
+    }
+
+    .results-frame {
+      gap: 14px;
+    }
+
+    .results-layout {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 16px;
+      align-items: stretch;
+      min-height: min(38vh, 380px);
+    }
+
+    .results-chart-wrap {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.96), rgba(15, 23, 33, 0.92));
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .results-chart-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      padding: 8px;
+    }
+
+    .results-table-panel {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
+      padding: clamp(12px, 1.6vw, 20px);
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .results-headline {
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--signal-green);
+      letter-spacing: -0.01em;
+    }
+
+    .results-sub {
+      font-size: 0.92rem;
+      color: var(--ink-mid);
+      line-height: 1.5;
+    }
+
+    .scenario-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .scenario-table th {
+      text-align: left;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .scenario-table td {
+      padding: 8px 8px;
+      font-size: 0.88rem;
+      color: var(--ink-high);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .scenario-table td:last-child {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-weight: 700;
+      color: var(--signal-green);
+      text-align: right;
+    }
+
+    .scenario-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .why-frame {
+      gap: 14px;
+    }
+
+    .why-layout {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 16px;
+      align-items: stretch;
+      min-height: min(38vh, 380px);
+    }
+
+    .why-decisions {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
+      padding: clamp(14px, 1.8vw, 22px);
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .why-decision {
+      border-left: 3px solid var(--lane);
+      padding: 10px 14px;
+      background: linear-gradient(90deg, rgba(217, 187, 109, 0.08), transparent 70%);
+    }
+
+    .why-decision b {
+      display: block;
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      color: var(--ink-high);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .why-decision span {
+      font-size: 0.86rem;
+      color: var(--ink-mid);
+      line-height: 1.45;
+    }
+
+    .why-figures {
+      display: grid;
+      grid-template-rows: 1.2fr 0.8fr;
+      gap: 10px;
+    }
+
+    .why-fig-wrap {
+      border: 1px solid var(--line);
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.96), rgba(15, 23, 33, 0.92));
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .why-fig-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      padding: 4px;
+    }
+
   </style>
 </head>
 <body>
@@ -2505,7 +2744,7 @@
             </div>
           </section>
           <section class="hero-canvas" aria-label="Introductory project visuals">
-            <article class="hero-corridor">
+            <article class="hero-corridor" style="grid-row:1/3;">
               <div class="hero-corridor-head">
                 <span>Dundas Street West corridor</span>
               </div>
@@ -2645,134 +2884,216 @@
       </li>
 
       <li class="slide" data-title="ASCE Model" data-phase="green">
-        <article class="frame split">
+        <article class="frame arch-frame">
           <section>
-            <div class="eyebrow">ASCE Model</div>
-            <h2>Action-gate residual MAPPO for person-priority signal control</h2>
-            <div class="module-grid">
-              <div class="module-row">
-                <b>Agents</b>
-                <p>12 signal agents observe local queue, speed, phase, and time-of-day.</p>
-              </div>
-              <div class="module-row">
-                <b>Policy Net</b>
-                <p>Action-Gate Residual MAPPO with binary follow-or-override MP gate and phase head. Shared 2-layer ReLU MLP, 128 hidden.</p>
-              </div>
-              <div class="module-row">
-                <b>Critic</b>
-                <p>Training-only centralized critic, global observation dimension 309, with per-feature Welford normalization.</p>
-              </div>
-              <div class="module-row">
-                <b>Run Setup</b>
-                <p>5 s decisions, 900 s episodes, over 200 episodes, 8 parallel libsumo workers, 3.4x speedup.</p>
-              </div>
-              <div class="module-row">
-                <b>Reward</b>
-                <p>Person-weighted per-person delay with local fairness. Objective is person-time-loss.</p>
-              </div>
-            </div>
+            <div class="eyebrow">ASCE &mdash; Adaptive Signal Control Engine</div>
+            <h2>Action-gate residual MAPPO with centralized training</h2>
           </section>
-          <section class="detail-panel">
-            <div class="eyebrow">Targets and Status</div>
-            <div class="metric-grid" style="margin-top: 2px">
-              <div class="metric">
-                <small>ASCE Target at most 0.90x</small>
-                <strong class="has-pill">0.897x</strong>
-              </div>
-              <div class="metric">
-                <small>PIRA MAPE Target</small>
-                <strong>At most 10 percent</strong>
-              </div>
-              <div class="metric">
-                <small>Runtime Target</small>
-                <strong>At most 5 s</strong>
-              </div>
+
+          <div class="arch-diagram-wrap">
+            <svg viewBox="0 0 960 390" xmlns="http://www.w3.org/2000/svg" role="img"
+                 aria-label="ASCE action-gate residual MAPPO architecture diagram"
+                 style="width:100%;height:100%;max-height:min(52vh,440px);padding:14px 18px;">
+              <defs>
+                <marker id="ah" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+                  <polygon points="0 0, 7 2.5, 0 5" fill="#bcc8d6"/>
+                </marker>
+                <marker id="ah-gold" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+                  <polygon points="0 0, 7 2.5, 0 5" fill="#d9bb6d"/>
+                </marker>
+              </defs>
+
+              <!-- ── DASHED SEPARATOR ── -->
+              <line x1="0" y1="262" x2="960" y2="262" stroke="#3a4555" stroke-width="1" stroke-dasharray="6 4"/>
+              <text x="480" y="276" text-anchor="middle" fill="#bcc8d6" font-size="10" font-family="JetBrains Mono, Consolas, monospace" letter-spacing="0.12em" text-transform="uppercase">CTDE: CENTRALIZED TRAINING, DECENTRALIZED EXECUTION</text>
+
+              <!-- ══════ ACTOR TRACK (top) ══════ -->
+
+              <!-- Input: Local Obs -->
+              <rect x="16" y="58" width="120" height="52" rx="0" fill="rgba(136,167,201,0.12)" stroke="#88a7c9" stroke-width="1.5"/>
+              <text x="76" y="78" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">Local Obs</text>
+              <text x="76" y="96" text-anchor="middle" fill="#88a7c9" font-size="9" font-family="JetBrains Mono, Consolas, monospace">queue, speed, phase</text>
+
+              <!-- Input: MP Action -->
+              <rect x="16" y="128" width="120" height="44" rx="0" fill="rgba(188,200,214,0.08)" stroke="#bcc8d6" stroke-width="1.2"/>
+              <text x="76" y="148" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">MP Action</text>
+              <text x="76" y="162" text-anchor="middle" fill="#bcc8d6" font-size="9" font-family="JetBrains Mono, Consolas, monospace">one-hot | 6 dims</text>
+
+              <!-- Arrows from inputs to Concat -->
+              <line x1="136" y1="84" x2="172" y2="100" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+              <line x1="136" y1="150" x2="172" y2="115" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Concat node -->
+              <rect x="178" y="90" width="62" height="32" rx="0" fill="rgba(58,69,85,0.5)" stroke="#3a4555" stroke-width="1"/>
+              <text x="209" y="111" text-anchor="middle" fill="#d6dfea" font-size="10.5" font-weight="600" font-family="Manrope, sans-serif">Concat</text>
+
+              <!-- Arrow to Welford -->
+              <line x1="240" y1="106" x2="270" y2="106" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Welford Norm -->
+              <rect x="276" y="86" width="90" height="40" rx="0" fill="rgba(58,69,85,0.35)" stroke="#3a4555" stroke-width="1"/>
+              <text x="321" y="103" text-anchor="middle" fill="#d6dfea" font-size="10.5" font-weight="600" font-family="Manrope, sans-serif">Welford</text>
+              <text x="321" y="118" text-anchor="middle" fill="#bcc8d6" font-size="8.5" font-family="JetBrains Mono, Consolas, monospace">per-feature &#x3BC;/&#x3C3;</text>
+
+              <!-- Arrow to Shared MLP -->
+              <line x1="366" y1="106" x2="400" y2="106" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Shared MLP (large, gold border) -->
+              <rect x="406" y="62" width="160" height="88" rx="0" fill="rgba(26,38,51,0.9)" stroke="#d9bb6d" stroke-width="2"/>
+              <text x="486" y="88" text-anchor="middle" fill="#f9fbff" font-size="13" font-weight="800" font-family="Manrope, sans-serif">Shared MLP</text>
+              <text x="486" y="108" text-anchor="middle" fill="#d9bb6d" font-size="10" font-family="JetBrains Mono, Consolas, monospace">128 &#x2192; ReLU &#x2192; 128 &#x2192; ReLU</text>
+              <text x="486" y="126" text-anchor="middle" fill="#bcc8d6" font-size="9" font-family="JetBrains Mono, Consolas, monospace">shared across 12 agents</text>
+
+              <!-- Split arrows from MLP to heads -->
+              <line x1="566" y1="90" x2="618" y2="55" stroke="#d9bb6d" stroke-width="1.5" marker-end="url(#ah-gold)"/>
+              <line x1="566" y1="122" x2="618" y2="150" stroke="#6eaf8b" stroke-width="1.5" marker-end="url(#ah)"/>
+
+              <!-- Gate Head -->
+              <rect x="620" y="24" width="140" height="62" rx="0" fill="rgba(217,187,109,0.15)" stroke="#d9bb6d" stroke-width="2"/>
+              <text x="690" y="48" text-anchor="middle" fill="#f9fbff" font-size="12" font-weight="700" font-family="Manrope, sans-serif">Gate Head</text>
+              <text x="690" y="63" text-anchor="middle" fill="#d9bb6d" font-size="9.5" font-family="JetBrains Mono, Consolas, monospace">2 out: follow / override</text>
+              <text x="690" y="78" text-anchor="middle" fill="#bcc8d6" font-size="8.5" font-family="JetBrains Mono, Consolas, monospace">init bias: 88% follow MP</text>
+
+              <!-- Phase Head -->
+              <rect x="614" y="134" width="156" height="48" rx="0" fill="rgba(110,175,139,0.15)" stroke="#6eaf8b" stroke-width="1.8"/>
+              <text x="692" y="155" text-anchor="middle" fill="#f9fbff" font-size="12" font-weight="700" font-family="Manrope, sans-serif">Phase Head</text>
+              <text x="692" y="172" text-anchor="middle" fill="#6eaf8b" font-size="9.5" font-family="JetBrains Mono, Consolas, monospace">6 out: next signal phase</text>
+
+              <!-- Arrows from heads to Decision -->
+              <line x1="760" y1="55" x2="796" y2="94" stroke="#d9bb6d" stroke-width="1.5" marker-end="url(#ah-gold)"/>
+              <line x1="770" y1="158" x2="796" y2="120" stroke="#6eaf8b" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Decision box -->
+              <rect x="796" y="78" width="140" height="58" rx="0" fill="rgba(18,27,38,0.95)" stroke="#d9bb6d" stroke-width="1.8"/>
+              <text x="866" y="98" text-anchor="middle" fill="#f9fbff" font-size="11" font-weight="700" font-family="Manrope, sans-serif">Decision Dispatch</text>
+              <text x="866" y="114" text-anchor="middle" fill="#df7a72" font-size="9" font-family="JetBrains Mono, Consolas, monospace">gate=0 &#x2192; MP action</text>
+              <text x="866" y="128" text-anchor="middle" fill="#6eaf8b" font-size="9" font-family="JetBrains Mono, Consolas, monospace">gate=1 &#x2192; phase action</text>
+
+              <!-- Traffic signal icon -->
+              <rect x="890" y="148" width="18" height="42" rx="3" fill="rgba(7,12,17,0.9)" stroke="#bcc8d6" stroke-width="1"/>
+              <circle cx="899" cy="158" r="4.5" fill="#df7a72"/>
+              <circle cx="899" cy="170" r="4.5" fill="#d8b36a"/>
+              <circle cx="899" cy="182" r="4.5" fill="#6eaf8b"/>
+              <line x1="866" y1="136" x2="899" y2="148" stroke="#bcc8d6" stroke-width="1" marker-end="url(#ah)"/>
+
+              <!-- ══════ CRITIC TRACK (bottom) ══════ -->
+
+              <!-- Track labels -->
+              <text x="10" y="30" fill="#d9bb6d" font-size="10" font-weight="700" font-family="JetBrains Mono, Consolas, monospace" letter-spacing="0.1em">ACTOR (PER-AGENT, DECENTRALIZED)</text>
+              <text x="10" y="300" fill="#88a7c9" font-size="10" font-weight="700" font-family="JetBrains Mono, Consolas, monospace" letter-spacing="0.1em">CRITIC (CENTRALIZED, TRAINING ONLY)</text>
+
+              <!-- Global Obs -->
+              <rect x="16" y="314" width="160" height="48" rx="0" fill="rgba(136,167,201,0.12)" stroke="#88a7c9" stroke-width="1.5"/>
+              <text x="96" y="334" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">Global Obs</text>
+              <text x="96" y="350" text-anchor="middle" fill="#88a7c9" font-size="9" font-family="JetBrains Mono, Consolas, monospace">all agents concat | ~460d</text>
+
+              <!-- Arrow to Critic -->
+              <line x1="176" y1="338" x2="276" y2="338" stroke="#88a7c9" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Critic MLP -->
+              <rect x="282" y="314" width="220" height="48" rx="0" fill="rgba(26,38,51,0.9)" stroke="#88a7c9" stroke-width="1.8"/>
+              <text x="392" y="334" text-anchor="middle" fill="#f9fbff" font-size="13" font-weight="800" font-family="Manrope, sans-serif">Centralized Critic</text>
+              <text x="392" y="350" text-anchor="middle" fill="#88a7c9" font-size="10" font-family="JetBrains Mono, Consolas, monospace">128 &#x2192; ReLU &#x2192; 128 &#x2192; ReLU &#x2192; 1</text>
+
+              <!-- Arrow to Value -->
+              <line x1="502" y1="338" x2="550" y2="338" stroke="#88a7c9" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Value output -->
+              <rect x="556" y="318" width="90" height="40" rx="0" fill="rgba(136,167,201,0.08)" stroke="#88a7c9" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="601" y="336" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">V(s)</text>
+              <text x="601" y="352" text-anchor="middle" fill="#88a7c9" font-size="8.5" font-family="JetBrains Mono, Consolas, monospace">training only</text>
+            </svg>
+          </div>
+
+          <div class="def-row">
+            <div class="def-box">
+              <b>Person-Time-Loss (KPI)</b>
+              <p><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>&Sigma;</mo><msub><mi>delay</mi><mi>i</mi></msub><mo>&times;</mo><msub><mi>occ</mi><mi>i</mi></msub></math> &mdash; bus&thinsp;=&thinsp;30, car&thinsp;=&thinsp;1.3 persons</p>
             </div>
-            <div class="inline-list">
-              <div class="inline-item">ASCE beats Max-Pressure by 10.3% on person-time-loss with action-gate residual MAPPO.</div>
-              <div class="inline-item">PIRA GAT is implemented. Baseline datasets are in Parquet.</div>
-              <div class="inline-item">~2 GPU-hours for 200-episode parallel training on RTX 4070.</div>
+            <div class="def-box">
+              <b>Reward (person_objective)</b>
+              <p><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>-</mo><mi>log</mi><mo>(</mo><mn>1</mn><mo>+</mo><mfrac><mrow><mo>&Sigma;</mo><msub><mi>wt</mi><mi>i</mi></msub><mo>&middot;</mo><msub><mi>occ</mi><mi>i</mi></msub></mrow><mrow><mo>&Sigma;</mo><msub><mi>occ</mi><mi>i</mi></msub></mrow></mfrac><mo>)</mo><mo>+</mo><mn>0.25</mn><mo>&middot;</mo><msub><mi>J</mi><mtext>ns,ew</mtext></msub></math></p>
+            </div>
+            <div class="def-box">
+              <b>Fairness</b>
+              <p><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mi>J</mi><mtext>ns,ew</mtext></msub></math> = Jain index over N/S vs E/W person-delay. Balances approach equity.</p>
+            </div>
+          </div>
+        </article>
+      </li>
+
+      <li class="slide" data-title="ASCE Results" data-phase="green">
+        <article class="frame results-frame">
+          <section>
+            <div class="eyebrow">Curriculum Evaluation &mdash; Best Checkpoint (ep 632 / 800)</div>
+            <h2>MAPPO beats Max-Pressure on all four scenarios</h2>
+          </section>
+
+          <section class="results-layout">
+            <div class="results-chart-wrap">
+              <img src="pictures/asce_bar_chart.png"
+                   alt="Grouped bar chart showing MAPPO person-time-loss is 10-14% lower than Max-Pressure across AM peak, PM peak, demand surge, and midday multimodal scenarios.">
+            </div>
+
+            <div class="results-table-panel">
+              <div class="results-headline">8.6&ndash;14.2%<br>less person-time-loss</div>
+              <p class="results-sub">200-ep AM warm-start + 600-ep 4-scenario curriculum, 8 parallel SUMO workers</p>
+
+              <table class="scenario-table">
+                <thead>
+                  <tr><th>Scenario</th><th style="text-align:right">MAPPO / MP</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--signal-green)"></span>AM Peak</td>
+                    <td>0.891</td>
+                  </tr>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--signal-red)"></span>PM Peak</td>
+                    <td>0.875</td>
+                  </tr>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--signal-amber)"></span>Demand Surge</td>
+                    <td>0.870</td>
+                  </tr>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--accent-blue)"></span>Midday Multimodal</td>
+                    <td>0.858</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
         </article>
       </li>
 
-      <li class="slide" data-title="ASCE Evaluation" data-phase="green">
-        <article class="frame split">
-          <section>
-            <div class="eyebrow">Phase 4 Best Checkpoint Results</div>
-            <h2>MAPPO beats all baselines on person-time-loss</h2>
-            <div class="result-bars">
-              <article class="result-row">
-                <header><span>MAPPO vs Max-Pressure: -10.3% person-time-loss</span><strong>387,264s vs 431,590s</strong></header>
-                <div class="result-track"><span style="width: 85%;"></span></div>
-              </article>
-              <article class="result-row">
-                <header><span>MAPPO vs Fixed-Time: -10.8% person-time-loss</span><strong>387,264s vs 433,965s</strong></header>
-                <div class="result-track"><span style="width: 83%;"></span></div>
-              </article>
-            </div>
-          </section>
-          <section class="detail-panel">
-            <div class="eyebrow">Phase 4 Best Checkpoint Results</div>
-            <div class="module-grid">
-              <div class="module-row">
-                <b>MAPPO (person_objective)</b>
-                <p>387,264 s person-time-loss (best checkpoint, ep 127).</p>
+      <li class="slide" data-title="Why MAPPO Wins" data-phase="green">
+        <article class="frame why-frame" style="gap:10px;">
+          <section class="why-layout" style="grid-template-columns:0.8fr 1.2fr;grid-template-rows:auto 1fr;min-height:min(42vh,420px);">
+            <div class="why-decisions" style="grid-row:1/3;">
+              <div class="eyebrow">Key Technical Decisions</div>
+              <h2 style="font-size:clamp(1.3rem,2.4vw,1.9rem);">Three decisions that closed the gap</h2>
+              <div class="why-decision">
+                <b>Action-Gate Residual</b>
+                <span>Warm-start from MP, learn when to deviate. Gate: 2% &rarr; 30%.</span>
               </div>
-              <div class="module-row">
-                <b>Max-Pressure</b>
-                <p>431,590 s person-time-loss.</p>
+              <div class="why-decision">
+                <b>Person-Weighted Reward</b>
+                <span>Per-person delay norm. Removed throughput term that dominated gradients.</span>
               </div>
-              <div class="module-row">
-                <b>Fixed-Time (30s uniform)</b>
-                <p>433,965 s person-time-loss.</p>
+              <div class="why-decision">
+                <b>4-Scenario Curriculum</b>
+                <span>Round-robin AM/PM/surge/midday. 8 workers, LR &times; 1/&radic;8.</span>
               </div>
             </div>
-          </section>
-        </article>
-      </li>
 
-      <li class="slide" data-title="How MAPPO Beat Max-Pressure" data-phase="green">
-        <article class="frame dual">
-          <section>
-            <div class="eyebrow">Key Technical Decisions</div>
-            <h2>Action-gate residual with person-weighted reward closed the gap</h2>
-            <div class="flow-list">
-              <article class="flow-item">
-                <strong>Action-Gate Residual</strong>
-                <p>Override gate learned selectively: gate fraction rose from 1.4% to 22%.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Person-Weighted Reward</strong>
-                <p>Per-person delay weights bus at 30 and car at 1.3. Local approach fairness replaced global throughput. Objective is person-time-loss.</p>
-              </article>
-              <article class="flow-item">
-                <strong>Curriculum Training</strong>
-                <p>Round-robin over 4 scenarios, AM, PM, surge, midday multimodal, with 8 parallel SUMO workers. Training is active.</p>
-              </article>
+            <div class="why-fig-wrap" style="grid-column:2;grid-row:1;">
+              <img src="pictures/asce_training_curve.png"
+                   alt="Training curve showing mean reward per episode across 4 scenarios, with best checkpoint at episode 432.">
             </div>
-          </section>
-          <section class="detail-panel">
-            <div class="eyebrow">Reward Evolution</div>
-            <div class="metric-grid" style="margin-top: 2px">
-              <div class="metric">
-                <small>v1 Objective (interim)</small>
-                <strong>7,101 s</strong>
-              </div>
-              <div class="metric">
-                <small>v3 Person-Objective</small>
-                <strong>387,264 s</strong>
-              </div>
-              <div class="metric">
-                <small>Max-Pressure</small>
-                <strong>431,590 s</strong>
-              </div>
-            </div>
-            <div class="inline-list">
-              <div class="inline-item">Removing throughput was critical. It dominated gradients and encouraged proxy gaming over delay reduction.</div>
-              <div class="inline-item">Gate-fraction trend confirms selective overrides, not random exploration.</div>
-              <div class="inline-item">The 4-scenario curriculum tests generalization beyond AM peak, where the target was first achieved.</div>
+            <div class="why-fig-wrap" style="grid-column:2;grid-row:2;">
+              <img src="pictures/asce_gate_fraction.png"
+                   alt="Gate override fraction rising from 12% at initialization to 30% during training, showing learned selective override.">
             </div>
           </section>
         </article>
@@ -2911,6 +3232,10 @@
     </div>
   </div>
 
+  <div class="pira-gif-fullscreen" id="piraGifFullscreen">
+    <img id="piraGifFullscreenImg" alt="PIRA demo animation (fullscreen)">
+  </div>
+
   <script>
     (function () {
       const slides = Array.from(document.querySelectorAll(".slide"));
@@ -3007,12 +3332,20 @@
         runLaneTransition(direction);
 
         requestAnimationFrame(function () {
-          to.classList.add("is-active");
-          to.classList.remove("is-entering-forward", "is-entering-backward");
+          requestAnimationFrame(function () {
+            to.classList.add("is-active");
+            to.classList.remove("is-entering-forward", "is-entering-backward");
+          });
         });
 
         window.setTimeout(function () {
           from.classList.remove("is-active", "is-leaving-forward", "is-leaving-backward");
+          /* Safety: ensure current slide always has is-active */
+          slides.forEach(function (s, i) {
+            if (i === current && !s.classList.contains("is-active")) {
+              s.classList.add("is-active");
+            }
+          });
         }, reduceMotion ? 0 : 780);
 
         current = target;
@@ -3751,6 +4084,25 @@
       function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
       }
+
+      /* PIRA GIF click-to-expand */
+      (function () {
+        var gifWrap = document.getElementById("piraGifWrap");
+        var fsOverlay = document.getElementById("piraGifFullscreen");
+        var fsImg = document.getElementById("piraGifFullscreenImg");
+        if (gifWrap && fsOverlay) {
+          gifWrap.addEventListener("click", function () {
+            var img = document.getElementById("piraGifImage");
+            if (img && img.src) {
+              fsImg.src = img.src;
+              fsOverlay.classList.add("is-open");
+            }
+          });
+          fsOverlay.addEventListener("click", function () {
+            fsOverlay.classList.remove("is-open");
+          });
+        }
+      })();
     })();
   </script>
 </body>
