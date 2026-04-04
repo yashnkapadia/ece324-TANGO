@@ -30,7 +30,6 @@ from dash import Dash, Input, Output, State, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from lxml import etree
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TMC_PATH = REPO_ROOT / "data" / "processed" / "tmc_parsed.csv"
 
@@ -176,7 +175,9 @@ def parse_iso_date(date_str: str | None) -> date | None:
         return None
 
 
-def clamp_float(value: Any, fallback: float, lo: float | None = None, hi: float | None = None) -> float:
+def clamp_float(
+    value: Any, fallback: float, lo: float | None = None, hi: float | None = None
+) -> float:
     try:
         parsed = float(value)
     except (TypeError, ValueError):
@@ -240,7 +241,9 @@ def resolve_network_path(dropdown_value: str | None, custom_value: str | None) -
 
     lowered = candidate.name.lower()
     if not any(lowered.endswith(suffix) for suffix in ALLOWED_NET_SUFFIXES):
-        raise ValueError("Network file must end with .net.xml, .net.xml.gz, .network.xml, or .network.xml.gz")
+        raise ValueError(
+            "Network file must end with .net.xml, .net.xml.gz, .network.xml, or .network.xml.gz"
+        )
 
     return candidate
 
@@ -262,10 +265,9 @@ def load_tmc_data(path: Path) -> pd.DataFrame:
 
     if "start_time" in df.columns:
         start_time = pd.to_datetime(df["start_time"], errors="coerce")
-        df["time_minutes"] = (
-            start_time.dt.hour.fillna(-1).astype(int) * 60
-            + start_time.dt.minute.fillna(0).astype(int)
-        )
+        df["time_minutes"] = start_time.dt.hour.fillna(-1).astype(
+            int
+        ) * 60 + start_time.dt.minute.fillna(0).astype(int)
     else:
         df["time_minutes"] = -1
 
@@ -290,7 +292,9 @@ def load_tmc_data(path: Path) -> pd.DataFrame:
 
 
 def available_dates(df: pd.DataFrame) -> list[str]:
-    unique_dates = sorted([d for d in df["count_date"].dropna().unique() if isinstance(d, date)], reverse=True)
+    unique_dates = sorted(
+        [d for d in df["count_date"].dropna().unique() if isinstance(d, date)], reverse=True
+    )
     return [d.isoformat() for d in unique_dates]
 
 
@@ -315,7 +319,9 @@ def edge_heading(edge) -> float | None:
     return math.degrees(math.atan2(dy, dx)) % 360
 
 
-def classify_approach(heading: float, heading_ranges: dict[str, tuple[float, float]]) -> str | None:
+def classify_approach(
+    heading: float, heading_ranges: dict[str, tuple[float, float]]
+) -> str | None:
     for direction, (lo, hi) in heading_ranges.items():
         if heading_in_range(heading, lo, hi):
             return direction
@@ -332,7 +338,9 @@ def verify_route(net, from_edge, to_edge, mode_class: str) -> bool:
     return route[0] is not None
 
 
-def get_incoming_edges_by_approach(node, mode_class: str, heading_ranges: dict[str, tuple[float, float]]):
+def get_incoming_edges_by_approach(
+    node, mode_class: str, heading_ranges: dict[str, tuple[float, float]]
+):
     best: dict[str, Any] = {}
 
     for edge in node.getIncoming():
@@ -436,7 +444,9 @@ def apply_date_policy(
     return rows[rows["count_date"] == latest.max()]
 
 
-def apply_time_window(rows: pd.DataFrame, start_minute: int, duration_minutes: int) -> pd.DataFrame:
+def apply_time_window(
+    rows: pd.DataFrame, start_minute: int, duration_minutes: int
+) -> pd.DataFrame:
     if rows.empty:
         return rows
 
@@ -452,7 +462,9 @@ def apply_time_window(rows: pd.DataFrame, start_minute: int, duration_minutes: i
 
     end = (start + duration) % (24 * 60)
     if start + duration <= 24 * 60:
-        return valid_rows[(valid_rows["time_minutes"] >= start) & (valid_rows["time_minutes"] < start + duration)]
+        return valid_rows[
+            (valid_rows["time_minutes"] >= start) & (valid_rows["time_minutes"] < start + duration)
+        ]
 
     return valid_rows[(valid_rows["time_minutes"] >= start) | (valid_rows["time_minutes"] < end)]
 
@@ -485,7 +497,9 @@ def aggregate_ped_counts(rows: pd.DataFrame) -> dict[str, float]:
     return counts
 
 
-def map_locations_to_network(net, node_coords: np.ndarray, node_ids: list[str], node_signalized: list[bool]):
+def map_locations_to_network(
+    net, node_coords: np.ndarray, node_ids: list[str], node_signalized: list[bool]
+):
     if node_coords.size == 0:
         return []
 
@@ -585,7 +599,9 @@ def load_network_summary(network_path: Path) -> dict[str, Any]:
         incoming_count.append(len(node.getIncoming()))
         outgoing_count.append(len(node.getOutgoing()))
 
-    node_coords = np.column_stack((np.array(node_x), np.array(node_y))) if node_x else np.empty((0, 2))
+    node_coords = (
+        np.column_stack((np.array(node_x), np.array(node_y))) if node_x else np.empty((0, 2))
+    )
     location_mappings = map_locations_to_network(net, node_coords, node_ids, node_signalized)
 
     summary = {
@@ -655,9 +671,7 @@ def build_network_figure(
     outgoing_count = summary["outgoing_count"]
 
     include_index = [
-        idx
-        for idx, sig in enumerate(node_signalized)
-        if (sig if show_signalized_only else True)
+        idx for idx, sig in enumerate(node_signalized) if (sig if show_signalized_only else True)
     ]
 
     marker_x = [node_x[idx] for idx in include_index]
@@ -677,7 +691,10 @@ def build_network_figure(
     selected_junctions: set[str] = set()
     if selected_locations:
         for mapping in summary["location_mappings"]:
-            if mapping["distance_m"] <= max_match_distance and mapping["location_name"] in selected_locations:
+            if (
+                mapping["distance_m"] <= max_match_distance
+                and mapping["location_name"] in selected_locations
+            ):
                 selected_junctions.add(mapping["junction_id"])
 
     selected_x = []
@@ -771,7 +788,11 @@ def _expected_state_size(tls_obj) -> int | None:
     if programs:
         program = next(iter(programs.values()))
         phases = getattr(program, "getPhases", lambda: [])()
-        lengths = [len(phase.state) for phase in phases if hasattr(phase, "state") and phase.state is not None]
+        lengths = [
+            len(phase.state)
+            for phase in phases
+            if hasattr(phase, "state") and phase.state is not None
+        ]
         if lengths:
             return max(lengths)
 
@@ -923,8 +944,16 @@ def write_sumocfg(
     root = etree.Element("configuration")
     input_elem = etree.SubElement(root, "input")
 
-    etree.SubElement(input_elem, "net-file", value=os.path.relpath(net_path, output_path.parent).replace("\\", "/"))
-    etree.SubElement(input_elem, "route-files", value=os.path.relpath(route_path, output_path.parent).replace("\\", "/"))
+    etree.SubElement(
+        input_elem,
+        "net-file",
+        value=os.path.relpath(net_path, output_path.parent).replace("\\", "/"),
+    )
+    etree.SubElement(
+        input_elem,
+        "route-files",
+        value=os.path.relpath(route_path, output_path.parent).replace("\\", "/"),
+    )
 
     if additional_path is not None and additional_path.exists():
         etree.SubElement(
@@ -1019,7 +1048,9 @@ def run_sumo_validation(
     }
 
 
-def add_vehicle_type(root, type_id: str, settings: dict[str, float], extra_attributes: dict[str, str] | None = None) -> None:
+def add_vehicle_type(
+    root, type_id: str, settings: dict[str, float], extra_attributes: dict[str, str] | None = None
+) -> None:
     attrs = {
         "id": type_id,
         "accel": f"{settings['accel']:.6g}",
@@ -1066,7 +1097,10 @@ def generate_scenario(
     network_key = network_store.get("network_key")
     summary = NETWORK_CACHE.get(str(network_key))
     if summary is None:
-        return GenerationResult(False, "Connected network was not found in memory cache. Reconnect the network and try again")
+        return GenerationResult(
+            False,
+            "Connected network was not found in memory cache. Reconnect the network and try again",
+        )
 
     if simulation_end <= simulation_begin:
         return GenerationResult(False, "Simulation end must be greater than simulation begin")
@@ -1082,13 +1116,13 @@ def generate_scenario(
 
     selected_set = set(selected_locations or [])
     mapping_candidates = [
-        item
-        for item in summary["location_mappings"]
-        if item["distance_m"] <= max_match_distance
+        item for item in summary["location_mappings"] if item["distance_m"] <= max_match_distance
     ]
 
     if selected_set:
-        active_mappings = [item for item in mapping_candidates if item["location_name"] in selected_set]
+        active_mappings = [
+            item for item in mapping_candidates if item["location_name"] in selected_set
+        ]
     else:
         active_mappings = mapping_candidates
 
@@ -1107,7 +1141,9 @@ def generate_scenario(
     if "buses" in included_modes:
         add_vehicle_type(root, "bus", vtype_settings["bus"], {"vClass": "bus"})
     if "streetcars" in included_modes:
-        add_vehicle_type(root, "streetcar", vtype_settings["streetcar"], {"vClass": "tram", "guiShape": "rail"})
+        add_vehicle_type(
+            root, "streetcar", vtype_settings["streetcar"], {"vClass": "tram", "guiShape": "rail"}
+        )
 
     flow_id = 0
     person_flow_id = 0
@@ -1118,7 +1154,13 @@ def generate_scenario(
         "vehicle_flows_created": 0,
         "person_flows_created": 0,
         "flows_by_mode": {"cars": 0, "trucks": 0, "buses": 0, "streetcars": 0, "pedestrians": 0},
-        "vehicles_by_mode": {"cars": 0, "trucks": 0, "buses": 0, "streetcars": 0, "pedestrians": 0},
+        "vehicles_by_mode": {
+            "cars": 0,
+            "trucks": 0,
+            "buses": 0,
+            "streetcars": 0,
+            "pedestrians": 0,
+        },
         "skipped_no_data": 0,
         "skipped_no_node": 0,
         "skipped_unmapped_approach": 0,
@@ -1136,7 +1178,9 @@ def generate_scenario(
         node_id = mapping["junction_id"]
 
         rows = TMC_DF[TMC_DF["location_name"] == location_name]
-        rows = apply_date_policy(rows, date_policy, selected_date, date_range_start, date_range_end)
+        rows = apply_date_policy(
+            rows, date_policy, selected_date, date_range_start, date_range_end
+        )
         rows = apply_time_window(rows, time_window_start, time_window_duration)
 
         if rows.empty:
@@ -1161,8 +1205,7 @@ def generate_scenario(
         # directly to tmc_parsed.csv without random generation.
         if "streetcars" in included_modes:
             counts_by_mode["streetcars"] = {
-                key: value * streetcar_share
-                for key, value in counts_by_mode["buses"].items()
+                key: value * streetcar_share for key, value in counts_by_mode["buses"].items()
             }
             if "buses" in included_modes:
                 counts_by_mode["buses"] = {
@@ -1286,7 +1329,9 @@ def generate_scenario(
             warnings=warnings,
         )
 
-    network_tag = sanitize_tag(summary["network_path"].name.replace(".xml.gz", "").replace(".xml", ""))
+    network_tag = sanitize_tag(
+        summary["network_path"].name.replace(".xml.gz", "").replace(".xml", "")
+    )
     scenario_tag = f"{network_tag}_{sanitize_tag(controller_mode)}"
 
     demand_path = DEMAND_OUTPUT_DIR / f"{scenario_tag}.rou.xml"
@@ -1529,13 +1574,20 @@ def build_output_paths(result: GenerationResult) -> html.Div:
 
     path_lines = [
         html.Div("Files were written to fixed repo paths", className="status-title"),
-        html.Div(f"Demand route file: {to_relpath(result.demand_path)}", className="status-line mono"),
-        html.Div(f"Scenario settings: {to_relpath(result.scenario_json_path)}", className="status-line mono"),
+        html.Div(
+            f"Demand route file: {to_relpath(result.demand_path)}", className="status-line mono"
+        ),
+        html.Div(
+            f"Scenario settings: {to_relpath(result.scenario_json_path)}",
+            className="status-line mono",
+        ),
         html.Div(f"SUMO config: {to_relpath(result.sumocfg_path)}", className="status-line mono"),
     ]
 
     if result.tls_path is not None:
-        path_lines.append(html.Div(f"Signal file: {to_relpath(result.tls_path)}", className="status-line mono"))
+        path_lines.append(
+            html.Div(f"Signal file: {to_relpath(result.tls_path)}", className="status-line mono")
+        )
 
     path_lines.append(
         html.Div(
@@ -1574,10 +1626,14 @@ def format_setting_value(value: Any) -> str:
     return str(value)
 
 
-def build_confirmation_sections(payload: dict[str, Any]) -> tuple[list[tuple[str, list[tuple[str, str]]]], list[dict[str, Any]]]:
+def build_confirmation_sections(
+    payload: dict[str, Any],
+) -> tuple[list[tuple[str, list[tuple[str, str]]]], list[dict[str, Any]]]:
     demand_settings = payload.get("demand_settings", {}) if isinstance(payload, dict) else {}
     signal_settings = payload.get("signal_settings", {}) if isinstance(payload, dict) else {}
-    mappo_hyperparams = payload.get("mappo_hyperparameters", {}) if isinstance(payload, dict) else {}
+    mappo_hyperparams = (
+        payload.get("mappo_hyperparameters", {}) if isinstance(payload, dict) else {}
+    )
     stats = payload.get("stats", {}) if isinstance(payload, dict) else {}
 
     if not isinstance(demand_settings, dict):
@@ -1634,13 +1690,19 @@ def build_confirmation_sections(payload: dict[str, Any]) -> tuple[list[tuple[str
         ("date_range_start", format_setting_value(demand_settings.get("date_range_start"))),
         ("date_range_end", format_setting_value(demand_settings.get("date_range_end"))),
         ("time_window_start", format_setting_value(demand_settings.get("time_window_start"))),
-        ("time_window_duration_min", format_setting_value(demand_settings.get("time_window_duration_min"))),
+        (
+            "time_window_duration_min",
+            format_setting_value(demand_settings.get("time_window_duration_min")),
+        ),
         ("simulation_begin", format_setting_value(demand_settings.get("simulation_begin"))),
         ("simulation_end", format_setting_value(demand_settings.get("simulation_end"))),
         ("strict_route_check", format_setting_value(demand_settings.get("strict_route_check"))),
         ("min_count_threshold", format_setting_value(demand_settings.get("min_count_threshold"))),
         ("global_demand_scale", format_setting_value(demand_settings.get("global_demand_scale"))),
-        ("streetcar_share_from_bus", format_setting_value(demand_settings.get("streetcar_share_from_bus"))),
+        (
+            "streetcar_share_from_bus",
+            format_setting_value(demand_settings.get("streetcar_share_from_bus")),
+        ),
         ("included_modes", format_setting_value(demand_settings.get("included_modes"))),
         ("matched_location_count", format_setting_value(len(matched_locations))),
     ]
@@ -1656,7 +1718,10 @@ def build_confirmation_sections(payload: dict[str, Any]) -> tuple[list[tuple[str
                 format_setting_value(payload.get("controller_mode")),
             ),
         ),
-        ("include_cluster_signals", format_setting_value(signal_settings.get("include_cluster_signals"))),
+        (
+            "include_cluster_signals",
+            format_setting_value(signal_settings.get("include_cluster_signals")),
+        ),
     ]
 
     for key, value in sorted(fixed_time.items()):
@@ -1671,7 +1736,12 @@ def build_confirmation_sections(payload: dict[str, Any]) -> tuple[list[tuple[str
     heading_rows: list[tuple[str, str]] = []
     for approach, bounds in sorted(heading_ranges.items()):
         if isinstance(bounds, (list, tuple)) and len(bounds) == 2:
-            heading_rows.append((approach, f"{format_setting_value(bounds[0])} -> {format_setting_value(bounds[1])}"))
+            heading_rows.append(
+                (
+                    approach,
+                    f"{format_setting_value(bounds[0])} -> {format_setting_value(bounds[1])}",
+                )
+            )
         else:
             heading_rows.append((approach, format_setting_value(bounds)))
 
@@ -1743,7 +1813,9 @@ def build_generation_artifacts(result: GenerationResult) -> dict[str, Any] | Non
     if not result.success or result.demand_path is None or result.scenario_json_path is None:
         return None
 
-    payload: dict[str, Any] | None = result.scenario_payload if isinstance(result.scenario_payload, dict) else None
+    payload: dict[str, Any] | None = (
+        result.scenario_payload if isinstance(result.scenario_payload, dict) else None
+    )
     if payload is None and result.scenario_json_path.exists():
         try:
             payload = json.loads(result.scenario_json_path.read_text(encoding="utf-8"))
@@ -1761,7 +1833,9 @@ def build_generation_artifacts(result: GenerationResult) -> dict[str, Any] | Non
         "demand_rel": to_relpath(result.demand_path),
         "scenario_abs": str(result.scenario_json_path.resolve()),
         "scenario_rel": to_relpath(result.scenario_json_path),
-        "sumocfg_rel": to_relpath(result.sumocfg_path) if result.sumocfg_path is not None else None,
+        "sumocfg_rel": (
+            to_relpath(result.sumocfg_path) if result.sumocfg_path is not None else None
+        ),
         "scenario_payload": payload,
         "confirmation_text": confirmation_text,
         "confirmation_filename": confirmation_filename,
@@ -1819,7 +1893,10 @@ def build_confirmation_screen(artifacts: dict[str, Any] | None, downloaded: bool
                 build_confirmation_table(
                     [
                         ("demand_file", format_setting_value(artifacts.get("demand_rel"))),
-                        ("scenario_settings_file", format_setting_value(artifacts.get("scenario_rel"))),
+                        (
+                            "scenario_settings_file",
+                            format_setting_value(artifacts.get("scenario_rel")),
+                        ),
                         (
                             "tmc_source",
                             format_setting_value(demand_settings.get("tmc_source")),
@@ -1889,13 +1966,11 @@ NETWORK_FILES = discover_network_files()
 DEFAULT_NETWORK = select_default_network(NETWORK_FILES)
 
 TIME_WINDOW_START_OPTIONS = [
-    {"label": minutes_to_label(minutes), "value": minutes}
-    for minutes in range(0, 24 * 60, 15)
+    {"label": minutes_to_label(minutes), "value": minutes} for minutes in range(0, 24 * 60, 15)
 ]
 
 TIME_WINDOW_DURATION_OPTIONS = [
-    {"label": f"{minutes} min", "value": minutes}
-    for minutes in [15, 30, 45, 60, 90, 120, 180]
+    {"label": f"{minutes} min", "value": minutes} for minutes in [15, 30, 45, 60, 90, 120, 180]
 ]
 
 
@@ -1968,10 +2043,16 @@ app.layout = html.Div(
                                         ),
                                     ],
                                 ),
-                                field_number("Junction marker size", "junction-marker-size", 6, 1, 2, 20),
+                                field_number(
+                                    "Junction marker size", "junction-marker-size", 6, 1, 2, 20
+                                ),
                             ],
                         ),
-                        dcc.Graph(id="network-graph", figure=empty_network_figure(), className="network-graph"),
+                        dcc.Graph(
+                            id="network-graph",
+                            figure=empty_network_figure(),
+                            className="network-graph",
+                        ),
                         html.Div(
                             className="viewer-foot",
                             children=[
@@ -2000,14 +2081,22 @@ app.layout = html.Div(
                                         html.Div(
                                             className="tab-panel",
                                             children=[
-                                                html.Div("Connect Network", className="panel-title"),
+                                                html.Div(
+                                                    "Connect Network", className="panel-title"
+                                                ),
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Network file in repo", className="field-label"),
+                                                        html.Label(
+                                                            "Network file in repo",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.Dropdown(
                                                             id="network-file-dropdown",
-                                                            options=[{"label": path, "value": path} for path in NETWORK_FILES],
+                                                            options=[
+                                                                {"label": path, "value": path}
+                                                                for path in NETWORK_FILES
+                                                            ],
                                                             value=DEFAULT_NETWORK,
                                                             placeholder="Select *.net.xml or *.net.xml.gz",
                                                             className="dropdown",
@@ -2017,7 +2106,10 @@ app.layout = html.Div(
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Or enter custom path", className="field-label"),
+                                                        html.Label(
+                                                            "Or enter custom path",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.Input(
                                                             id="network-custom-path",
                                                             type="text",
@@ -2029,17 +2121,35 @@ app.layout = html.Div(
                                                 html.Div(
                                                     className="inline-actions",
                                                     children=[
-                                                        html.Button("Connect Network", id="connect-network-button", className="action-button"),
+                                                        html.Button(
+                                                            "Connect Network",
+                                                            id="connect-network-button",
+                                                            className="action-button",
+                                                        ),
                                                     ],
                                                 ),
-                                                html.Div(id="network-status", className="status-inline"),
+                                                html.Div(
+                                                    id="network-status", className="status-inline"
+                                                ),
                                                 html.Div(
                                                     className="sub-panel",
                                                     children=[
-                                                        html.Div("Fixed output folders", className="sub-panel-title"),
-                                                        html.Div(f"Demand: {to_relpath(DEMAND_OUTPUT_DIR)}", className="mono tiny"),
-                                                        html.Div(f"SUMO cfg: {to_relpath(SUMOCFG_OUTPUT_DIR)}", className="mono tiny"),
-                                                        html.Div(f"Scenario JSON: {to_relpath(SCENARIO_OUTPUT_DIR)}", className="mono tiny"),
+                                                        html.Div(
+                                                            "Fixed output folders",
+                                                            className="sub-panel-title",
+                                                        ),
+                                                        html.Div(
+                                                            f"Demand: {to_relpath(DEMAND_OUTPUT_DIR)}",
+                                                            className="mono tiny",
+                                                        ),
+                                                        html.Div(
+                                                            f"SUMO cfg: {to_relpath(SUMOCFG_OUTPUT_DIR)}",
+                                                            className="mono tiny",
+                                                        ),
+                                                        html.Div(
+                                                            f"Scenario JSON: {to_relpath(SCENARIO_OUTPUT_DIR)}",
+                                                            className="mono tiny",
+                                                        ),
                                                     ],
                                                 ),
                                             ],
@@ -2055,11 +2165,16 @@ app.layout = html.Div(
                                         html.Div(
                                             className="tab-panel",
                                             children=[
-                                                html.Div("Demand Data Settings", className="panel-title"),
+                                                html.Div(
+                                                    "Demand Data Settings", className="panel-title"
+                                                ),
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Mapped TMC locations", className="field-label"),
+                                                        html.Label(
+                                                            "Mapped TMC locations",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.Dropdown(
                                                             id="location-selector",
                                                             options=[],
@@ -2073,21 +2188,54 @@ app.layout = html.Div(
                                                 html.Div(
                                                     className="field-grid three",
                                                     children=[
-                                                        field_number("Max TMC to junction match distance (m)", "max-match-distance", 180, 5, 1, 2500),
-                                                        field_number("Min flow count threshold", "min-count-threshold", 1, 1, 0, 1000),
-                                                        field_number("Global demand scale", "global-demand-scale", 1.0, 0.05, 0.0, 10.0),
+                                                        field_number(
+                                                            "Max TMC to junction match distance (m)",
+                                                            "max-match-distance",
+                                                            180,
+                                                            5,
+                                                            1,
+                                                            2500,
+                                                        ),
+                                                        field_number(
+                                                            "Min flow count threshold",
+                                                            "min-count-threshold",
+                                                            1,
+                                                            1,
+                                                            0,
+                                                            1000,
+                                                        ),
+                                                        field_number(
+                                                            "Global demand scale",
+                                                            "global-demand-scale",
+                                                            1.0,
+                                                            0.05,
+                                                            0.0,
+                                                            10.0,
+                                                        ),
                                                     ],
                                                 ),
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Date selection policy", className="field-label"),
+                                                        html.Label(
+                                                            "Date selection policy",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.RadioItems(
                                                             id="date-policy",
                                                             options=[
-                                                                {"label": "Latest per location", "value": "latest_per_location"},
-                                                                {"label": "One exact date", "value": "selected_date"},
-                                                                {"label": "Date range", "value": "date_range"},
+                                                                {
+                                                                    "label": "Latest per location",
+                                                                    "value": "latest_per_location",
+                                                                },
+                                                                {
+                                                                    "label": "One exact date",
+                                                                    "value": "selected_date",
+                                                                },
+                                                                {
+                                                                    "label": "Date range",
+                                                                    "value": "date_range",
+                                                                },
                                                             ],
                                                             value="latest_per_location",
                                                             className="radio-row",
@@ -2098,11 +2246,21 @@ app.layout = html.Div(
                                                     id="selected-date-wrapper",
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Selected date", className="field-label"),
+                                                        html.Label(
+                                                            "Selected date",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.Dropdown(
                                                             id="selected-date",
-                                                            options=[{"label": d, "value": d} for d in DATE_OPTIONS],
-                                                            value=DATE_OPTIONS[0] if DATE_OPTIONS else None,
+                                                            options=[
+                                                                {"label": d, "value": d}
+                                                                for d in DATE_OPTIONS
+                                                            ],
+                                                            value=(
+                                                                DATE_OPTIONS[0]
+                                                                if DATE_OPTIONS
+                                                                else None
+                                                            ),
                                                             className="dropdown",
                                                         ),
                                                     ],
@@ -2114,11 +2272,21 @@ app.layout = html.Div(
                                                         html.Div(
                                                             className="field-block",
                                                             children=[
-                                                                html.Label("Range start", className="field-label"),
+                                                                html.Label(
+                                                                    "Range start",
+                                                                    className="field-label",
+                                                                ),
                                                                 dcc.Dropdown(
                                                                     id="date-range-start",
-                                                                    options=[{"label": d, "value": d} for d in DATE_OPTIONS],
-                                                                    value=DATE_OPTIONS[-1] if DATE_OPTIONS else None,
+                                                                    options=[
+                                                                        {"label": d, "value": d}
+                                                                        for d in DATE_OPTIONS
+                                                                    ],
+                                                                    value=(
+                                                                        DATE_OPTIONS[-1]
+                                                                        if DATE_OPTIONS
+                                                                        else None
+                                                                    ),
                                                                     className="dropdown",
                                                                 ),
                                                             ],
@@ -2126,11 +2294,21 @@ app.layout = html.Div(
                                                         html.Div(
                                                             className="field-block",
                                                             children=[
-                                                                html.Label("Range end", className="field-label"),
+                                                                html.Label(
+                                                                    "Range end",
+                                                                    className="field-label",
+                                                                ),
                                                                 dcc.Dropdown(
                                                                     id="date-range-end",
-                                                                    options=[{"label": d, "value": d} for d in DATE_OPTIONS],
-                                                                    value=DATE_OPTIONS[0] if DATE_OPTIONS else None,
+                                                                    options=[
+                                                                        {"label": d, "value": d}
+                                                                        for d in DATE_OPTIONS
+                                                                    ],
+                                                                    value=(
+                                                                        DATE_OPTIONS[0]
+                                                                        if DATE_OPTIONS
+                                                                        else None
+                                                                    ),
                                                                     className="dropdown",
                                                                 ),
                                                             ],
@@ -2143,7 +2321,10 @@ app.layout = html.Div(
                                                         html.Div(
                                                             className="field-block",
                                                             children=[
-                                                                html.Label("TMC time window start", className="field-label"),
+                                                                html.Label(
+                                                                    "TMC time window start",
+                                                                    className="field-label",
+                                                                ),
                                                                 dcc.Dropdown(
                                                                     id="time-window-start",
                                                                     options=TIME_WINDOW_START_OPTIONS,
@@ -2155,7 +2336,10 @@ app.layout = html.Div(
                                                         html.Div(
                                                             className="field-block",
                                                             children=[
-                                                                html.Label("TMC time window duration", className="field-label"),
+                                                                html.Label(
+                                                                    "TMC time window duration",
+                                                                    className="field-label",
+                                                                ),
                                                                 dcc.Dropdown(
                                                                     id="time-window-duration",
                                                                     options=TIME_WINDOW_DURATION_OPTIONS,
@@ -2164,8 +2348,22 @@ app.layout = html.Div(
                                                                 ),
                                                             ],
                                                         ),
-                                                        field_number("Simulation begin (s)", "sim-begin", 0, 1, 0, 1000000),
-                                                        field_number("Simulation end (s)", "sim-end", 3600, 1, 1, 1000000),
+                                                        field_number(
+                                                            "Simulation begin (s)",
+                                                            "sim-begin",
+                                                            0,
+                                                            1,
+                                                            0,
+                                                            1000000,
+                                                        ),
+                                                        field_number(
+                                                            "Simulation end (s)",
+                                                            "sim-end",
+                                                            3600,
+                                                            1,
+                                                            1,
+                                                            1000000,
+                                                        ),
                                                     ],
                                                 ),
                                                 html.Div(
@@ -2174,17 +2372,39 @@ app.layout = html.Div(
                                                         html.Div(
                                                             className="field-block",
                                                             children=[
-                                                                html.Label("Include modes", className="field-label"),
+                                                                html.Label(
+                                                                    "Include modes",
+                                                                    className="field-label",
+                                                                ),
                                                                 dcc.Checklist(
                                                                     id="mode-checklist",
                                                                     options=[
-                                                                        {"label": "Cars", "value": "cars"},
-                                                                        {"label": "Trucks", "value": "trucks"},
-                                                                        {"label": "Buses", "value": "buses"},
-                                                                        {"label": "Streetcars", "value": "streetcars"},
-                                                                        {"label": "Pedestrians", "value": "pedestrians"},
+                                                                        {
+                                                                            "label": "Cars",
+                                                                            "value": "cars",
+                                                                        },
+                                                                        {
+                                                                            "label": "Trucks",
+                                                                            "value": "trucks",
+                                                                        },
+                                                                        {
+                                                                            "label": "Buses",
+                                                                            "value": "buses",
+                                                                        },
+                                                                        {
+                                                                            "label": "Streetcars",
+                                                                            "value": "streetcars",
+                                                                        },
+                                                                        {
+                                                                            "label": "Pedestrians",
+                                                                            "value": "pedestrians",
+                                                                        },
                                                                     ],
-                                                                    value=["cars", "trucks", "buses"],
+                                                                    value=[
+                                                                        "cars",
+                                                                        "trucks",
+                                                                        "buses",
+                                                                    ],
                                                                     className="check-grid",
                                                                 ),
                                                             ],
@@ -2192,16 +2412,61 @@ app.layout = html.Div(
                                                         html.Div(
                                                             className="field-block",
                                                             children=[
-                                                                html.Label("Demand scaling by mode", className="field-label"),
+                                                                html.Label(
+                                                                    "Demand scaling by mode",
+                                                                    className="field-label",
+                                                                ),
                                                                 html.Div(
                                                                     className="field-grid two",
                                                                     children=[
-                                                                        field_number("Cars", "car-scale", 1.0, 0.05, 0.0, 10.0),
-                                                                        field_number("Trucks", "truck-scale", 1.0, 0.05, 0.0, 10.0),
-                                                                        field_number("Buses", "bus-scale", 1.0, 0.05, 0.0, 10.0),
-                                                                        field_number("Streetcars", "streetcar-scale", 1.0, 0.05, 0.0, 10.0),
-                                                                        field_number("Pedestrians", "pedestrian-scale", 1.0, 0.05, 0.0, 10.0),
-                                                                        field_number("Streetcar share from bus", "streetcar-share", 0.35, 0.05, 0.0, 1.0),
+                                                                        field_number(
+                                                                            "Cars",
+                                                                            "car-scale",
+                                                                            1.0,
+                                                                            0.05,
+                                                                            0.0,
+                                                                            10.0,
+                                                                        ),
+                                                                        field_number(
+                                                                            "Trucks",
+                                                                            "truck-scale",
+                                                                            1.0,
+                                                                            0.05,
+                                                                            0.0,
+                                                                            10.0,
+                                                                        ),
+                                                                        field_number(
+                                                                            "Buses",
+                                                                            "bus-scale",
+                                                                            1.0,
+                                                                            0.05,
+                                                                            0.0,
+                                                                            10.0,
+                                                                        ),
+                                                                        field_number(
+                                                                            "Streetcars",
+                                                                            "streetcar-scale",
+                                                                            1.0,
+                                                                            0.05,
+                                                                            0.0,
+                                                                            10.0,
+                                                                        ),
+                                                                        field_number(
+                                                                            "Pedestrians",
+                                                                            "pedestrian-scale",
+                                                                            1.0,
+                                                                            0.05,
+                                                                            0.0,
+                                                                            10.0,
+                                                                        ),
+                                                                        field_number(
+                                                                            "Streetcar share from bus",
+                                                                            "streetcar-share",
+                                                                            0.35,
+                                                                            0.05,
+                                                                            0.0,
+                                                                            1.0,
+                                                                        ),
                                                                     ],
                                                                 ),
                                                             ],
@@ -2211,7 +2476,10 @@ app.layout = html.Div(
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Route constraints", className="field-label"),
+                                                        html.Label(
+                                                            "Route constraints",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.Checklist(
                                                             id="strict-route-check",
                                                             options=[
@@ -2238,17 +2506,32 @@ app.layout = html.Div(
                                         html.Div(
                                             className="tab-panel",
                                             children=[
-                                                html.Div("Signal and MAPPO Settings", className="panel-title"),
+                                                html.Div(
+                                                    "Signal and MAPPO Settings",
+                                                    className="panel-title",
+                                                ),
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Controller mode", className="field-label"),
+                                                        html.Label(
+                                                            "Controller mode",
+                                                            className="field-label",
+                                                        ),
                                                         dcc.RadioItems(
                                                             id="controller-mode",
                                                             options=[
-                                                                {"label": "MAPPO custom", "value": "mappo_custom"},
-                                                                {"label": "Baseline fixed time", "value": "baseline_fixed_time"},
-                                                                {"label": "Baseline max pressure", "value": "baseline_max_pressure"},
+                                                                {
+                                                                    "label": "MAPPO custom",
+                                                                    "value": "mappo_custom",
+                                                                },
+                                                                {
+                                                                    "label": "Baseline fixed time",
+                                                                    "value": "baseline_fixed_time",
+                                                                },
+                                                                {
+                                                                    "label": "Baseline max pressure",
+                                                                    "value": "baseline_max_pressure",
+                                                                },
                                                             ],
                                                             value="mappo_custom",
                                                             className="radio-row",
@@ -2259,24 +2542,71 @@ app.layout = html.Div(
                                                     id="fixed-time-group",
                                                     className="sub-panel",
                                                     children=[
-                                                        html.Div("Fixed time settings", className="sub-panel-title"),
+                                                        html.Div(
+                                                            "Fixed time settings",
+                                                            className="sub-panel-title",
+                                                        ),
                                                         html.Div(
                                                             className="field-grid four",
                                                             children=[
-                                                                field_number("EW green", "fixed-ew-green", DEFAULT_FIXED_SIGNAL["ew_green"], 1, 1, 240),
-                                                                field_number("NS green", "fixed-ns-green", DEFAULT_FIXED_SIGNAL["ns_green"], 1, 1, 240),
-                                                                field_number("Yellow", "fixed-yellow", DEFAULT_FIXED_SIGNAL["yellow"], 1, 1, 20),
-                                                                field_number("All red", "fixed-all-red", DEFAULT_FIXED_SIGNAL["all_red"], 1, 0, 20),
+                                                                field_number(
+                                                                    "EW green",
+                                                                    "fixed-ew-green",
+                                                                    DEFAULT_FIXED_SIGNAL[
+                                                                        "ew_green"
+                                                                    ],
+                                                                    1,
+                                                                    1,
+                                                                    240,
+                                                                ),
+                                                                field_number(
+                                                                    "NS green",
+                                                                    "fixed-ns-green",
+                                                                    DEFAULT_FIXED_SIGNAL[
+                                                                        "ns_green"
+                                                                    ],
+                                                                    1,
+                                                                    1,
+                                                                    240,
+                                                                ),
+                                                                field_number(
+                                                                    "Yellow",
+                                                                    "fixed-yellow",
+                                                                    DEFAULT_FIXED_SIGNAL["yellow"],
+                                                                    1,
+                                                                    1,
+                                                                    20,
+                                                                ),
+                                                                field_number(
+                                                                    "All red",
+                                                                    "fixed-all-red",
+                                                                    DEFAULT_FIXED_SIGNAL[
+                                                                        "all_red"
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    20,
+                                                                ),
                                                             ],
                                                         ),
                                                         html.Div(
                                                             className="field-grid two",
                                                             children=[
-                                                                field_number("Offset", "fixed-offset", DEFAULT_FIXED_SIGNAL["offset"], 1, 0, 3600),
+                                                                field_number(
+                                                                    "Offset",
+                                                                    "fixed-offset",
+                                                                    DEFAULT_FIXED_SIGNAL["offset"],
+                                                                    1,
+                                                                    0,
+                                                                    3600,
+                                                                ),
                                                                 html.Div(
                                                                     className="field-block",
                                                                     children=[
-                                                                        html.Label("TLS selection", className="field-label"),
+                                                                        html.Label(
+                                                                            "TLS selection",
+                                                                            className="field-label",
+                                                                        ),
                                                                         dcc.Checklist(
                                                                             id="include-cluster-signals",
                                                                             options=[
@@ -2298,16 +2628,73 @@ app.layout = html.Div(
                                                     id="max-pressure-group",
                                                     className="sub-panel",
                                                     children=[
-                                                        html.Div("Max pressure settings", className="sub-panel-title"),
+                                                        html.Div(
+                                                            "Max pressure settings",
+                                                            className="sub-panel-title",
+                                                        ),
                                                         html.Div(
                                                             className="field-grid three",
                                                             children=[
-                                                                field_number("Min green", "mp-min-green", DEFAULT_MAX_PRESSURE_SIGNAL["min_green"], 1, 1, 180),
-                                                                field_number("Max green", "mp-max-green", DEFAULT_MAX_PRESSURE_SIGNAL["max_green"], 1, 2, 360),
-                                                                field_number("Yellow", "mp-yellow", DEFAULT_MAX_PRESSURE_SIGNAL["yellow"], 1, 1, 20),
-                                                                field_number("All red", "mp-all-red", DEFAULT_MAX_PRESSURE_SIGNAL["all_red"], 1, 0, 20),
-                                                                field_number("Pressure exponent", "mp-pressure-exp", DEFAULT_MAX_PRESSURE_SIGNAL["pressure_exponent"], 0.1, 0.0, 5.0),
-                                                                field_number("Queue exponent", "mp-queue-exp", DEFAULT_MAX_PRESSURE_SIGNAL["queue_exponent"], 0.1, 0.0, 5.0),
+                                                                field_number(
+                                                                    "Min green",
+                                                                    "mp-min-green",
+                                                                    DEFAULT_MAX_PRESSURE_SIGNAL[
+                                                                        "min_green"
+                                                                    ],
+                                                                    1,
+                                                                    1,
+                                                                    180,
+                                                                ),
+                                                                field_number(
+                                                                    "Max green",
+                                                                    "mp-max-green",
+                                                                    DEFAULT_MAX_PRESSURE_SIGNAL[
+                                                                        "max_green"
+                                                                    ],
+                                                                    1,
+                                                                    2,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "Yellow",
+                                                                    "mp-yellow",
+                                                                    DEFAULT_MAX_PRESSURE_SIGNAL[
+                                                                        "yellow"
+                                                                    ],
+                                                                    1,
+                                                                    1,
+                                                                    20,
+                                                                ),
+                                                                field_number(
+                                                                    "All red",
+                                                                    "mp-all-red",
+                                                                    DEFAULT_MAX_PRESSURE_SIGNAL[
+                                                                        "all_red"
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    20,
+                                                                ),
+                                                                field_number(
+                                                                    "Pressure exponent",
+                                                                    "mp-pressure-exp",
+                                                                    DEFAULT_MAX_PRESSURE_SIGNAL[
+                                                                        "pressure_exponent"
+                                                                    ],
+                                                                    0.1,
+                                                                    0.0,
+                                                                    5.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Queue exponent",
+                                                                    "mp-queue-exp",
+                                                                    DEFAULT_MAX_PRESSURE_SIGNAL[
+                                                                        "queue_exponent"
+                                                                    ],
+                                                                    0.1,
+                                                                    0.0,
+                                                                    5.0,
+                                                                ),
                                                             ],
                                                         ),
                                                     ],
@@ -2316,26 +2703,149 @@ app.layout = html.Div(
                                                     id="mappo-group",
                                                     className="sub-panel",
                                                     children=[
-                                                        html.Div("MAPPO hyperparameters", className="sub-panel-title"),
+                                                        html.Div(
+                                                            "MAPPO hyperparameters",
+                                                            className="sub-panel-title",
+                                                        ),
                                                         html.Div(
                                                             className="field-grid three",
                                                             children=[
-                                                                field_number("LR actor", "mappo-lr-actor", DEFAULT_MAPPO["learning_rate_actor"], 0.0001, 1e-06, 1.0),
-                                                                field_number("LR critic", "mappo-lr-critic", DEFAULT_MAPPO["learning_rate_critic"], 0.0001, 1e-06, 1.0),
-                                                                field_number("Gamma", "mappo-gamma", DEFAULT_MAPPO["gamma"], 0.01, 0.0, 1.0),
-                                                                field_number("GAE lambda", "mappo-gae-lambda", DEFAULT_MAPPO["gae_lambda"], 0.01, 0.0, 1.0),
-                                                                field_number("Clip ratio", "mappo-clip-ratio", DEFAULT_MAPPO["clip_ratio"], 0.01, 0.01, 1.0),
-                                                                field_number("Entropy coef", "mappo-entropy-coef", DEFAULT_MAPPO["entropy_coef"], 0.001, 0.0, 1.0),
-                                                                field_number("Value loss coef", "mappo-value-coef", DEFAULT_MAPPO["value_loss_coef"], 0.01, 0.0, 10.0),
-                                                                field_number("Max grad norm", "mappo-max-grad-norm", DEFAULT_MAPPO["max_grad_norm"], 0.1, 0.0, 10.0),
-                                                                field_number("Target KL", "mappo-target-kl", DEFAULT_MAPPO["target_kl"], 0.01, 0.0, 1.0),
-                                                                field_number("Rollout steps", "mappo-rollout-steps", DEFAULT_MAPPO["rollout_steps"], 1, 16, 1000000),
-                                                                field_number("PPO epochs", "mappo-ppo-epochs", DEFAULT_MAPPO["ppo_epochs"], 1, 1, 500),
-                                                                field_number("Minibatch size", "mappo-minibatch-size", DEFAULT_MAPPO["minibatch_size"], 1, 1, 1000000),
-                                                                field_number("Num envs", "mappo-num-envs", DEFAULT_MAPPO["num_envs"], 1, 1, 10000),
-                                                                field_number("Hidden dim", "mappo-hidden-dim", DEFAULT_MAPPO["hidden_dim"], 1, 4, 4096),
-                                                                field_number("Hidden layers", "mappo-hidden-layers", DEFAULT_MAPPO["hidden_layers"], 1, 1, 16),
-                                                                field_number("Seed", "mappo-seed", DEFAULT_MAPPO["seed"], 1, 0, 1000000),
+                                                                field_number(
+                                                                    "LR actor",
+                                                                    "mappo-lr-actor",
+                                                                    DEFAULT_MAPPO[
+                                                                        "learning_rate_actor"
+                                                                    ],
+                                                                    0.0001,
+                                                                    1e-06,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "LR critic",
+                                                                    "mappo-lr-critic",
+                                                                    DEFAULT_MAPPO[
+                                                                        "learning_rate_critic"
+                                                                    ],
+                                                                    0.0001,
+                                                                    1e-06,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Gamma",
+                                                                    "mappo-gamma",
+                                                                    DEFAULT_MAPPO["gamma"],
+                                                                    0.01,
+                                                                    0.0,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "GAE lambda",
+                                                                    "mappo-gae-lambda",
+                                                                    DEFAULT_MAPPO["gae_lambda"],
+                                                                    0.01,
+                                                                    0.0,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Clip ratio",
+                                                                    "mappo-clip-ratio",
+                                                                    DEFAULT_MAPPO["clip_ratio"],
+                                                                    0.01,
+                                                                    0.01,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Entropy coef",
+                                                                    "mappo-entropy-coef",
+                                                                    DEFAULT_MAPPO["entropy_coef"],
+                                                                    0.001,
+                                                                    0.0,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Value loss coef",
+                                                                    "mappo-value-coef",
+                                                                    DEFAULT_MAPPO[
+                                                                        "value_loss_coef"
+                                                                    ],
+                                                                    0.01,
+                                                                    0.0,
+                                                                    10.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Max grad norm",
+                                                                    "mappo-max-grad-norm",
+                                                                    DEFAULT_MAPPO["max_grad_norm"],
+                                                                    0.1,
+                                                                    0.0,
+                                                                    10.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Target KL",
+                                                                    "mappo-target-kl",
+                                                                    DEFAULT_MAPPO["target_kl"],
+                                                                    0.01,
+                                                                    0.0,
+                                                                    1.0,
+                                                                ),
+                                                                field_number(
+                                                                    "Rollout steps",
+                                                                    "mappo-rollout-steps",
+                                                                    DEFAULT_MAPPO["rollout_steps"],
+                                                                    1,
+                                                                    16,
+                                                                    1000000,
+                                                                ),
+                                                                field_number(
+                                                                    "PPO epochs",
+                                                                    "mappo-ppo-epochs",
+                                                                    DEFAULT_MAPPO["ppo_epochs"],
+                                                                    1,
+                                                                    1,
+                                                                    500,
+                                                                ),
+                                                                field_number(
+                                                                    "Minibatch size",
+                                                                    "mappo-minibatch-size",
+                                                                    DEFAULT_MAPPO[
+                                                                        "minibatch_size"
+                                                                    ],
+                                                                    1,
+                                                                    1,
+                                                                    1000000,
+                                                                ),
+                                                                field_number(
+                                                                    "Num envs",
+                                                                    "mappo-num-envs",
+                                                                    DEFAULT_MAPPO["num_envs"],
+                                                                    1,
+                                                                    1,
+                                                                    10000,
+                                                                ),
+                                                                field_number(
+                                                                    "Hidden dim",
+                                                                    "mappo-hidden-dim",
+                                                                    DEFAULT_MAPPO["hidden_dim"],
+                                                                    1,
+                                                                    4,
+                                                                    4096,
+                                                                ),
+                                                                field_number(
+                                                                    "Hidden layers",
+                                                                    "mappo-hidden-layers",
+                                                                    DEFAULT_MAPPO["hidden_layers"],
+                                                                    1,
+                                                                    1,
+                                                                    16,
+                                                                ),
+                                                                field_number(
+                                                                    "Seed",
+                                                                    "mappo-seed",
+                                                                    DEFAULT_MAPPO["seed"],
+                                                                    1,
+                                                                    0,
+                                                                    1000000,
+                                                                ),
                                                             ],
                                                         ),
                                                         html.Div(
@@ -2344,10 +2854,18 @@ app.layout = html.Div(
                                                                 html.Div(
                                                                     className="field-block",
                                                                     children=[
-                                                                        html.Label("Shared critic", className="field-label"),
+                                                                        html.Label(
+                                                                            "Shared critic",
+                                                                            className="field-label",
+                                                                        ),
                                                                         dcc.Checklist(
                                                                             id="mappo-shared-critic",
-                                                                            options=[{"label": "Enabled", "value": "enabled"}],
+                                                                            options=[
+                                                                                {
+                                                                                    "label": "Enabled",
+                                                                                    "value": "enabled",
+                                                                                }
+                                                                            ],
                                                                             value=["enabled"],
                                                                             className="check-row",
                                                                         ),
@@ -2356,10 +2874,18 @@ app.layout = html.Div(
                                                                 html.Div(
                                                                     className="field-block",
                                                                     children=[
-                                                                        html.Label("Normalize advantages", className="field-label"),
+                                                                        html.Label(
+                                                                            "Normalize advantages",
+                                                                            className="field-label",
+                                                                        ),
                                                                         dcc.Checklist(
                                                                             id="mappo-normalize-advantages",
-                                                                            options=[{"label": "Enabled", "value": "enabled"}],
+                                                                            options=[
+                                                                                {
+                                                                                    "label": "Enabled",
+                                                                                    "value": "enabled",
+                                                                                }
+                                                                            ],
                                                                             value=["enabled"],
                                                                             className="check-row",
                                                                         ),
@@ -2382,22 +2908,116 @@ app.layout = html.Div(
                                         html.Div(
                                             className="tab-panel",
                                             children=[
-                                                html.Div("Advanced Mapping and Vehicle Settings", className="panel-title"),
+                                                html.Div(
+                                                    "Advanced Mapping and Vehicle Settings",
+                                                    className="panel-title",
+                                                ),
                                                 html.Div(
                                                     className="sub-panel",
                                                     children=[
-                                                        html.Div("Approach heading ranges (degrees)", className="sub-panel-title"),
+                                                        html.Div(
+                                                            "Approach heading ranges (degrees)",
+                                                            className="sub-panel-title",
+                                                        ),
                                                         html.Div(
                                                             className="field-grid four",
                                                             children=[
-                                                                field_number("N low", "heading-n-lo", APPROACH_HEADING_RANGES_DEFAULT["n"][0], 1, 0, 360),
-                                                                field_number("N high", "heading-n-hi", APPROACH_HEADING_RANGES_DEFAULT["n"][1], 1, 0, 360),
-                                                                field_number("S low", "heading-s-lo", APPROACH_HEADING_RANGES_DEFAULT["s"][0], 1, 0, 360),
-                                                                field_number("S high", "heading-s-hi", APPROACH_HEADING_RANGES_DEFAULT["s"][1], 1, 0, 360),
-                                                                field_number("E low", "heading-e-lo", APPROACH_HEADING_RANGES_DEFAULT["e"][0], 1, 0, 360),
-                                                                field_number("E high", "heading-e-hi", APPROACH_HEADING_RANGES_DEFAULT["e"][1], 1, 0, 360),
-                                                                field_number("W low", "heading-w-lo", APPROACH_HEADING_RANGES_DEFAULT["w"][0], 1, 0, 360),
-                                                                field_number("W high", "heading-w-hi", APPROACH_HEADING_RANGES_DEFAULT["w"][1], 1, 0, 360),
+                                                                field_number(
+                                                                    "N low",
+                                                                    "heading-n-lo",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "n"
+                                                                    ][
+                                                                        0
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "N high",
+                                                                    "heading-n-hi",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "n"
+                                                                    ][
+                                                                        1
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "S low",
+                                                                    "heading-s-lo",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "s"
+                                                                    ][
+                                                                        0
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "S high",
+                                                                    "heading-s-hi",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "s"
+                                                                    ][
+                                                                        1
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "E low",
+                                                                    "heading-e-lo",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "e"
+                                                                    ][
+                                                                        0
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "E high",
+                                                                    "heading-e-hi",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "e"
+                                                                    ][
+                                                                        1
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "W low",
+                                                                    "heading-w-lo",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "w"
+                                                                    ][
+                                                                        0
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
+                                                                field_number(
+                                                                    "W high",
+                                                                    "heading-w-hi",
+                                                                    APPROACH_HEADING_RANGES_DEFAULT[
+                                                                        "w"
+                                                                    ][
+                                                                        1
+                                                                    ],
+                                                                    1,
+                                                                    0,
+                                                                    360,
+                                                                ),
                                                             ],
                                                         ),
                                                     ],
@@ -2409,7 +3029,9 @@ app.layout = html.Div(
                                                 html.Div(
                                                     className="field-block",
                                                     children=[
-                                                        html.Label("Validation", className="field-label"),
+                                                        html.Label(
+                                                            "Validation", className="field-label"
+                                                        ),
                                                         dcc.Checklist(
                                                             id="run-sumo-check",
                                                             options=[
@@ -2484,7 +3106,9 @@ def connect_network(n_clicks: int | None, dropdown_value: str | None, custom_pat
     _ = n_clicks
 
     if not dropdown_value and not custom_path:
-        return None, html.Div("Select a network file and click Connect Network", className="status-inline")
+        return None, html.Div(
+            "Select a network file and click Connect Network", className="status-inline"
+        )
 
     try:
         network_path = resolve_network_path(dropdown_value, custom_path)
@@ -2533,8 +3157,7 @@ def update_location_selector(
     limit = clamp_float(max_match_distance, 180.0, 1.0, 5000.0)
 
     filtered = [
-        item for item in summary["location_mappings"]
-        if float(item["distance_m"]) <= limit
+        item for item in summary["location_mappings"] if float(item["distance_m"]) <= limit
     ]
 
     options = [
@@ -2582,7 +3205,9 @@ def update_network_graph(
         return empty_network_figure()
 
     network_key = str(network_store.get("network_key"))
-    show_signalized_only = bool(show_signalized_only_values and "signalized_only" in show_signalized_only_values)
+    show_signalized_only = bool(
+        show_signalized_only_values and "signalized_only" in show_signalized_only_values
+    )
     marker_size = clamp_int(marker_size_value, 6, 2, 30)
     max_distance = clamp_float(max_match_distance, 180.0, 1.0, 5000.0)
 
@@ -2601,18 +3226,27 @@ def update_network_graph(
 )
 def update_hover_panel(hover_data: dict[str, Any] | None):
     if not hover_data or "points" not in hover_data or not hover_data["points"]:
-        return html.Div("Hover any junction to inspect ID, signalization state, and degree", className="status-inline")
+        return html.Div(
+            "Hover any junction to inspect ID, signalization state, and degree",
+            className="status-inline",
+        )
 
     point = hover_data["points"][0]
     custom = point.get("customdata")
     if not custom:
-        return html.Div("Hover any junction to inspect ID, signalization state, and degree", className="status-inline")
+        return html.Div(
+            "Hover any junction to inspect ID, signalization state, and degree",
+            className="status-inline",
+        )
 
     return html.Div(
         [
             html.Div(f"Junction ID: {custom[0]}", className="status-inline mono"),
             html.Div(f"Signalized: {custom[1]}", className="status-inline"),
-            html.Div(f"Incoming edges: {custom[2]} | Outgoing edges: {custom[3]}", className="status-inline"),
+            html.Div(
+                f"Incoming edges: {custom[2]} | Outgoing edges: {custom[3]}",
+                className="status-inline",
+            ),
             html.Div(f"Node type: {custom[4]}", className="status-inline"),
         ]
     )
@@ -2638,8 +3272,12 @@ def toggle_date_controls(date_policy: str):
     Input("controller-mode", "value"),
 )
 def toggle_controller_groups(controller_mode: str):
-    show_fixed = {"display": "block"} if controller_mode == "baseline_fixed_time" else {"display": "none"}
-    show_max_pressure = {"display": "block"} if controller_mode == "baseline_max_pressure" else {"display": "none"}
+    show_fixed = (
+        {"display": "block"} if controller_mode == "baseline_fixed_time" else {"display": "none"}
+    )
+    show_max_pressure = (
+        {"display": "block"} if controller_mode == "baseline_max_pressure" else {"display": "none"}
+    )
     show_mappo = {"display": "block"} if controller_mode == "mappo_custom" else {"display": "none"}
     return show_fixed, show_max_pressure, show_mappo
 
@@ -2842,36 +3480,66 @@ def generate_demand_callback(
         "max_green": clamp_int(mp_max_green, DEFAULT_MAX_PRESSURE_SIGNAL["max_green"], 2, 360),
         "yellow": clamp_int(mp_yellow, DEFAULT_MAX_PRESSURE_SIGNAL["yellow"], 1, 20),
         "all_red": clamp_int(mp_all_red, DEFAULT_MAX_PRESSURE_SIGNAL["all_red"], 0, 20),
-        "pressure_exponent": clamp_float(mp_pressure_exp, DEFAULT_MAX_PRESSURE_SIGNAL["pressure_exponent"], 0.0, 5.0),
-        "queue_exponent": clamp_float(mp_queue_exp, DEFAULT_MAX_PRESSURE_SIGNAL["queue_exponent"], 0.0, 5.0),
+        "pressure_exponent": clamp_float(
+            mp_pressure_exp, DEFAULT_MAX_PRESSURE_SIGNAL["pressure_exponent"], 0.0, 5.0
+        ),
+        "queue_exponent": clamp_float(
+            mp_queue_exp, DEFAULT_MAX_PRESSURE_SIGNAL["queue_exponent"], 0.0, 5.0
+        ),
     }
 
     mappo_hyperparams = {
-        "learning_rate_actor": clamp_float(mappo_lr_actor, DEFAULT_MAPPO["learning_rate_actor"], 1e-6, 1.0),
-        "learning_rate_critic": clamp_float(mappo_lr_critic, DEFAULT_MAPPO["learning_rate_critic"], 1e-6, 1.0),
+        "learning_rate_actor": clamp_float(
+            mappo_lr_actor, DEFAULT_MAPPO["learning_rate_actor"], 1e-6, 1.0
+        ),
+        "learning_rate_critic": clamp_float(
+            mappo_lr_critic, DEFAULT_MAPPO["learning_rate_critic"], 1e-6, 1.0
+        ),
         "gamma": clamp_float(mappo_gamma, DEFAULT_MAPPO["gamma"], 0.0, 1.0),
         "gae_lambda": clamp_float(mappo_gae_lambda, DEFAULT_MAPPO["gae_lambda"], 0.0, 1.0),
         "clip_ratio": clamp_float(mappo_clip_ratio, DEFAULT_MAPPO["clip_ratio"], 0.01, 1.0),
         "entropy_coef": clamp_float(mappo_entropy_coef, DEFAULT_MAPPO["entropy_coef"], 0.0, 1.0),
-        "value_loss_coef": clamp_float(mappo_value_coef, DEFAULT_MAPPO["value_loss_coef"], 0.0, 10.0),
-        "max_grad_norm": clamp_float(mappo_max_grad_norm, DEFAULT_MAPPO["max_grad_norm"], 0.0, 10.0),
-        "rollout_steps": clamp_int(mappo_rollout_steps, DEFAULT_MAPPO["rollout_steps"], 16, 1000000),
+        "value_loss_coef": clamp_float(
+            mappo_value_coef, DEFAULT_MAPPO["value_loss_coef"], 0.0, 10.0
+        ),
+        "max_grad_norm": clamp_float(
+            mappo_max_grad_norm, DEFAULT_MAPPO["max_grad_norm"], 0.0, 10.0
+        ),
+        "rollout_steps": clamp_int(
+            mappo_rollout_steps, DEFAULT_MAPPO["rollout_steps"], 16, 1000000
+        ),
         "ppo_epochs": clamp_int(mappo_ppo_epochs, DEFAULT_MAPPO["ppo_epochs"], 1, 500),
-        "minibatch_size": clamp_int(mappo_minibatch_size, DEFAULT_MAPPO["minibatch_size"], 1, 1000000),
+        "minibatch_size": clamp_int(
+            mappo_minibatch_size, DEFAULT_MAPPO["minibatch_size"], 1, 1000000
+        ),
         "num_envs": clamp_int(mappo_num_envs, DEFAULT_MAPPO["num_envs"], 1, 10000),
         "hidden_dim": clamp_int(mappo_hidden_dim, DEFAULT_MAPPO["hidden_dim"], 4, 4096),
         "hidden_layers": clamp_int(mappo_hidden_layers, DEFAULT_MAPPO["hidden_layers"], 1, 16),
         "target_kl": clamp_float(mappo_target_kl, DEFAULT_MAPPO["target_kl"], 0.0, 1.0),
         "seed": clamp_int(mappo_seed, DEFAULT_MAPPO["seed"], 0, 1000000),
         "shared_critic": bool(mappo_shared_critic and "enabled" in mappo_shared_critic),
-        "normalize_advantages": bool(mappo_normalize_advantages and "enabled" in mappo_normalize_advantages),
+        "normalize_advantages": bool(
+            mappo_normalize_advantages and "enabled" in mappo_normalize_advantages
+        ),
     }
 
     heading_ranges = {
-        "n": (clamp_float(heading_n_lo, APPROACH_HEADING_RANGES_DEFAULT["n"][0], 0.0, 360.0), clamp_float(heading_n_hi, APPROACH_HEADING_RANGES_DEFAULT["n"][1], 0.0, 360.0)),
-        "s": (clamp_float(heading_s_lo, APPROACH_HEADING_RANGES_DEFAULT["s"][0], 0.0, 360.0), clamp_float(heading_s_hi, APPROACH_HEADING_RANGES_DEFAULT["s"][1], 0.0, 360.0)),
-        "e": (clamp_float(heading_e_lo, APPROACH_HEADING_RANGES_DEFAULT["e"][0], 0.0, 360.0), clamp_float(heading_e_hi, APPROACH_HEADING_RANGES_DEFAULT["e"][1], 0.0, 360.0)),
-        "w": (clamp_float(heading_w_lo, APPROACH_HEADING_RANGES_DEFAULT["w"][0], 0.0, 360.0), clamp_float(heading_w_hi, APPROACH_HEADING_RANGES_DEFAULT["w"][1], 0.0, 360.0)),
+        "n": (
+            clamp_float(heading_n_lo, APPROACH_HEADING_RANGES_DEFAULT["n"][0], 0.0, 360.0),
+            clamp_float(heading_n_hi, APPROACH_HEADING_RANGES_DEFAULT["n"][1], 0.0, 360.0),
+        ),
+        "s": (
+            clamp_float(heading_s_lo, APPROACH_HEADING_RANGES_DEFAULT["s"][0], 0.0, 360.0),
+            clamp_float(heading_s_hi, APPROACH_HEADING_RANGES_DEFAULT["s"][1], 0.0, 360.0),
+        ),
+        "e": (
+            clamp_float(heading_e_lo, APPROACH_HEADING_RANGES_DEFAULT["e"][0], 0.0, 360.0),
+            clamp_float(heading_e_hi, APPROACH_HEADING_RANGES_DEFAULT["e"][1], 0.0, 360.0),
+        ),
+        "w": (
+            clamp_float(heading_w_lo, APPROACH_HEADING_RANGES_DEFAULT["w"][0], 0.0, 360.0),
+            clamp_float(heading_w_hi, APPROACH_HEADING_RANGES_DEFAULT["w"][1], 0.0, 360.0),
+        ),
     }
 
     vtype_settings = {
@@ -2900,8 +3568,12 @@ def generate_demand_callback(
             "accel": clamp_float(streetcar_accel, DEFAULT_VTYPE["streetcar"]["accel"], 0.1, 10.0),
             "decel": clamp_float(streetcar_decel, DEFAULT_VTYPE["streetcar"]["decel"], 0.1, 10.0),
             "sigma": clamp_float(streetcar_sigma, DEFAULT_VTYPE["streetcar"]["sigma"], 0.0, 1.0),
-            "length": clamp_float(streetcar_length, DEFAULT_VTYPE["streetcar"]["length"], 0.5, 100.0),
-            "maxSpeed": clamp_float(streetcar_maxspeed, DEFAULT_VTYPE["streetcar"]["maxSpeed"], 1.0, 60.0),
+            "length": clamp_float(
+                streetcar_length, DEFAULT_VTYPE["streetcar"]["length"], 0.5, 100.0
+            ),
+            "maxSpeed": clamp_float(
+                streetcar_maxspeed, DEFAULT_VTYPE["streetcar"]["maxSpeed"], 1.0, 60.0
+            ),
         },
     }
 
@@ -2924,7 +3596,9 @@ def generate_demand_callback(
         mode_scales=mode_scales,
         streetcar_share_from_bus=clamp_float(streetcar_share, 0.35, 0.0, 1.0),
         controller_mode=str(controller_mode or "mappo_custom"),
-        include_cluster_signals=bool(include_cluster_signals and "include" in include_cluster_signals),
+        include_cluster_signals=bool(
+            include_cluster_signals and "include" in include_cluster_signals
+        ),
         fixed_signal=fixed_signal,
         max_pressure_signal=max_pressure_signal,
         mappo_hyperparams=mappo_hyperparams,
