@@ -1,0 +1,4109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TANGO Presentation | ECE324</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Manrope:wght@500;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-0: #0b1118;
+      --bg-1: #121b26;
+      --bg-2: #1a2633;
+      --ink-high: #f9fbff;
+      --ink-mid: #d6dfea;
+      --ink-soft: #bcc8d6;
+      --line: rgba(230, 237, 248, 0.2);
+      --line-strong: rgba(230, 237, 248, 0.34);
+      --lane: #d9bb6d;
+      --lane-muted: rgba(217, 187, 109, 0.26);
+      --road-marking: rgba(255, 255, 255, 0.46);
+      --road-surface: rgba(8, 12, 18, 0.44);
+      --signal-red: #df7a72;
+      --signal-amber: #d8b36a;
+      --signal-green: #6eaf8b;
+      --accent-blue: #88a7c9;
+      --ease-slide: cubic-bezier(0.2, 0.78, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      color: var(--ink-high);
+      background: var(--bg-1);
+      letter-spacing: 0.003em;
+      text-rendering: optimizeLegibility;
+    }
+
+    .deck {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      isolation: isolate;
+    }
+
+    .ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.2;
+    }
+
+    .ambient::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(460px 460px at 50% 50%, rgba(244, 211, 111, 0.06), transparent 75%);
+      opacity: 0.34;
+    }
+
+    .road {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--road-surface);
+      backdrop-filter: blur(1px);
+    }
+
+    .road-h {
+      left: -8%;
+      right: -8%;
+      top: 50%;
+      height: min(21vw, 210px);
+      transform: translateY(-50%);
+    }
+
+    .road-v {
+      top: -14%;
+      bottom: -14%;
+      left: 50%;
+      width: min(23vw, 230px);
+      transform: translateX(-50%);
+    }
+
+    .flow {
+      position: absolute;
+      opacity: 0.44;
+    }
+
+    .flow::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+    }
+
+    .flow-h {
+      left: -8%;
+      right: -8%;
+      top: 50%;
+      height: 3px;
+      transform: translateY(-50%);
+    }
+
+    .flow-h::before {
+      background: repeating-linear-gradient(
+        90deg,
+        var(--road-marking) 0 20px,
+        transparent 20px 40px
+      );
+    }
+
+    .flow-v {
+      position: absolute;
+      top: -12%;
+      bottom: -12%;
+      left: 50%;
+      width: 3px;
+      transform: translateX(-50%);
+    }
+
+    .flow-v::before {
+      background: repeating-linear-gradient(
+        180deg,
+        var(--road-marking) 0 20px,
+        transparent 20px 40px
+      );
+    }
+
+    .intersection-core {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(23vw, 230px);
+      height: min(21vw, 210px);
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.14));
+      z-index: 1;
+    }
+
+    .traffic-layer {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .ambient-car {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 36px;
+      height: 17px;
+      border-radius: 7px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 22%, rgba(255, 255, 255, 0) 35%, rgba(0, 0, 0, 0.18) 100%),
+        linear-gradient(180deg, var(--car-body-top, #d0d9e4) 0%, var(--car-body, #9db3c8) 72%);
+      border: 1px solid rgba(6, 11, 17, 0.58);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.24),
+        0 4px 10px rgba(0, 0, 0, 0.24);
+      opacity: 0.78;
+      transform-origin: center;
+    }
+
+    .ambient-car::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      top: 2px;
+      height: 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(7, 13, 20, 0.56);
+      background:
+        linear-gradient(
+          90deg,
+          rgba(195, 218, 241, 0.9) 0 43%,
+          rgba(34, 52, 72, 0.92) 43% 57%,
+          rgba(195, 218, 241, 0.9) 57% 100%
+        ),
+        linear-gradient(180deg, rgba(151, 176, 203, 0.92), rgba(96, 121, 147, 0.86));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    .ambient-car::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 7px;
+      background:
+        radial-gradient(circle at 4px 4px, rgba(255, 86, 86, 0.82) 0 1.3px, transparent 1.4px),
+        radial-gradient(circle at 32px 4px, rgba(255, 245, 178, 0.92) 0 1.3px, transparent 1.4px),
+        radial-gradient(circle at 5px 13px, rgba(5, 9, 14, 0.95) 0 2.5px, transparent 2.6px),
+        radial-gradient(circle at 31px 13px, rgba(5, 9, 14, 0.95) 0 2.5px, transparent 2.6px);
+      pointer-events: none;
+    }
+
+    .ambient-signal {
+      position: absolute;
+      width: 20px;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(7, 12, 17, 0.86);
+      display: grid;
+      gap: 3px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 4;
+    }
+
+    .sig-west {
+      left: calc(50% - (min(23vw, 230px) / 2) - 28px);
+      top: calc(50% - 58px);
+    }
+
+    .sig-east {
+      left: calc(50% + (min(23vw, 230px) / 2) + 8px);
+      top: calc(50% + 18px);
+    }
+
+    .sig-north {
+      top: calc(50% - (min(21vw, 210px) / 2) - 28px);
+      left: calc(50% + 18px);
+    }
+
+    .sig-south {
+      top: calc(50% + (min(21vw, 210px) / 2) + 8px);
+      left: calc(50% - 58px);
+    }
+
+    .ambient-signal-light {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 999px;
+      background: rgba(214, 223, 235, 0.14);
+      transition: background 220ms ease, box-shadow 220ms ease;
+    }
+
+    .ambient-signal-light.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 10px rgba(255, 95, 83, 0.72);
+    }
+
+    .ambient-signal-light.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 10px rgba(255, 179, 71, 0.72);
+    }
+
+    .ambient-signal-light.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 10px rgba(49, 201, 138, 0.72);
+    }
+
+    .topbar {
+      position: absolute;
+      top: 14px;
+      left: 20px;
+      right: 20px;
+      z-index: 11;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand {
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .brand strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.18rem;
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: none;
+      color: var(--ink-high);
+    }
+
+    .status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: min(640px, 62vw);
+    }
+
+    .slide-title {
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: var(--ink-high);
+      min-width: 132px;
+      text-align: right;
+    }
+
+    .phase-pack {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .phase-head {
+      display: grid;
+      gap: 6px;
+      padding: 7px;
+      border: 1px solid var(--line);
+      background: rgba(6, 12, 17, 0.6);
+    }
+
+    .phase-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(215, 224, 236, 0.12);
+      transition: background 200ms ease, box-shadow 200ms ease;
+    }
+
+    .phase-light.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 12px rgba(255, 95, 83, 0.75);
+    }
+
+    .phase-light.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 12px rgba(255, 179, 71, 0.75);
+    }
+
+    .phase-light.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 12px rgba(49, 201, 138, 0.75);
+    }
+
+    .progress-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .progress-track span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--signal-red) 0%, var(--signal-amber) 45%, var(--signal-green) 100%);
+      transition: width 460ms var(--ease-slide);
+    }
+
+    .progress-label {
+      min-width: 74px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      color: var(--ink-high);
+      text-align: right;
+    }
+
+    .slides {
+      list-style: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 4;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: clamp(56px, 7vh, 80px) clamp(160px, 13vw, 200px) clamp(56px, 7vh, 80px) clamp(14px, 3vw, 40px);
+      display: grid;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate3d(8vw, 0, 0) scale(0.99);
+      filter: blur(3px);
+      transition:
+        transform 760ms var(--ease-slide),
+        opacity 460ms ease,
+        filter 760ms ease;
+    }
+
+    .slide.is-active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: none;
+    }
+
+    .slide.is-entering-forward {
+      transform: translate3d(10vw, 0, 0) scale(0.992);
+      opacity: 0.22;
+    }
+
+    .slide.is-entering-backward {
+      transform: translate3d(-10vw, 0, 0) scale(0.992);
+      opacity: 0.22;
+    }
+
+    .slide.is-leaving-forward {
+      transform: translate3d(-9vw, 0, 0) scale(0.977);
+      opacity: 0;
+    }
+
+    .slide.is-leaving-backward {
+      transform: translate3d(9vw, 0, 0) scale(0.977);
+      opacity: 0;
+    }
+
+    .frame {
+      width: min(1280px, 82vw);
+      max-height: calc(100vh - 120px);
+      overflow: hidden;
+      margin: 0 auto;
+      padding: clamp(12px, 1.5vw, 20px);
+      border: 1px solid rgba(230, 237, 248, 0.2);
+      background: linear-gradient(160deg, rgba(7, 11, 16, 0.7), rgba(12, 18, 26, 0.55));
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+      backdrop-filter: blur(2px);
+      display: grid;
+      align-content: center;
+      gap: 18px;
+    }
+
+    .frame.split {
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+    }
+
+    .frame.dual {
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .thankyou-frame {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      min-height: min(50vh, 500px);
+      place-items: center;
+      text-align: center;
+    }
+
+    .thankyou-frame h1 {
+      margin: 0;
+      font-size: clamp(3.4rem, 9vw, 7.2rem);
+    }
+
+    .thankyou-note {
+      margin-top: 10px;
+      color: var(--ink-high);
+      font-size: clamp(1rem, 1.9vw, 1.4rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-high);
+      margin-bottom: 12px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: 0.005em;
+      margin: 0;
+      color: var(--ink-high);
+      text-shadow: 0 3px 18px rgba(4, 8, 13, 0.32);
+    }
+
+    h1 {
+      font-size: clamp(2.6rem, 5.5vw, 4.8rem);
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: clamp(1.1rem, 1.8vw, 1.6rem);
+      margin-bottom: 8px;
+    }
+
+    p,
+    li {
+      color: var(--ink-mid);
+      line-height: 1.45;
+      font-size: clamp(0.88rem, 1.1vw, 1rem);
+    }
+
+    .lead {
+      max-width: 66ch;
+      font-size: clamp(1.18rem, 1.78vw, 1.52rem);
+      color: var(--ink-high);
+      line-height: 1.58;
+    }
+
+    .tag-row {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      color: var(--ink-high);
+      padding: 8px 12px;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      background: rgba(244, 211, 111, 0.08);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border: 1px solid rgba(59, 166, 109, 0.52);
+      background: rgba(39, 128, 84, 0.22);
+      color: var(--signal-green);
+      font-size: 0.62em;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .metric strong.has-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .note {
+      margin-top: 16px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      color: var(--ink-mid);
+      text-transform: uppercase;
+    }
+
+    .hero-frame {
+      gap: 10px;
+      padding-top: clamp(10px, 1.5vw, 18px);
+    }
+
+    .hero-head {
+      display: grid;
+      gap: 6px;
+    }
+
+    .hero-head h1 {
+      margin-bottom: 0;
+    }
+
+    .hero-sub {
+      margin-top: 4px;
+      font-size: clamp(1.08rem, 1.92vw, 1.44rem);
+      color: var(--lane);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .hero-meta {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-meta span {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.12);
+      color: var(--ink-high);
+      padding: 8px 11px;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+    }
+
+    .hero-canvas {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(162deg, rgba(8, 13, 19, 0.9), rgba(15, 23, 34, 0.72));
+      min-height: 0;
+      padding: clamp(8px, 1.2vw, 14px);
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .hero-corridor {
+      position: relative;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: linear-gradient(164deg, rgba(7, 12, 17, 0.96), rgba(15, 23, 34, 0.9));
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .hero-corridor::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(360px 220px at 18% 20%, rgba(125, 181, 244, 0.15), transparent 72%),
+        radial-gradient(320px 210px at 84% 88%, rgba(244, 211, 111, 0.11), transparent 74%);
+      pointer-events: none;
+    }
+
+    .hero-corridor-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      color: var(--ink-high);
+    }
+
+    .hero-map-stage {
+      position: relative;
+      min-height: 248px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(170deg, rgba(9, 15, 22, 0.95), rgba(14, 22, 31, 0.9));
+      overflow: hidden;
+    }
+
+    .hero-map-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.45;
+    }
+
+    .hero-map-stage::after {
+      content: "";
+      position: absolute;
+      left: 14%;
+      right: 12%;
+      top: 18%;
+      bottom: 16%;
+      border: 1px dashed rgba(125, 181, 244, 0.32);
+      border-radius: 0;
+      filter: blur(0.2px);
+      opacity: 0.58;
+    }
+
+    .hero-map-svg {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hero-route-base {
+      fill: none;
+      stroke: rgba(214, 223, 235, 0.28);
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+
+    .hero-route-glow {
+      fill: none;
+      stroke: rgba(125, 181, 244, 0.52);
+      stroke-width: 7;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 8px rgba(125, 181, 244, 0.32));
+    }
+
+    .hero-map-node .hero-node-halo {
+      fill: rgba(214, 223, 235, 0.06);
+      stroke: rgba(214, 223, 235, 0.24);
+      stroke-width: 1.2;
+    }
+
+    .hero-map-node .hero-node-shell {
+      fill: rgba(9, 15, 22, 0.92);
+      stroke: rgba(214, 223, 235, 0.52);
+      stroke-width: 1.8;
+    }
+
+    .hero-map-node .hero-node-core {
+      fill: rgba(244, 211, 111, 0.76);
+      stroke: rgba(6, 10, 15, 0.72);
+      stroke-width: 1;
+    }
+
+    .hero-map-node.is-terminal .hero-node-halo {
+      fill: rgba(125, 181, 244, 0.18);
+      stroke: rgba(125, 181, 244, 0.42);
+    }
+
+    .hero-map-node.is-terminal .hero-node-core {
+      fill: rgba(125, 181, 244, 0.9);
+    }
+
+    .hero-map-node text {
+      fill: var(--ink-high);
+      font-size: 10px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      letter-spacing: 0.06em;
+    }
+
+    .hero-map-node .hero-node-label {
+      font-family: "Manrope", "Sora", "Segoe UI", sans-serif;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      fill: rgba(249, 251, 255, 0.92);
+    }
+
+    .hero-map-strip {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-map-strip span {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.12);
+      color: var(--ink-high);
+      padding: 7px 10px;
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-flow {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(170deg, rgba(10, 16, 24, 0.95), rgba(16, 24, 35, 0.85));
+      padding: 10px;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .hero-node {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.1);
+      padding: 6px 8px;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      color: var(--ink-high);
+      line-height: 1.46;
+      text-align: center;
+    }
+
+    .hero-arrow {
+      position: relative;
+      height: 16px;
+      display: grid;
+      place-items: center;
+      opacity: 0.95;
+    }
+
+    .hero-arrow::before {
+      content: "";
+      width: 2px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(125, 181, 244, 0.12), rgba(125, 181, 244, 0.92));
+      box-shadow: 0 0 8px rgba(125, 181, 244, 0.35);
+    }
+
+    .hero-arrow::after {
+      content: "";
+      position: absolute;
+      bottom: 1px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--lane);
+      border-bottom: 2px solid var(--lane);
+      transform: rotate(45deg);
+    }
+
+    .title-plate,
+    .detail-panel {
+      border: 1px solid var(--line);
+      padding: clamp(12px, 1.6vw, 18px);
+      min-height: 0;
+      background: linear-gradient(165deg, rgba(10, 16, 22, 0.88), rgba(16, 24, 34, 0.78));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .title-plate::before,
+    .detail-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(244, 211, 111, 0.11), transparent 36%);
+      pointer-events: none;
+    }
+
+    .plate-city {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.86rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      margin-bottom: 10px;
+    }
+
+    .plate-title {
+      font-size: 1.16rem;
+      color: var(--ink-high);
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .plate-lines {
+      display: grid;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .plate-lines div {
+      display: grid;
+      gap: 4px;
+    }
+
+    .plate-lines span {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .plate-lines strong {
+      font-size: 0.96rem;
+      font-weight: 600;
+      color: var(--ink-high);
+    }
+
+    .metric-grid {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+    }
+
+    .metric small {
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.72rem;
+      color: var(--ink-high);
+      margin-bottom: 4px;
+    }
+
+    .metric strong {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      line-height: 1;
+      color: var(--ink-high);
+    }
+
+    .flow-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .flow-item {
+      padding: 8px 10px;
+      border-left: 2px solid var(--lane-muted);
+      background: linear-gradient(90deg, rgba(244, 211, 111, 0.11), transparent 76%);
+    }
+
+    .flow-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+    }
+
+    .process {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .process-step {
+      border-top: 1px solid var(--line-strong);
+      padding-top: 11px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .process-step b {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      color: var(--lane);
+      text-transform: uppercase;
+    }
+
+    .process-step h3 {
+      margin-bottom: 0;
+      font-size: 1.07rem;
+      line-height: 1.2;
+    }
+
+    .pipeline-frame {
+      gap: 10px;
+      padding-top: clamp(10px, 1.5vw, 16px);
+    }
+
+    .pipeline-head {
+      display: grid;
+      gap: 4px;
+      max-width: 78ch;
+    }
+
+    .pipeline-lead {
+      max-width: 74ch;
+      color: var(--ink-high);
+      font-size: clamp(1rem, 1.34vw, 1.12rem);
+      line-height: 1.46;
+      opacity: 0.92;
+    }
+
+    .pipeline-layout {
+      display: grid;
+      grid-template-columns: 0.86fr 1.14fr;
+      gap: 20px;
+      align-items: stretch;
+      min-height: min(38vh, 380px);
+    }
+
+    .pipeline-flow-panel,
+    .pipeline-interface-panel {
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.94), rgba(15, 23, 33, 0.9));
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.25);
+      padding: 14px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pipeline-interface-panel {
+      align-content: stretch;
+      padding: 10px;
+    }
+
+    .pipeline-flow-panel::before,
+    .pipeline-interface-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(320px 170px at 0% 0%, rgba(125, 181, 244, 0.12), transparent 72%),
+        radial-gradient(340px 160px at 100% 100%, rgba(244, 211, 111, 0.09), transparent 74%);
+      pointer-events: none;
+    }
+
+    .pipeline-label {
+      position: relative;
+      z-index: 1;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--ink-high);
+    }
+
+    .pipeline-track-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 2px;
+      height: 100%;
+    }
+
+    .pipeline-node-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      align-content: start;
+    }
+
+    .pipeline-node {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(165deg, rgba(12, 19, 28, 0.94), rgba(18, 28, 39, 0.86));
+      color: var(--ink-high);
+      min-height: 46px;
+      padding: 6px 10px;
+      display: grid;
+      gap: 5px;
+      justify-items: start;
+      align-content: center;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 220ms ease, background 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .pipeline-node small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.73rem;
+      color: var(--lane);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .pipeline-node strong {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .pipeline-node.is-active {
+      border-color: rgba(244, 211, 111, 0.78);
+      background: linear-gradient(165deg, rgba(244, 211, 111, 0.2), rgba(19, 28, 40, 0.9));
+      transform: translateY(-2px);
+      box-shadow: 0 10px 16px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(244, 211, 111, 0.25);
+    }
+
+    .pipeline-node:focus-visible {
+      outline: 2px solid rgba(244, 211, 111, 0.75);
+      outline-offset: 2px;
+    }
+
+    .pipeline-controller {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .pipeline-controller-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-high);
+    }
+
+    .pipeline-controller-top span:last-child {
+      color: var(--lane);
+      font-family: "JetBrains Mono", "Consolas", monospace;
+    }
+
+    .pipeline-caption {
+      border-left: 2px solid rgba(244, 211, 111, 0.8);
+      background: linear-gradient(90deg, rgba(244, 211, 111, 0.14), transparent 84%);
+      padding: 10px 12px;
+      min-height: 58px;
+      color: var(--ink-high);
+      font-size: 0.93rem;
+      line-height: 1.5;
+    }
+
+    .pipeline-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pipeline-tag {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.12);
+      color: var(--ink-high);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-size: 0.72rem;
+      padding: 6px 8px;
+    }
+
+    .pipeline-shot-wrap {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      min-height: min(42vh, 400px);
+      height: 100%;
+      background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
+      overflow: hidden;
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+      display: grid;
+    }
+
+    .pipeline-flowchart-wrap {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      min-height: min(42vh, 400px);
+      background: linear-gradient(165deg, rgba(11, 17, 26, 0.96), rgba(18, 28, 39, 0.92));
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .pipeline-flowchart-head {
+      display: grid;
+      gap: 6px;
+    }
+
+    .pipeline-flowchart-head small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.75rem;
+      color: var(--lane);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pipeline-flowchart-head strong {
+      font-size: 0.96rem;
+      letter-spacing: 0.03em;
+      color: var(--ink-high);
+      line-height: 1.35;
+    }
+
+    .pipeline-flow-rail {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      align-content: stretch;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .pipeline-flow-step {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: linear-gradient(165deg, rgba(10, 16, 24, 0.94), rgba(17, 25, 36, 0.9));
+      min-height: 0;
+      padding: 6px 10px;
+      display: grid;
+      align-content: start;
+      gap: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .pipeline-flow-step small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--lane);
+    }
+
+    .pipeline-flow-step p {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.38;
+      color: var(--ink-high);
+    }
+
+    .pipeline-flow-link {
+      width: 24px;
+      height: 24px;
+      justify-self: center;
+      align-self: center;
+      margin: 0;
+    }
+
+    .pipeline-flow-link::after {
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .pipeline-shot-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      background: rgba(8, 13, 19, 0.88);
+      display: block;
+      cursor: zoom-in;
+      transition: opacity 220ms ease, filter 220ms ease;
+    }
+
+    .pipeline-shot-wrap.is-missing img {
+      opacity: 0.1;
+      filter: grayscale(1);
+    }
+
+    .pipeline-image-missing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.84rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.5;
+      color: var(--ink-high);
+      background: rgba(8, 13, 19, 0.8);
+    }
+
+    .pipeline-shot-wrap.is-missing .pipeline-image-missing {
+      display: grid;
+    }
+
+    .pipeline-stage-visual[hidden] {
+      display: none;
+    }
+
+    body.is-stage6-gallery-open {
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .stage6-gallery-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2200;
+      background: rgba(4, 8, 13, 0.98);
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    .stage6-gallery-overlay[hidden] {
+      display: none;
+    }
+
+    .stage6-gallery-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .stage6-gallery-tile {
+      position: relative;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid rgba(230, 237, 248, 0.12);
+      background: #060c13;
+    }
+
+    .stage6-gallery-image {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      background: #060c13;
+    }
+
+    .stage6-gallery-label {
+      position: absolute;
+      left: 14px;
+      bottom: 12px;
+      z-index: 1;
+      padding: 4px 8px;
+      border: 1px solid rgba(230, 237, 248, 0.24);
+      background: rgba(6, 12, 19, 0.68);
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+    }
+
+    .stage6-gallery-missing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      background: rgba(5, 10, 16, 0.76);
+    }
+
+    .stage6-gallery-tile.is-missing .stage6-gallery-image {
+      opacity: 0.12;
+      filter: grayscale(1);
+    }
+
+    .stage6-gallery-tile.is-missing .stage6-gallery-missing {
+      display: grid;
+    }
+
+    .stage6-gallery-back {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 2210;
+      border: 1px solid var(--line-strong);
+      background: rgba(11, 17, 26, 0.9);
+      color: var(--ink-high);
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 13px;
+      cursor: pointer;
+    }
+
+    .stage6-gallery-back:focus-visible {
+      outline: 2px solid rgba(244, 211, 111, 0.82);
+      outline-offset: 2px;
+    }
+
+    .module-grid {
+      display: grid;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .module-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+      padding-top: 6px;
+    }
+
+    .module-row b {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--lane);
+      padding-top: 3px;
+    }
+
+    .result-bars {
+      margin-top: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .result-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    .result-row header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--ink-high);
+    }
+
+    .result-row strong {
+      color: var(--signal-green);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+    }
+
+    .result-track {
+      height: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .result-track span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--signal-red), var(--signal-amber) 42%, var(--signal-green));
+    }
+
+    .inline-list {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .inline-item {
+      padding: 7px 10px;
+      border-left: 2px solid rgba(125, 181, 244, 0.75);
+      background: linear-gradient(90deg, rgba(125, 181, 244, 0.11), transparent 78%);
+    }
+
+    .pira-layout {
+      width: min(1520px, 82vw);
+      min-height: 0;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .pira-text-panel,
+    .pira-media-panel {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+      padding: clamp(10px, 1.4vw, 16px);
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .pira-text-panel::before,
+    .pira-media-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(300px 180px at 0% 0%, rgba(125, 181, 244, 0.12), transparent 74%),
+        radial-gradient(360px 210px at 100% 100%, rgba(244, 211, 111, 0.1), transparent 76%);
+      pointer-events: none;
+    }
+
+    .pira-text-panel > *,
+    .pira-media-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .pira-text-panel h2 {
+      margin-bottom: 2px;
+      font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+    }
+
+    .pira-brief {
+      margin: 0;
+      color: var(--ink-high);
+      max-width: 56ch;
+      line-height: 1.5;
+      font-size: clamp(0.92rem, 1vw, 1rem);
+    }
+
+    .pira-quick-points {
+      margin: 0;
+      padding-left: 14px;
+      display: grid;
+      gap: 2px;
+      max-width: 58ch;
+    }
+
+    .pira-quick-points li {
+      color: var(--ink-high);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .pira-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .pira-pill {
+      border: 1px solid var(--line);
+      background: rgba(125, 181, 244, 0.13);
+      color: var(--ink-high);
+      padding: 5px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-size: 0.69rem;
+      line-height: 1;
+    }
+
+    .pira-arch {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pira-arch-node {
+      border: 1px solid var(--line);
+      background: linear-gradient(170deg, rgba(10, 16, 24, 0.95), rgba(16, 24, 35, 0.86));
+      min-height: 0;
+      padding: 6px 8px;
+      display: grid;
+      gap: 3px;
+      align-content: start;
+    }
+
+    .pira-arch-node small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--lane);
+      font-size: 0.7rem;
+      line-height: 1;
+    }
+
+    .pira-arch-node b {
+      display: block;
+      color: var(--ink-high);
+      font-size: 0.72rem;
+      line-height: 1.28;
+      letter-spacing: 0.01em;
+    }
+
+    .pira-arch-arrow {
+      width: 12px;
+      height: 12px;
+      border-top: 2px solid rgba(244, 211, 111, 0.82);
+      border-right: 2px solid rgba(244, 211, 111, 0.82);
+      transform: rotate(45deg);
+      opacity: 0.9;
+    }
+
+    .pira-fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .pira-fact {
+      border-left: 2px solid rgba(125, 181, 244, 0.84);
+      background: linear-gradient(90deg, rgba(125, 181, 244, 0.12), transparent 86%);
+      padding: 4px 6px;
+      display: grid;
+      gap: 2px;
+    }
+
+    .pira-fact small {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      color: var(--ink-high);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.62rem;
+      line-height: 1;
+    }
+
+    .pira-fact p {
+      margin: 0;
+      font-size: 0.72rem;
+      line-height: 1.3;
+      color: var(--ink-mid);
+    }
+
+    .pira-fact ul {
+      margin: 0;
+      padding-left: 12px;
+      display: grid;
+      gap: 1px;
+    }
+
+    .pira-fact li {
+      margin: 0;
+      font-size: 0.7rem;
+      line-height: 1.25;
+      color: var(--ink-mid);
+    }
+
+    .pira-media-panel {
+      align-content: stretch;
+      gap: 10px;
+      padding: clamp(10px, 1.6vw, 18px);
+    }
+
+    .pira-gif-shell {
+      position: relative;
+      margin: 0;
+      height: 100%;
+      min-height: 0;
+      cursor: zoom-in;
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(170deg, rgba(8, 13, 20, 0.98), rgba(16, 24, 35, 0.92));
+      display: grid;
+      grid-template-rows: 1fr auto;
+      overflow: hidden;
+    }
+
+    .pira-gif-shell img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      background: rgba(7, 12, 19, 0.92);
+      transition: opacity 220ms ease, filter 220ms ease;
+    }
+
+    .pira-gif-shell figcaption {
+      border-top: 1px solid var(--line);
+      padding: 8px 10px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      background: rgba(7, 12, 19, 0.9);
+    }
+
+    .pira-gif-missing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      background: rgba(7, 12, 19, 0.78);
+    }
+
+    .pira-gif-shell.is-missing img {
+      opacity: 0.1;
+      filter: grayscale(1);
+    }
+
+    .pira-gif-shell.is-missing .pira-gif-missing {
+      display: grid;
+    }
+
+    .pira-gif-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 2200;
+      background: rgba(4, 8, 13, 0.96);
+      display: none;
+      place-items: center;
+      cursor: zoom-out;
+    }
+
+    .pira-gif-fullscreen.is-open {
+      display: grid;
+    }
+
+    .pira-gif-fullscreen img {
+      max-width: 92vw;
+      max-height: 92vh;
+      object-fit: contain;
+    }
+
+    .demo-layout,
+    .corridor-layout {
+      display: grid;
+      grid-template-columns: 1.06fr 0.94fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .junction {
+      position: relative;
+      min-height: 336px;
+      border: 1px solid var(--line-strong);
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, transparent 0 49%, rgba(244, 211, 111, 0.28) 49% 51%, transparent 51% 100%),
+        linear-gradient(transparent 0 49%, rgba(244, 211, 111, 0.28) 49% 51%, transparent 51% 100%),
+        linear-gradient(180deg, rgba(7, 11, 16, 0.94), rgba(13, 20, 28, 0.9));
+    }
+
+    .junction::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 34px;
+      transform: translateY(-50%);
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.12) 0 10px,
+        transparent 10px 24px
+      );
+      opacity: 0.33;
+    }
+
+    .signal-head-demo {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      width: 58px;
+      border: 1px solid var(--line);
+      padding: 8px;
+      background: rgba(5, 10, 15, 0.8);
+      display: grid;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .signal-head-demo span {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(4, 8, 12, 0.6);
+    }
+
+    .signal-head-demo span.is-on.red {
+      background: var(--signal-red);
+      box-shadow: 0 0 14px rgba(255, 95, 83, 0.72);
+    }
+
+    .signal-head-demo span.is-on.amber {
+      background: var(--signal-amber);
+      box-shadow: 0 0 14px rgba(255, 179, 71, 0.72);
+    }
+
+    .signal-head-demo span.is-on.green {
+      background: var(--signal-green);
+      box-shadow: 0 0 14px rgba(49, 201, 138, 0.72);
+    }
+
+    .phase-readout {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: grid;
+      gap: 5px;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+      z-index: 2;
+    }
+
+    .phase-readout b {
+      color: var(--ink-high);
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+    }
+
+    .queue-board {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    .queue-line {
+      display: grid;
+      grid-template-columns: 132px 1fr 56px;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-high);
+    }
+
+    .queue-track {
+      height: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .queue-fill {
+      height: 100%;
+      width: 20%;
+      background: linear-gradient(90deg, var(--signal-green), var(--signal-amber) 55%, var(--signal-red));
+      transition: width 450ms ease;
+    }
+
+    .queue-value {
+      text-align: right;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      color: var(--ink-high);
+    }
+
+    .control-panel,
+    .detail-panel {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-high);
+    }
+
+    .field output {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.9rem;
+      color: var(--ink-high);
+      letter-spacing: 0.05em;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      background: transparent;
+      height: 24px;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border: 1px solid var(--line);
+      background: linear-gradient(
+        90deg,
+        rgba(255, 95, 83, 0.92) 0%,
+        rgba(255, 179, 71, 0.92) 48%,
+        rgba(49, 201, 138, 0.92) 100%
+      );
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      margin-top: -6px;
+      border-radius: 999px;
+      border: 1px solid rgba(5, 10, 16, 0.8);
+      background: #f9fbff;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 8px;
+      border: 1px solid var(--line);
+      background: linear-gradient(
+        90deg,
+        rgba(255, 95, 83, 0.92) 0%,
+        rgba(255, 179, 71, 0.92) 48%,
+        rgba(49, 201, 138, 0.92) 100%
+      );
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(5, 10, 16, 0.8);
+      background: #f9fbff;
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(246, 250, 255, 0.08);
+      color: var(--ink-high);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 200ms ease, border-color 200ms ease;
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      background: rgba(244, 211, 111, 0.2);
+      border-color: var(--line-strong);
+      outline: none;
+    }
+
+    .mini-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .mini {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .mini small {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--ink-high);
+    }
+
+    .mini strong {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 1.12rem;
+      color: var(--ink-high);
+    }
+
+    .corridor-stage {
+      border: 1px solid var(--line-strong);
+      padding: 16px;
+      background: linear-gradient(165deg, rgba(8, 13, 18, 0.8), rgba(16, 24, 34, 0.7));
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .corridor-map {
+      position: relative;
+      height: 94px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(7, 11, 16, 0.84), rgba(13, 20, 28, 0.86));
+    }
+
+    .corridor-map .lane {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 42px;
+      height: 10px;
+      background: repeating-linear-gradient(90deg, rgba(244, 211, 111, 0.65) 0 14px, transparent 14px 30px);
+      opacity: 0.45;
+    }
+
+    .corridor-map .wave {
+      position: absolute;
+      top: 46px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--signal-green);
+      box-shadow: 0 0 12px rgba(49, 201, 138, 0.7);
+      transform: translate(-50%, -50%);
+      left: 40%;
+      transition: left 380ms var(--ease-slide);
+    }
+
+    .corridor-map .pulse,
+    .corridor-map .pulse-alt {
+      position: absolute;
+      top: 47px;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--signal-amber);
+      transform: translate(-50%, -50%);
+      opacity: 0.18;
+      animation: pulseRun var(--pulse-speed, 4s) linear infinite;
+    }
+
+    .corridor-map .pulse-alt {
+      animation-delay: -2s;
+      opacity: 0.26;
+    }
+
+    .corridor-band {
+      position: absolute;
+      top: 30px;
+      left: 0;
+      width: 54%;
+      height: 34px;
+      border: 1px solid rgba(49, 201, 138, 0.55);
+      background: rgba(49, 201, 138, 0.16);
+      transition: width 380ms var(--ease-slide);
+    }
+
+    .corridor-tip {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--ink-high);
+    }
+
+    .jump-nav {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      display: grid;
+      gap: 8px;
+      max-height: 70vh;
+      overflow: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+    }
+
+    .jump-btn {
+      border: 1px solid var(--line);
+      background: rgba(6, 12, 18, 0.62);
+      color: var(--ink-high);
+      padding: 8px 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 190ms ease, color 190ms ease, border-color 190ms ease;
+    }
+
+    .jump-btn:hover,
+    .jump-btn:focus-visible {
+      background: rgba(244, 211, 111, 0.2);
+      color: var(--ink-high);
+      outline: none;
+    }
+
+    .jump-btn.is-current {
+      color: #1a2026;
+      border-color: rgba(255, 255, 255, 0.3);
+      background: linear-gradient(90deg, #f4d36f, #f8df8f);
+      font-weight: 700;
+    }
+
+    .controls {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 14px;
+      z-index: 11;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .controls .hint {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .nav-actions {
+      display: inline-flex;
+      gap: 9px;
+    }
+
+    .nav-btn {
+      min-width: 122px;
+      border: 1px solid var(--line-strong);
+      background: rgba(245, 249, 255, 0.08);
+      color: var(--ink-high);
+      padding: 11px 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 200ms ease, border-color 200ms ease;
+    }
+
+    .nav-btn:hover,
+    .nav-btn:focus-visible {
+      background: rgba(244, 211, 111, 0.22);
+      outline: none;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .transition-lane {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9;
+      overflow: hidden;
+    }
+
+    .transition-lane::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 38vw;
+      min-width: 340px;
+      max-width: 640px;
+      height: 10px;
+      transform: translateY(-50%);
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(244, 211, 111, 0.95) 0 12px,
+        rgba(244, 211, 111, 0.05) 12px 22px
+      );
+      opacity: 0;
+    }
+
+    .transition-lane.forward::before {
+      left: -42vw;
+      animation: laneSweepForward 620ms var(--ease-slide) forwards;
+    }
+
+    .transition-lane.backward::before {
+      right: -42vw;
+      animation: laneSweepBackward 620ms var(--ease-slide) forwards;
+    }
+
+    @keyframes laneSweepForward {
+      0% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0;
+      }
+      24% {
+        opacity: 0.84;
+      }
+      100% {
+        transform: translateY(-50%) translateX(160vw);
+        opacity: 0;
+      }
+    }
+
+    @keyframes laneSweepBackward {
+      0% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0;
+      }
+      24% {
+        opacity: 0.84;
+      }
+      100% {
+        transform: translateY(-50%) translateX(-160vw);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulseRun {
+      0% {
+        left: 0%;
+        opacity: 0.1;
+      }
+      12% {
+        opacity: 0.8;
+      }
+      100% {
+        left: 100%;
+        opacity: 0.08;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .frame.split,
+      .frame.dual,
+      .demo-layout,
+      .corridor-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-canvas {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-map-stage {
+        min-height: 220px;
+      }
+
+      .metric-grid,
+      .mini-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .process {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .pipeline-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .pira-layout {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+
+      .pira-arch {
+        grid-template-columns: 1fr;
+      }
+
+      .pira-arch-arrow {
+        justify-self: center;
+        transform: rotate(135deg);
+      }
+
+      .pira-gif-shell {
+        min-height: min(50vh, 460px);
+      }
+
+      .pipeline-node-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-flow-rail {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .pipeline-flow-step {
+        min-height: 0;
+      }
+
+      .jump-nav {
+        right: 12px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .topbar {
+        left: 12px;
+        right: 12px;
+        top: 10px;
+        flex-wrap: wrap;
+      }
+
+      .status {
+        min-width: 100%;
+      }
+
+      .slide-title {
+        min-width: 0;
+      }
+
+      .slide {
+        padding: 88px 10px 150px;
+      }
+
+      .jump-nav {
+        top: auto;
+        bottom: 72px;
+        left: 12px;
+        right: 12px;
+        transform: none;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: none;
+        padding: 0 0 2px;
+      }
+
+      .controls {
+        left: 12px;
+        right: 12px;
+        bottom: 10px;
+      }
+
+      .module-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .queue-line {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .queue-value {
+        text-align: left;
+      }
+
+      .pipeline-node-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stage6-gallery-back {
+        top: 10px;
+        right: 10px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .metric-grid,
+      .mini-metrics,
+      .process {
+        grid-template-columns: 1fr;
+      }
+
+      .pira-fact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-node-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .nav-actions {
+        width: 100%;
+      }
+
+      .nav-btn {
+        flex: 1;
+      }
+
+      .controls .hint {
+        text-align: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition-duration: 0ms !important;
+      }
+    }
+    /* ── ASCE slide additions ──────────────────────────────────────────── */
+
+    .arch-frame {
+      gap: 14px;
+      padding-top: clamp(14px, 2vw, 22px);
+    }
+
+    .arch-diagram-wrap {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.96), rgba(15, 23, 33, 0.92));
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      min-height: min(36vh, 360px);
+    }
+
+    .arch-diagram-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      padding: 10px;
+    }
+
+    .def-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .def-box {
+      border-top: 2px solid var(--lane);
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(217, 187, 109, 0.1), transparent 60%);
+    }
+
+    .def-box b {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--lane);
+      margin-bottom: 5px;
+    }
+
+    .def-box p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      color: var(--ink-high);
+    }
+
+    .def-box math {
+      font-size: 1rem;
+      color: var(--signal-green);
+    }
+
+    .results-frame {
+      gap: 14px;
+    }
+
+    .results-layout {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 16px;
+      align-items: stretch;
+      min-height: min(38vh, 380px);
+    }
+
+    .results-chart-wrap {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.96), rgba(15, 23, 33, 0.92));
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .results-chart-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      padding: 8px;
+    }
+
+    .results-table-panel {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
+      padding: clamp(12px, 1.6vw, 20px);
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .results-headline {
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--signal-green);
+      letter-spacing: -0.01em;
+    }
+
+    .results-sub {
+      font-size: 0.92rem;
+      color: var(--ink-mid);
+      line-height: 1.5;
+    }
+
+    .scenario-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .scenario-table th {
+      text-align: left;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .scenario-table td {
+      padding: 8px 8px;
+      font-size: 0.88rem;
+      color: var(--ink-high);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .scenario-table td:last-child {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-weight: 700;
+      color: var(--signal-green);
+      text-align: right;
+    }
+
+    .scenario-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .why-frame {
+      gap: 14px;
+    }
+
+    .why-layout {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 16px;
+      align-items: stretch;
+      min-height: min(38vh, 380px);
+    }
+
+    .why-decisions {
+      border: 1px solid var(--line-strong);
+      background: linear-gradient(165deg, rgba(9, 14, 21, 0.95), rgba(14, 22, 32, 0.9));
+      padding: clamp(14px, 1.8vw, 22px);
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .why-decision {
+      border-left: 3px solid var(--lane);
+      padding: 10px 14px;
+      background: linear-gradient(90deg, rgba(217, 187, 109, 0.08), transparent 70%);
+    }
+
+    .why-decision b {
+      display: block;
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      color: var(--ink-high);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .why-decision span {
+      font-size: 0.86rem;
+      color: var(--ink-mid);
+      line-height: 1.45;
+    }
+
+    .why-figures {
+      display: grid;
+      grid-template-rows: 1.2fr 0.8fr;
+      gap: 10px;
+    }
+
+    .why-fig-wrap {
+      border: 1px solid var(--line);
+      background: linear-gradient(165deg, rgba(8, 13, 19, 0.96), rgba(15, 23, 33, 0.92));
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .why-fig-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      padding: 4px;
+    }
+
+  </style>
+</head>
+<body>
+  <main class="deck" aria-label="TANGO project presentation">
+    <div class="ambient" aria-hidden="true">
+      <span class="road road-h"></span>
+      <span class="road road-v"></span>
+      <span class="flow flow-h"></span>
+      <span class="flow flow-v"></span>
+      <span class="intersection-core"></span>
+
+      <span class="ambient-signal sig-west" data-axis="ew">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-east" data-axis="ew">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-north" data-axis="ns">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+      <span class="ambient-signal sig-south" data-axis="ns">
+        <span class="ambient-signal-light red"></span>
+        <span class="ambient-signal-light amber"></span>
+        <span class="ambient-signal-light green"></span>
+      </span>
+
+      <div class="traffic-layer" id="ambientTraffic"></div>
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        ECE324
+        <strong>TANGO</strong>
+      </div>
+      <div class="status">
+        <div class="slide-title" id="slideTitle">Introduction</div>
+        <div class="phase-pack" aria-hidden="true">
+          <div class="phase-head">
+            <span class="phase-light red" id="phaseRed"></span>
+            <span class="phase-light amber" id="phaseAmber"></span>
+            <span class="phase-light green" id="phaseGreen"></span>
+          </div>
+        </div>
+        <div class="progress-wrap" aria-hidden="true">
+          <div class="progress-track">
+            <span id="progressFill"></span>
+          </div>
+          <div class="progress-label" id="progressLabel">1 / 9</div>
+        </div>
+      </div>
+    </header>
+
+    <ol class="slides" id="slides">
+      <li class="slide is-active" data-title="Introduction" data-phase="red">
+        <article class="frame split">
+          <section class="title-plate">
+            <div class="eyebrow">Scoping and Context</div>
+            <h2>Transit signal priority for Toronto's growing corridor</h2>
+            <div class="flow-list">
+              <article class="flow-item">
+                <strong>What We Are Solving</strong>
+                <p>Adaptive signal control that cuts transit delay and preserves corridor stability.</p>
+              </article>
+              <article class="flow-item">
+                <strong>ASCE and PIRA Roles</strong>
+                <p>ASCE controls signals in real time. PIRA handles rapid disruption and policy what-if analysis.</p>
+              </article>
+              <article class="flow-item">
+                <strong>Simulation Backbone</strong>
+                <p>SUMO replays Toronto demand in a city-scale testbed for safe pre-deployment testing.</p>
+              </article>
+            </div>
+            <div class="metric-grid">
+              <div class="metric">
+                <small>Main Control Metric</small>
+                <strong>Person-time-loss</strong>
+              </div>
+              <div class="metric">
+                <small>ASCE Target</small>
+                <strong>At most 0.90x vs MP</strong>
+              </div>
+              <div class="metric">
+                <small>PIRA Targets</small>
+                <strong>MAPE at most 10 percent, runtime at most 5 s</strong>
+              </div>
+            </div>
+          </section>
+          <section class="detail-panel">
+            <div class="eyebrow">Motivation</div>
+            <h3>Why now and why it matters</h3>
+            <div class="inline-list">
+              <div class="inline-item">Car dependence harms climate, health, and urban design.</div>
+              <div class="inline-item">Toronto is improving transit and we aligned from day one.</div>
+              <div class="inline-item">TTC Lines 5 and 6 opened pre-project, with TSP under discussion and hardware largely in place.</div>
+              <div class="inline-item">Proven feasibility shifts the bottleneck away from implementation uncertainty.</div>
+            </div>
+            <div class="flow-item">
+              <strong>Project Thesis</strong>
+              <p>Reproducible evidence pipeline to accelerate Toronto corridor-scale TSP decisions.</p>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Overview" data-phase="red">
+        <article class="frame hero-frame">
+          <section class="hero-head">
+            <div class="eyebrow">ECE324 Final Presentation</div>
+            <h1>TANGO</h1>
+            <p class="hero-sub">Traffic Adaptive Network Guidance &amp; Optimization</p>
+            <div class="hero-meta" aria-label="Project scope snapshot">
+              <span>Dundas Street West corridor</span>
+              <span>Current benchmark: 8 signalized intersections</span>
+            </div>
+          </section>
+          <section class="hero-canvas" aria-label="Introductory project visuals">
+            <article class="hero-corridor" style="grid-row:1/3;">
+              <div class="hero-corridor-head">
+                <span>Dundas Street West corridor</span>
+              </div>
+              <div class="hero-map-stage" aria-label="Stylized benchmark corridor map">
+                <svg class="hero-map-svg" viewBox="0 0 820 320" role="img" aria-label="Eight benchmark intersections on corridor">
+                  <path class="hero-route-base" d="M44 228 C130 206, 188 158, 262 172 C328 186, 374 246, 454 236 C520 228, 560 162, 630 150 C692 140, 736 178, 778 166" />
+                  <path class="hero-route-glow" d="M44 228 C130 206, 188 158, 262 172 C328 186, 374 246, 454 236 C520 228, 560 162, 630 150 C692 140, 736 178, 778 166" />
+
+                  <g class="hero-map-node is-terminal" transform="translate(70,220)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">01</text>
+                    <text class="hero-node-label" x="14" y="20">University Ave</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(165,190)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">02</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(250,174)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">03</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(342,198)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">04</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(442,236)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">05</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(542,205)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">06</text>
+                  </g>
+                  <g class="hero-map-node" transform="translate(640,154)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">07</text>
+                  </g>
+                  <g class="hero-map-node is-terminal" transform="translate(754,168)">
+                    <circle class="hero-node-halo" r="14"></circle>
+                    <circle class="hero-node-shell" r="8.7"></circle>
+                    <circle class="hero-node-core" r="4.4"></circle>
+                    <text x="14" y="-11">08</text>
+                    <text class="hero-node-label" x="-70" y="20">Bathurst St</text>
+                  </g>
+                </svg>
+              </div>
+              <div class="hero-map-strip">
+                <span>8 signalized benchmark nodes</span>
+                <span>TMC-linked SUMO junction mapping</span>
+                <span>Streetcar corridor ready for expansion</span>
+              </div>
+            </article>
+            <article class="hero-flow" aria-label="TANGO project flowchart">
+              <div class="hero-node">Toronto TMC counts</div>
+              <div class="hero-arrow" aria-hidden="true"></div>
+              <div class="hero-node">SUMO network build, TLS safety overrides, demand calibration</div>
+              <div class="hero-arrow" aria-hidden="true"></div>
+              <div class="hero-node">ASCE MAPPO control benchmark and rollout logs</div>
+              <div class="hero-arrow" aria-hidden="true"></div>
+              <div class="hero-node">PIRA scenario-planning module</div>
+            </article>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Data Pipeline" data-phase="amber">
+        <article class="frame pipeline-frame">
+          <section class="pipeline-head">
+            <div class="eyebrow">Data and Simulation Pipeline</div>
+            <h2>Visual flow from Toronto TMC records to controlled SUMO generation</h2>
+          </section>
+
+          <section class="pipeline-layout" aria-label="Interactive data pipeline walkthrough">
+            <article class="pipeline-flow-panel">
+              <div class="pipeline-track-wrap">
+                <div class="pipeline-node-grid" role="list" aria-label="Pipeline stages">
+                  <button class="pipeline-node is-active" type="button" data-pipeline-step="1">
+                    <small>Stage 1</small>
+                    <strong>Raw TMC CSV ingest</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="2">
+                    <small>Stage 2</small>
+                    <strong>Parse to tmc_parsed.csv</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="3">
+                    <small>Stage 3</small>
+                    <strong>Map to junction IDs</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="4">
+                    <small>Stage 4</small>
+                    <strong>Demand Studio control</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="5">
+                    <small>Stage 5</small>
+                    <strong>Generated SUMO files</strong>
+                  </button>
+                  <button class="pipeline-node" type="button" data-pipeline-step="6">
+                    <small>Stage 6</small>
+                    <strong>Demand Studio</strong>
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <article class="pipeline-interface-panel">
+              <section class="pipeline-flowchart-wrap pipeline-stage-visual" id="pipelineFlowchartWrap" aria-label="Stage flowchart display">
+                <header class="pipeline-flowchart-head">
+                  <small id="pipelineFlowchartStage">Stage 1 flowchart</small>
+                  <strong id="pipelineFlowchartTitle">Raw TMC CSV ingest to parsed corridor demand data</strong>
+                </header>
+                <div class="pipeline-flow-rail" id="pipelineFlowRail"></div>
+              </section>
+
+              <div class="pipeline-shot-wrap pipeline-stage-visual is-missing" id="pipelineShotWrap" hidden>
+                <img id="pipelineInterfaceImage" src="pictures/demand_studio.png" alt="Demand Studio interface screenshot">
+                <div class="pipeline-image-missing" id="pipelineImageMissing">
+                  Add Demand Studio screenshot into /pictures (for example demand_studio.png)
+                </div>
+              </div>
+            </article>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="ASCE Model" data-phase="green">
+        <article class="frame arch-frame">
+          <section>
+            <div class="eyebrow">ASCE &mdash; Adaptive Signal Control Engine</div>
+            <h2>Action-gate residual MAPPO with centralized training</h2>
+          </section>
+
+          <div class="arch-diagram-wrap">
+            <svg viewBox="0 0 960 390" xmlns="http://www.w3.org/2000/svg" role="img"
+                 aria-label="ASCE action-gate residual MAPPO architecture diagram"
+                 style="width:100%;height:100%;max-height:min(52vh,440px);padding:14px 18px;">
+              <defs>
+                <marker id="ah" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+                  <polygon points="0 0, 7 2.5, 0 5" fill="#bcc8d6"/>
+                </marker>
+                <marker id="ah-gold" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+                  <polygon points="0 0, 7 2.5, 0 5" fill="#d9bb6d"/>
+                </marker>
+              </defs>
+
+              <!-- ── DASHED SEPARATOR ── -->
+              <line x1="0" y1="262" x2="960" y2="262" stroke="#3a4555" stroke-width="1" stroke-dasharray="6 4"/>
+              <text x="480" y="276" text-anchor="middle" fill="#bcc8d6" font-size="10" font-family="JetBrains Mono, Consolas, monospace" letter-spacing="0.12em" text-transform="uppercase">CTDE: CENTRALIZED TRAINING, DECENTRALIZED EXECUTION</text>
+
+              <!-- ══════ ACTOR TRACK (top) ══════ -->
+
+              <!-- Input: Local Obs -->
+              <rect x="16" y="58" width="120" height="52" rx="0" fill="rgba(136,167,201,0.12)" stroke="#88a7c9" stroke-width="1.5"/>
+              <text x="76" y="78" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">Local Obs</text>
+              <text x="76" y="96" text-anchor="middle" fill="#88a7c9" font-size="9" font-family="JetBrains Mono, Consolas, monospace">queue, speed, phase</text>
+
+              <!-- Input: MP Action -->
+              <rect x="16" y="128" width="120" height="44" rx="0" fill="rgba(188,200,214,0.08)" stroke="#bcc8d6" stroke-width="1.2"/>
+              <text x="76" y="148" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">MP Action</text>
+              <text x="76" y="162" text-anchor="middle" fill="#bcc8d6" font-size="9" font-family="JetBrains Mono, Consolas, monospace">one-hot | 6 dims</text>
+
+              <!-- Arrows from inputs to Concat -->
+              <line x1="136" y1="84" x2="172" y2="100" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+              <line x1="136" y1="150" x2="172" y2="115" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Concat node -->
+              <rect x="178" y="90" width="62" height="32" rx="0" fill="rgba(58,69,85,0.5)" stroke="#3a4555" stroke-width="1"/>
+              <text x="209" y="111" text-anchor="middle" fill="#d6dfea" font-size="10.5" font-weight="600" font-family="Manrope, sans-serif">Concat</text>
+
+              <!-- Arrow to Welford -->
+              <line x1="240" y1="106" x2="270" y2="106" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Welford Norm -->
+              <rect x="276" y="86" width="90" height="40" rx="0" fill="rgba(58,69,85,0.35)" stroke="#3a4555" stroke-width="1"/>
+              <text x="321" y="103" text-anchor="middle" fill="#d6dfea" font-size="10.5" font-weight="600" font-family="Manrope, sans-serif">Welford</text>
+              <text x="321" y="118" text-anchor="middle" fill="#bcc8d6" font-size="8.5" font-family="JetBrains Mono, Consolas, monospace">per-feature &#x3BC;/&#x3C3;</text>
+
+              <!-- Arrow to Shared MLP -->
+              <line x1="366" y1="106" x2="400" y2="106" stroke="#bcc8d6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Shared MLP (large, gold border) -->
+              <rect x="406" y="62" width="160" height="88" rx="0" fill="rgba(26,38,51,0.9)" stroke="#d9bb6d" stroke-width="2"/>
+              <text x="486" y="88" text-anchor="middle" fill="#f9fbff" font-size="13" font-weight="800" font-family="Manrope, sans-serif">Shared MLP</text>
+              <text x="486" y="108" text-anchor="middle" fill="#d9bb6d" font-size="10" font-family="JetBrains Mono, Consolas, monospace">128 &#x2192; ReLU &#x2192; 128 &#x2192; ReLU</text>
+              <text x="486" y="126" text-anchor="middle" fill="#bcc8d6" font-size="9" font-family="JetBrains Mono, Consolas, monospace">shared across 12 agents</text>
+
+              <!-- Split arrows from MLP to heads -->
+              <line x1="566" y1="90" x2="618" y2="55" stroke="#d9bb6d" stroke-width="1.5" marker-end="url(#ah-gold)"/>
+              <line x1="566" y1="122" x2="618" y2="150" stroke="#6eaf8b" stroke-width="1.5" marker-end="url(#ah)"/>
+
+              <!-- Gate Head -->
+              <rect x="620" y="24" width="140" height="62" rx="0" fill="rgba(217,187,109,0.15)" stroke="#d9bb6d" stroke-width="2"/>
+              <text x="690" y="48" text-anchor="middle" fill="#f9fbff" font-size="12" font-weight="700" font-family="Manrope, sans-serif">Gate Head</text>
+              <text x="690" y="63" text-anchor="middle" fill="#d9bb6d" font-size="9.5" font-family="JetBrains Mono, Consolas, monospace">2 out: follow / override</text>
+              <text x="690" y="78" text-anchor="middle" fill="#bcc8d6" font-size="8.5" font-family="JetBrains Mono, Consolas, monospace">init bias: 88% follow MP</text>
+
+              <!-- Phase Head -->
+              <rect x="614" y="134" width="156" height="48" rx="0" fill="rgba(110,175,139,0.15)" stroke="#6eaf8b" stroke-width="1.8"/>
+              <text x="692" y="155" text-anchor="middle" fill="#f9fbff" font-size="12" font-weight="700" font-family="Manrope, sans-serif">Phase Head</text>
+              <text x="692" y="172" text-anchor="middle" fill="#6eaf8b" font-size="9.5" font-family="JetBrains Mono, Consolas, monospace">6 out: next signal phase</text>
+
+              <!-- Arrows from heads to Decision -->
+              <line x1="760" y1="55" x2="796" y2="94" stroke="#d9bb6d" stroke-width="1.5" marker-end="url(#ah-gold)"/>
+              <line x1="770" y1="158" x2="796" y2="120" stroke="#6eaf8b" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Decision box -->
+              <rect x="796" y="78" width="140" height="58" rx="0" fill="rgba(18,27,38,0.95)" stroke="#d9bb6d" stroke-width="1.8"/>
+              <text x="866" y="98" text-anchor="middle" fill="#f9fbff" font-size="11" font-weight="700" font-family="Manrope, sans-serif">Decision Dispatch</text>
+              <text x="866" y="114" text-anchor="middle" fill="#df7a72" font-size="9" font-family="JetBrains Mono, Consolas, monospace">gate=0 &#x2192; MP action</text>
+              <text x="866" y="128" text-anchor="middle" fill="#6eaf8b" font-size="9" font-family="JetBrains Mono, Consolas, monospace">gate=1 &#x2192; phase action</text>
+
+              <!-- Traffic signal icon -->
+              <rect x="890" y="148" width="18" height="42" rx="3" fill="rgba(7,12,17,0.9)" stroke="#bcc8d6" stroke-width="1"/>
+              <circle cx="899" cy="158" r="4.5" fill="#df7a72"/>
+              <circle cx="899" cy="170" r="4.5" fill="#d8b36a"/>
+              <circle cx="899" cy="182" r="4.5" fill="#6eaf8b"/>
+              <line x1="866" y1="136" x2="899" y2="148" stroke="#bcc8d6" stroke-width="1" marker-end="url(#ah)"/>
+
+              <!-- ══════ CRITIC TRACK (bottom) ══════ -->
+
+              <!-- Track labels -->
+              <text x="10" y="30" fill="#d9bb6d" font-size="10" font-weight="700" font-family="JetBrains Mono, Consolas, monospace" letter-spacing="0.1em">ACTOR (PER-AGENT, DECENTRALIZED)</text>
+              <text x="10" y="300" fill="#88a7c9" font-size="10" font-weight="700" font-family="JetBrains Mono, Consolas, monospace" letter-spacing="0.1em">CRITIC (CENTRALIZED, TRAINING ONLY)</text>
+
+              <!-- Global Obs -->
+              <rect x="16" y="314" width="160" height="48" rx="0" fill="rgba(136,167,201,0.12)" stroke="#88a7c9" stroke-width="1.5"/>
+              <text x="96" y="334" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">Global Obs</text>
+              <text x="96" y="350" text-anchor="middle" fill="#88a7c9" font-size="9" font-family="JetBrains Mono, Consolas, monospace">all agents concat | ~460d</text>
+
+              <!-- Arrow to Critic -->
+              <line x1="176" y1="338" x2="276" y2="338" stroke="#88a7c9" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Critic MLP -->
+              <rect x="282" y="314" width="220" height="48" rx="0" fill="rgba(26,38,51,0.9)" stroke="#88a7c9" stroke-width="1.8"/>
+              <text x="392" y="334" text-anchor="middle" fill="#f9fbff" font-size="13" font-weight="800" font-family="Manrope, sans-serif">Centralized Critic</text>
+              <text x="392" y="350" text-anchor="middle" fill="#88a7c9" font-size="10" font-family="JetBrains Mono, Consolas, monospace">128 &#x2192; ReLU &#x2192; 128 &#x2192; ReLU &#x2192; 1</text>
+
+              <!-- Arrow to Value -->
+              <line x1="502" y1="338" x2="550" y2="338" stroke="#88a7c9" stroke-width="1.2" marker-end="url(#ah)"/>
+
+              <!-- Value output -->
+              <rect x="556" y="318" width="90" height="40" rx="0" fill="rgba(136,167,201,0.08)" stroke="#88a7c9" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="601" y="336" text-anchor="middle" fill="#f9fbff" font-size="11.5" font-weight="700" font-family="Manrope, sans-serif">V(s)</text>
+              <text x="601" y="352" text-anchor="middle" fill="#88a7c9" font-size="8.5" font-family="JetBrains Mono, Consolas, monospace">training only</text>
+            </svg>
+          </div>
+
+          <div class="def-row">
+            <div class="def-box">
+              <b>Person-Time-Loss (KPI)</b>
+              <p><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>&Sigma;</mo><msub><mi>delay</mi><mi>i</mi></msub><mo>&times;</mo><msub><mi>occ</mi><mi>i</mi></msub></math> &mdash; bus&thinsp;=&thinsp;30, car&thinsp;=&thinsp;1.3 persons</p>
+            </div>
+            <div class="def-box">
+              <b>Reward (person_objective)</b>
+              <p><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>-</mo><mi>log</mi><mo>(</mo><mn>1</mn><mo>+</mo><mfrac><mrow><mo>&Sigma;</mo><msub><mi>wt</mi><mi>i</mi></msub><mo>&middot;</mo><msub><mi>occ</mi><mi>i</mi></msub></mrow><mrow><mo>&Sigma;</mo><msub><mi>occ</mi><mi>i</mi></msub></mrow></mfrac><mo>)</mo><mo>+</mo><mn>0.25</mn><mo>&middot;</mo><msub><mi>J</mi><mtext>ns,ew</mtext></msub></math></p>
+            </div>
+            <div class="def-box">
+              <b>Fairness</b>
+              <p><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mi>J</mi><mtext>ns,ew</mtext></msub></math> = Jain index over N/S vs E/W person-delay. Balances approach equity.</p>
+            </div>
+          </div>
+        </article>
+      </li>
+
+      <li class="slide" data-title="ASCE Results" data-phase="green">
+        <article class="frame results-frame">
+          <section>
+            <div class="eyebrow">Curriculum Evaluation &mdash; Best Checkpoint (ep 632 / 800)</div>
+            <h2>MAPPO beats Max-Pressure on all four scenarios</h2>
+          </section>
+
+          <section class="results-layout">
+            <div class="results-chart-wrap">
+              <img src="pictures/asce_bar_chart.png"
+                   alt="Grouped bar chart showing MAPPO person-time-loss is 10-14% lower than Max-Pressure across AM peak, PM peak, demand surge, and midday multimodal scenarios.">
+            </div>
+
+            <div class="results-table-panel">
+              <div class="results-headline">10.9&ndash;14.2%<br>less person-time-loss</div>
+              <p class="results-sub">200-ep AM warm-start + 600-ep 4-scenario curriculum, 8 parallel SUMO workers</p>
+
+              <table class="scenario-table">
+                <thead>
+                  <tr><th>Scenario</th><th style="text-align:right">MAPPO / MP</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--signal-green)"></span>AM Peak</td>
+                    <td>0.891</td>
+                  </tr>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--signal-red)"></span>PM Peak</td>
+                    <td>0.875</td>
+                  </tr>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--signal-amber)"></span>Demand Surge</td>
+                    <td>0.870</td>
+                  </tr>
+                  <tr>
+                    <td><span class="scenario-dot" style="background:var(--accent-blue)"></span>Midday Multimodal</td>
+                    <td>0.858</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Why MAPPO Wins" data-phase="green">
+        <article class="frame why-frame" style="gap:10px;">
+          <section class="why-layout" style="grid-template-columns:0.8fr 1.2fr;grid-template-rows:auto 1fr;min-height:min(42vh,420px);">
+            <div class="why-decisions" style="grid-row:1/3;">
+              <div class="eyebrow">Key Technical Decisions</div>
+              <h2 style="font-size:clamp(1.3rem,2.4vw,1.9rem);">Three decisions that closed the gap</h2>
+              <div class="why-decision">
+                <b>Action-Gate Residual</b>
+                <span>Warm-start from MP, learn when to deviate. Gate: 2% &rarr; 30%.</span>
+              </div>
+              <div class="why-decision">
+                <b>Person-Weighted Reward</b>
+                <span>Per-person delay norm. Removed throughput term that dominated gradients.</span>
+              </div>
+              <div class="why-decision">
+                <b>4-Scenario Curriculum</b>
+                <span>Round-robin AM/PM/surge/midday. 8 workers, LR &times; 1/&radic;8.</span>
+              </div>
+            </div>
+
+            <div class="why-fig-wrap" style="grid-column:2;grid-row:1;">
+              <img src="pictures/asce_training_curve.png"
+                   alt="Training curve showing mean reward per episode across 4 scenarios, with best checkpoint at episode 432.">
+            </div>
+            <div class="why-fig-wrap" style="grid-column:2;grid-row:2;">
+              <img src="pictures/asce_gate_fraction.png"
+                   alt="Gate override fraction rising from 12% at initialization to 30% during training, showing learned selective override.">
+            </div>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="PIRA Model" data-phase="green">
+        <article class="frame pira-layout">
+          <section class="pira-text-panel">
+            <div class="eyebrow">Reference Design (Not in Final Control Loop)</div>
+            <h2>PIRA surrogate for fast corridor what-if planning</h2>
+            <ul class="pira-quick-points">
+              <li>Fast disruption what-if layer without full SUMO reruns.</li>
+              <li>Input is scenario context and per-intersection traffic state.</li>
+              <li>Output is corridor impact estimate and signal timing recommendations.</li>
+            </ul>
+            <div class="pira-pill-row" aria-label="Supported disruption types">
+              <span class="pira-pill">none</span>
+              <span class="pira-pill">construction</span>
+              <span class="pira-pill">lane_closure</span>
+              <span class="pira-pill">transit_line</span>
+              <span class="pira-pill">major_event</span>
+            </div>
+            <div class="pira-arch" aria-label="PIRA architecture overview">
+              <article class="pira-arch-node">
+                <small>Graph Input</small>
+                <b>(scenario, time_step) graph snapshots with intersections as nodes</b>
+              </article>
+              <span class="pira-arch-arrow" aria-hidden="true"></span>
+              <article class="pira-arch-node">
+                <small>Backbone</small>
+                <b>Node MLP (128), 3 GATConv layers with 4 heads, residual LayerNorm</b>
+              </article>
+              <span class="pira-arch-arrow" aria-hidden="true"></span>
+              <article class="pira-arch-node">
+                <small>Dual Heads</small>
+                <b>Impact head for delay, throughput, queue_total. Timing head for green_ns_s and green_ew_s.</b>
+              </article>
+            </div>
+            <div class="pira-fact-grid">
+              <article class="pira-fact">
+                <small>Required Inputs</small>
+                <ul>
+                  <li>Requires osm.net.xml, dataset.parquet, and a trained checkpoint.</li>
+                  <li>intersection_map.csv is optional.</li>
+                </ul>
+              </article>
+              <article class="pira-fact">
+                <small>Features and Topology</small>
+                <ul>
+                  <li>17 node features: 10 traffic, 7 scenario.</li>
+                  <li>Capacity set to 0 removes affected edges.</li>
+                </ul>
+              </article>
+              <article class="pira-fact">
+                <small>Training Protocol</small>
+                <ul>
+                  <li>MSE with Adam (1e-3), gradient clip 1.0.</li>
+                  <li>Default curriculum, early stop patience 15, split by scenario_id.</li>
+                </ul>
+              </article>
+              <article class="pira-fact">
+                <small>Proposal Targets</small>
+                <ul>
+                  <li>MAPE at most 10 percent and R^2 at least 0.85.</li>
+                  <li>Inference under 5 s per scenario.</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+          <section class="pira-media-panel">
+            <figure class="pira-gif-shell is-missing" id="piraGifWrap">
+              <img id="piraGifImage" alt="Looping PIRA what-if scenario animation">
+              <div class="pira-gif-missing">Expected names: pira.gif, pira_loop.gif, pira_demo.gif</div>
+            </figure>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="PIRA Evaluation" data-phase="green">
+        <article class="frame thankyou-frame">
+          <section>
+            <div class="eyebrow">PIRA Evaluation</div>
+            <h2>This page has been unintentionally left blank</h2>
+          </section>
+        </article>
+      </li>
+
+      <li class="slide" data-title="Thank You" data-phase="green">
+        <article class="frame thankyou-frame">
+          <section>
+            <div class="eyebrow">Get Set tanGO</div>
+            <h1>Thank You</h1>
+            <p class="thankyou-note">Questions?</p>
+          </section>
+        </article>
+      </li>
+    </ol>
+
+    <nav class="jump-nav" id="jumpRail" aria-label="Jump to slide"></nav>
+
+    <footer class="controls" aria-label="Slide navigation controls">
+      <div class="nav-actions">
+        <button id="prevBtn" class="nav-btn" type="button" aria-label="Previous slide">Previous</button>
+        <button id="nextBtn" class="nav-btn" type="button" aria-label="Next slide">Next</button>
+      </div>
+    </footer>
+
+    <div class="transition-lane" id="transitionLane" aria-hidden="true"></div>
+  </main>
+
+  <div class="stage6-gallery-overlay" id="stage6GalleryOverlay" hidden aria-hidden="true">
+    <button class="stage6-gallery-back" id="stage6GalleryBack" type="button" aria-label="Back to presentation">
+      Back to presentation
+    </button>
+    <div class="stage6-gallery-grid" role="dialog" aria-modal="true" aria-label="Demand Studio detailed screenshots">
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="1">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 1">
+        <figcaption class="stage6-gallery-label">Demand Studio 1</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_1.png</div>
+      </figure>
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="2">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 2">
+        <figcaption class="stage6-gallery-label">Demand Studio 2</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_2.png</div>
+      </figure>
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="3">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 3">
+        <figcaption class="stage6-gallery-label">Demand Studio 3</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_3.png</div>
+      </figure>
+      <figure class="stage6-gallery-tile is-missing" data-stage6-tile="4">
+        <img class="stage6-gallery-image" alt="Demand Studio detailed view 4">
+        <figcaption class="stage6-gallery-label">Demand Studio 4</figcaption>
+        <div class="stage6-gallery-missing">Add pictures/demand_studio_4.png</div>
+      </figure>
+    </div>
+  </div>
+
+  <div class="pira-gif-fullscreen" id="piraGifFullscreen">
+    <img id="piraGifFullscreenImg" alt="PIRA demo animation (fullscreen)">
+  </div>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const jumpRail = document.getElementById("jumpRail");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const progressFill = document.getElementById("progressFill");
+      const progressLabel = document.getElementById("progressLabel");
+      const slideTitle = document.getElementById("slideTitle");
+      const phaseRed = document.getElementById("phaseRed");
+      const phaseAmber = document.getElementById("phaseAmber");
+      const phaseGreen = document.getElementById("phaseGreen");
+      const transitionLane = document.getElementById("transitionLane");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      let current = 0;
+      const total = slides.length;
+      const jumpButtons = [];
+
+      function setStage6GalleryState(isOpen) {
+        const stage6GalleryOverlay = document.getElementById("stage6GalleryOverlay");
+        if (!stage6GalleryOverlay) {
+          return;
+        }
+
+        stage6GalleryOverlay.hidden = !isOpen;
+        stage6GalleryOverlay.setAttribute("aria-hidden", isOpen ? "false" : "true");
+        document.body.classList.toggle("is-stage6-gallery-open", isOpen);
+      }
+
+      function closeStage6Gallery() {
+        setStage6GalleryState(false);
+      }
+
+      function cleanupSlideClasses(slide) {
+        slide.classList.remove(
+          "is-active",
+          "is-entering-forward",
+          "is-entering-backward",
+          "is-leaving-forward",
+          "is-leaving-backward"
+        );
+      }
+
+      function setPhaseLights(phase) {
+        phaseRed.classList.toggle("is-on", phase === "red");
+        phaseAmber.classList.toggle("is-on", phase === "amber");
+        phaseGreen.classList.toggle("is-on", phase === "green");
+      }
+
+      function updateDeckUI() {
+        const ratio = ((current + 1) / total) * 100;
+        progressFill.style.width = ratio + "%";
+        progressLabel.textContent = (current + 1) + " / " + total;
+
+        const active = slides[current];
+        slideTitle.textContent = active.dataset.title || "Slide";
+        setPhaseLights(active.dataset.phase || "red");
+
+        jumpButtons.forEach((btn, index) => {
+          const selected = index === current;
+          btn.classList.toggle("is-current", selected);
+          btn.setAttribute("aria-current", selected ? "true" : "false");
+        });
+
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === total - 1;
+      }
+
+      function runLaneTransition(direction) {
+        transitionLane.classList.remove("forward", "backward");
+        if (reduceMotion) {
+          return;
+        }
+        void transitionLane.offsetWidth;
+        transitionLane.classList.add(direction === "forward" ? "forward" : "backward");
+      }
+
+      function showSlide(target) {
+        if (target < 0 || target >= total || target === current) {
+          return;
+        }
+
+        const direction = target > current ? "forward" : "backward";
+        const from = slides[current];
+        const to = slides[target];
+
+        cleanupSlideClasses(from);
+        cleanupSlideClasses(to);
+
+        to.classList.add(direction === "forward" ? "is-entering-forward" : "is-entering-backward");
+        from.classList.add(direction === "forward" ? "is-leaving-forward" : "is-leaving-backward");
+
+        runLaneTransition(direction);
+
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            to.classList.add("is-active");
+            to.classList.remove("is-entering-forward", "is-entering-backward");
+          });
+        });
+
+        window.setTimeout(function () {
+          from.classList.remove("is-active", "is-leaving-forward", "is-leaving-backward");
+          /* Safety: ensure current slide always has is-active */
+          slides.forEach(function (s, i) {
+            if (i === current && !s.classList.contains("is-active")) {
+              s.classList.add("is-active");
+            }
+          });
+        }, reduceMotion ? 0 : 780);
+
+        current = target;
+        updateDeckUI();
+      }
+
+      slides.forEach((slide, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "jump-btn";
+        button.textContent = (index + 1) + ". " + (slide.dataset.title || "Slide");
+        button.addEventListener("click", function () {
+          showSlide(index);
+        });
+        jumpRail.appendChild(button);
+        jumpButtons.push(button);
+      });
+
+      prevBtn.addEventListener("click", function () {
+        showSlide(current - 1);
+      });
+
+      nextBtn.addEventListener("click", function () {
+        showSlide(current + 1);
+      });
+
+      document.addEventListener("keydown", function (event) {
+        const stage6GalleryOpen = document.body.classList.contains("is-stage6-gallery-open");
+        if (stage6GalleryOpen && event.key === "Escape") {
+          event.preventDefault();
+          closeStage6Gallery();
+          return;
+        }
+
+        if (stage6GalleryOpen) {
+          if (
+            event.key === "ArrowRight" ||
+            event.key === "PageDown" ||
+            event.key === "ArrowLeft" ||
+            event.key === "PageUp" ||
+            event.key === "Home" ||
+            event.key === "End"
+          ) {
+            event.preventDefault();
+          }
+          return;
+        }
+
+        const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+        if (tag === "input" || tag === "select" || tag === "textarea") {
+          return;
+        }
+
+        if (event.key === "ArrowRight" || event.key === "PageDown") {
+          event.preventDefault();
+          showSlide(current + 1);
+        }
+
+        if (event.key === "ArrowLeft" || event.key === "PageUp") {
+          event.preventDefault();
+          showSlide(current - 1);
+        }
+
+        if (event.key === "Home") {
+          event.preventDefault();
+          showSlide(0);
+        }
+
+        if (event.key === "End") {
+          event.preventDefault();
+          showSlide(total - 1);
+        }
+      });
+
+      let touchStartX = null;
+
+      document.addEventListener(
+        "touchstart",
+        function (event) {
+          if (document.body.classList.contains("is-stage6-gallery-open")) {
+            return;
+          }
+
+          if (event.changedTouches.length > 0) {
+            touchStartX = event.changedTouches[0].clientX;
+          }
+        },
+        { passive: true }
+      );
+
+      document.addEventListener(
+        "touchend",
+        function (event) {
+          if (document.body.classList.contains("is-stage6-gallery-open")) {
+            return;
+          }
+
+          if (touchStartX === null || event.changedTouches.length === 0) {
+            return;
+          }
+
+          const delta = event.changedTouches[0].clientX - touchStartX;
+          if (Math.abs(delta) > 42) {
+            showSlide(current + (delta < 0 ? 1 : -1));
+          }
+          touchStartX = null;
+        },
+        { passive: true }
+      );
+
+      updateDeckUI();
+
+      const pipelineNodes = Array.from(document.querySelectorAll(".pipeline-node"));
+      const pipelineCaption = document.getElementById("pipelineCaption");
+      const pipelineStepLabel = document.getElementById("pipelineStepLabel");
+      const pipelineShotWrap = document.getElementById("pipelineShotWrap");
+      const pipelineImage = document.getElementById("pipelineInterfaceImage");
+      const pipelineFlowchartWrap = document.getElementById("pipelineFlowchartWrap");
+      const pipelineFlowchartStage = document.getElementById("pipelineFlowchartStage");
+      const pipelineFlowchartTitle = document.getElementById("pipelineFlowchartTitle");
+      const pipelineFlowRail = document.getElementById("pipelineFlowRail");
+      const stage6GalleryBack = document.getElementById("stage6GalleryBack");
+      const stage6GalleryTiles = Array.from(document.querySelectorAll(".stage6-gallery-tile"));
+      const piraGifWrap = document.getElementById("piraGifWrap");
+      const piraGifImage = document.getElementById("piraGifImage");
+
+      const pipelineStageInfo = {
+        1: {
+          caption: "Raw turning movement CSVs are ingested for Dundas corridor intersections.",
+          mode: "flow",
+          flowTitle: "Raw TMC CSV ingest",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "TMC CSV files per intersection from 1980-present"
+            },
+            {
+              label: "Process",
+              text: "Raw turning movement CSVs are ingested for Dundas corridor intersections."
+            },
+            {
+              label: "Output",
+              text: "Raw movement records are prepared for parsing and standardizing"
+            }
+          ]
+        },
+        2: {
+          caption: "/scripts/02_parse_tmc.py standardizes column formats and writes /data/processed/tmc_parsed.csv.",
+          mode: "flow",
+          flowTitle: "Parse and normalize TMC data",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "Consumes raw corridor CSVs"
+            },
+            {
+              label: "Process",
+              text: "Standardize column formats and write tmc_parsed.csv."
+            },
+            {
+              label: "Output",
+              text: "Parsed TMC data in standardized format"
+            }
+          ]
+        },
+        3: {
+          caption: "/scripts/03_map_intersections.py links corridor locations to nearest SUMO junction IDs in /data/processed/intersection_map.csv.",
+          mode: "flow",
+          flowTitle: "Map parsed records to SUMO network",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "Parsed TMC data in standardized format"
+            },
+            {
+              label: "Process",
+              text: "Link corridor locations to nearest SUMO junction IDs in intersection_map.csv."
+            },
+            {
+              label: "Output",
+              text: "Intersection mapping file linking TMC records to SUMO junctions"
+            }
+          ]
+        },
+        4: {
+          caption: "Demand Studio is the control center for mode demand, vehicle dynamics, signal mode, and MAPPO hyperparameters.",
+          mode: "flow",
+          flowTitle: "Configure scenario controls",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "Intersection mapping file and parsed TMC data from previous stages"
+            },
+            {
+              label: "Process",
+              text: "Demand Studio is the control center for mode demand, vehicle dynamics, signal mode, and MAPPO hyperparameters."
+            },
+            {
+              label: "Output",
+              text: "Validated generation directives for /sumo outputs"
+            }
+          ]
+        },
+        5: {
+          caption: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in /sumo/*/generated, with optional short SUMO validation.",
+          mode: "flow",
+          flowTitle: "Export simulation artifacts",
+          flowNodes: [
+            {
+              label: "Input",
+              text: "Demand Studio generation command from Demand Studio configuration stage"
+            },
+            {
+              label: "Process",
+              text: "Generation exports .rou.xml, .sumocfg, .json, and fixed TLS files in /sumo/*/generated, with optional short SUMO validation."
+            },
+            {
+              label: "Output",
+              text: "Generated SUMO configuration and scenario files ready for training and evaluation"
+            }
+          ]
+        },
+        6: {
+          caption: "Demand Studio interface view from /pictures for final verification.",
+          mode: "image"
+        }
+      };
+
+      function renderPipelineFlowchart(stage, info) {
+        if (!pipelineFlowRail) {
+          return;
+        }
+
+        const flowNodes = (info && info.flowNodes) || [];
+
+        if (pipelineFlowchartStage) {
+          pipelineFlowchartStage.textContent = "Stage " + stage + " flowchart";
+        }
+
+        if (pipelineFlowchartTitle) {
+          pipelineFlowchartTitle.textContent = info && info.flowTitle ? info.flowTitle : "Pipeline stage flow";
+        }
+
+        pipelineFlowRail.innerHTML = "";
+
+        flowNodes.forEach(function (flowNode, index) {
+          const node = document.createElement("article");
+          node.className = "pipeline-flow-step";
+
+          const label = document.createElement("small");
+          label.textContent = flowNode.label || "Step";
+          node.appendChild(label);
+
+          const text = document.createElement("p");
+          text.textContent = flowNode.text || "";
+          node.appendChild(text);
+
+          pipelineFlowRail.appendChild(node);
+
+          if (index < flowNodes.length - 1) {
+            const connector = document.createElement("div");
+            connector.className = "hero-arrow pipeline-flow-link";
+            connector.setAttribute("aria-hidden", "true");
+            pipelineFlowRail.appendChild(connector);
+          }
+        });
+      }
+
+      function setPipelineStage(stepValue) {
+        if (!pipelineNodes.length) {
+          return;
+        }
+
+        const stage = clamp(Number(stepValue) || 1, 1, pipelineNodes.length);
+
+        pipelineNodes.forEach(function (node) {
+          const active = Number(node.dataset.pipelineStep) === stage;
+          node.classList.toggle("is-active", active);
+        });
+
+        if (pipelineStepLabel) {
+          pipelineStepLabel.textContent = "Stage " + stage + " / " + pipelineNodes.length;
+        }
+
+        const info = pipelineStageInfo[stage] || pipelineStageInfo[1];
+        if (pipelineCaption && info && info.caption) {
+          pipelineCaption.textContent = info.caption;
+        }
+
+        const useImagePanel = Boolean(info && info.mode === "image");
+
+        if (pipelineFlowchartWrap) {
+          pipelineFlowchartWrap.hidden = useImagePanel;
+        }
+
+        if (pipelineShotWrap) {
+          pipelineShotWrap.hidden = !useImagePanel;
+        }
+
+        if (!useImagePanel) {
+          closeStage6Gallery();
+          renderPipelineFlowchart(stage, info);
+        }
+      }
+
+      if (pipelineNodes.length) {
+        pipelineNodes.forEach(function (node) {
+          node.addEventListener("click", function () {
+            setPipelineStage(node.dataset.pipelineStep);
+          });
+        });
+
+        const activePipelineNode = pipelineNodes.find(function (node) {
+          return node.classList.contains("is-active");
+        });
+
+        setPipelineStage(activePipelineNode ? activePipelineNode.dataset.pipelineStep : 1);
+      }
+
+      const pipelineImageCandidates = [
+        "pictures/demand_studio.png",
+        "pictures/demand-studio.png",
+        "pictures/demand-studio-interface.png",
+        "pictures/demand_studio_interface.png",
+        "pictures/demand-studio.jpg",
+        "pictures/demand_studio.jpg",
+        "pictures/demand-studio.jpeg",
+        "pictures/demand_studio.jpeg",
+        "pictures/interface.png",
+        "pictures/interface.jpg"
+      ];
+
+      const piraGifCandidates = [
+        "pictures/pira.gif",
+        "pictures/pira_loop.gif",
+        "pictures/pira-model.gif",
+        "pictures/pira_model.gif",
+        "pictures/pira-demo.gif",
+        "pictures/pira_demo.gif",
+        "pictures/pira-scenario.gif",
+        "pictures/pira_scenario.gif"
+      ];
+
+      function getStage6ImageCandidates(slot) {
+        return [
+          "pictures/demand_studio_" + slot + ".png",
+          "pictures/demand_studio_" + slot + ".jpg",
+          "pictures/demand_studio_" + slot + ".jpeg",
+          "pictures/demand-studio-" + slot + ".png",
+          "pictures/demand-studio-" + slot + ".jpg",
+          "pictures/demand-studio-" + slot + ".jpeg",
+          "pictures/deamnd_studio_" + slot + ".png",
+          "pictures/deamnd_studio_" + slot + ".jpg",
+          "pictures/deamnd_studio_" + slot + ".jpeg",
+          "pictures/deamnd-studio-" + slot + ".png",
+          "pictures/deamnd-studio-" + slot + ".jpg",
+          "pictures/deamnd-studio-" + slot + ".jpeg"
+        ];
+      }
+
+      function loadStage6GalleryTile(tile) {
+        if (!tile) {
+          return;
+        }
+
+        const slot = tile.dataset.stage6Tile;
+        const image = tile.querySelector(".stage6-gallery-image");
+        if (!slot || !image) {
+          return;
+        }
+
+        const candidates = getStage6ImageCandidates(slot);
+        let index = 0;
+
+        function tryStage6Candidate() {
+          if (index >= candidates.length) {
+            tile.classList.add("is-missing");
+            return;
+          }
+
+          const nextSrc = candidates[index];
+          index += 1;
+
+          image.onload = function () {
+            tile.classList.remove("is-missing");
+          };
+
+          image.onerror = function () {
+            tryStage6Candidate();
+          };
+
+          image.src = nextSrc;
+        }
+
+        tryStage6Candidate();
+      }
+
+      function openStage6Gallery() {
+        if (!pipelineShotWrap || pipelineShotWrap.hidden || pipelineShotWrap.classList.contains("is-missing")) {
+          return;
+        }
+
+        setStage6GalleryState(true);
+      }
+
+      if (stage6GalleryBack) {
+        stage6GalleryBack.addEventListener("click", function () {
+          closeStage6Gallery();
+        });
+      }
+
+      if (stage6GalleryTiles.length) {
+        stage6GalleryTiles.forEach(function (tile) {
+          loadStage6GalleryTile(tile);
+        });
+      }
+
+      if (pipelineImage && pipelineShotWrap) {
+        pipelineImage.setAttribute("role", "button");
+        pipelineImage.setAttribute("tabindex", "0");
+        pipelineImage.setAttribute("aria-haspopup", "dialog");
+        pipelineImage.setAttribute("aria-label", "Open full-screen Demand Studio gallery");
+
+        pipelineImage.addEventListener("click", function () {
+          openStage6Gallery();
+        });
+
+        pipelineImage.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openStage6Gallery();
+          }
+        });
+
+        let candidateIndex = 0;
+
+        function tryPipelineImage() {
+          if (candidateIndex >= pipelineImageCandidates.length) {
+            pipelineShotWrap.classList.add("is-missing");
+            return;
+          }
+
+          const nextSrc = pipelineImageCandidates[candidateIndex];
+          candidateIndex += 1;
+
+          pipelineImage.onload = function () {
+            pipelineShotWrap.classList.remove("is-missing");
+          };
+
+          pipelineImage.onerror = function () {
+            tryPipelineImage();
+          };
+
+          pipelineImage.src = nextSrc;
+        }
+
+        tryPipelineImage();
+      }
+
+      if (piraGifWrap && piraGifImage) {
+        let piraGifIndex = 0;
+
+        function tryPiraGif() {
+          if (piraGifIndex >= piraGifCandidates.length) {
+            piraGifWrap.classList.add("is-missing");
+            return;
+          }
+
+          const nextSrc = piraGifCandidates[piraGifIndex];
+          piraGifIndex += 1;
+
+          piraGifImage.onload = function () {
+            piraGifWrap.classList.remove("is-missing");
+          };
+
+          piraGifImage.onerror = function () {
+            tryPiraGif();
+          };
+
+          piraGifImage.src = nextSrc;
+        }
+
+        tryPiraGif();
+      }
+
+      const ambientTraffic = document.getElementById("ambientTraffic");
+      const ambientSignalHeads = Array.from(document.querySelectorAll(".ambient-signal"));
+      const ambientSignalProgram = [
+        { mode: "ew-green", duration: 7.4 },
+        { mode: "ew-amber", duration: 2.0 },
+        { mode: "ns-green", duration: 7.4 },
+        { mode: "ns-amber", duration: 2.0 }
+      ];
+
+      const ambientState = {
+        cars: [],
+        signalIndex: 0,
+        signalElapsed: 0,
+        lastFrame: 0
+      };
+
+      function getAmbientGeometry() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const hRoad = Math.min(width * 0.21, 210);
+        const vRoad = Math.min(width * 0.23, 230);
+
+        return {
+          width: width,
+          height: height,
+          centerX: centerX,
+          centerY: centerY,
+          hLaneOffset: Math.max(22, hRoad * 0.24),
+          vLaneOffset: Math.max(22, vRoad * 0.24),
+          stopEast: centerX - (vRoad / 2) - 20,
+          stopWest: centerX + (vRoad / 2) + 20,
+          stopSouth: centerY - (hRoad / 2) - 20,
+          stopNorth: centerY + (hRoad / 2) + 20
+        };
+      }
+
+      function ambientSignalForAxis(axis) {
+        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
+        if (mode === axis + "-green") {
+          return "green";
+        }
+        if (mode === axis + "-amber") {
+          return "amber";
+        }
+        return "red";
+      }
+
+      function setAmbientSignalHeads() {
+        const mode = ambientSignalProgram[ambientState.signalIndex].mode;
+        ambientSignalHeads.forEach(function (head) {
+          const axis = head.dataset.axis;
+          const red = head.querySelector(".ambient-signal-light.red");
+          const amber = head.querySelector(".ambient-signal-light.amber");
+          const green = head.querySelector(".ambient-signal-light.green");
+
+          red.classList.remove("is-on");
+          amber.classList.remove("is-on");
+          green.classList.remove("is-on");
+
+          if (mode === axis + "-green") {
+            green.classList.add("is-on");
+          } else if (mode === axis + "-amber") {
+            amber.classList.add("is-on");
+          } else {
+            red.classList.add("is-on");
+          }
+        });
+      }
+
+      function buildAmbientCars() {
+        if (!ambientTraffic) {
+          return;
+        }
+
+        ambientTraffic.innerHTML = "";
+        ambientState.cars = [];
+
+        const palette = [
+          { body: "#d84a43", top: "#ef736d" },
+          { body: "#2f6ed8", top: "#5f97f0" },
+          { body: "#d9a528", top: "#efc85e" },
+          { body: "#208f57", top: "#49b976" },
+          { body: "#e26c2a", top: "#f19458" },
+          { body: "#7a8797", top: "#aab4c1" },
+          { body: "#2f3640", top: "#586270" },
+          { body: "#cfd6df", top: "#eff3f7" }
+        ];
+        const laneTemplates = [
+          { direction: "east", axis: "ew", rotation: 0, count: 3 },
+          { direction: "west", axis: "ew", rotation: 180, count: 3 },
+          { direction: "south", axis: "ns", rotation: 90, count: 3 },
+          { direction: "north", axis: "ns", rotation: -90, count: 3 }
+        ];
+        const geo = getAmbientGeometry();
+
+        laneTemplates.forEach(function (lane, laneIndex) {
+          for (let i = 0; i < lane.count; i += 1) {
+            const carNode = document.createElement("span");
+            carNode.className = "ambient-car";
+            const swatch = palette[(laneIndex * lane.count + i) % palette.length];
+            carNode.style.setProperty("--car-body", swatch.body);
+            carNode.style.setProperty("--car-body-top", swatch.top);
+            ambientTraffic.appendChild(carNode);
+
+            let progress = 0;
+            if (lane.direction === "east") {
+              progress = ((geo.width / lane.count) * i) - 140 - (Math.random() * 36);
+            } else if (lane.direction === "west") {
+              progress = geo.width - ((geo.width / lane.count) * i) + 140 + (Math.random() * 36);
+            } else if (lane.direction === "south") {
+              progress = ((geo.height / lane.count) * i) - 140 - (Math.random() * 36);
+            } else {
+              progress = geo.height - ((geo.height / lane.count) * i) + 140 + (Math.random() * 36);
+            }
+
+            ambientState.cars.push({
+              el: carNode,
+              axis: lane.axis,
+              direction: lane.direction,
+              rotation: lane.rotation,
+              progress: progress,
+              speed: 0,
+              maxSpeed: 50 + (Math.random() * 20)
+            });
+          }
+        });
+      }
+
+      function ambientDirectionSign(direction) {
+        return direction === "east" || direction === "south" ? 1 : -1;
+      }
+
+      function ambientDistanceToStop(car, geo) {
+        if (car.direction === "east") {
+          return geo.stopEast - car.progress;
+        }
+        if (car.direction === "west") {
+          return car.progress - geo.stopWest;
+        }
+        if (car.direction === "south") {
+          return geo.stopSouth - car.progress;
+        }
+        return car.progress - geo.stopNorth;
+      }
+
+      function ambientPassedStop(car, geo) {
+        if (car.direction === "east") {
+          return car.progress >= geo.stopEast + 14;
+        }
+        if (car.direction === "west") {
+          return car.progress <= geo.stopWest - 14;
+        }
+        if (car.direction === "south") {
+          return car.progress >= geo.stopSouth + 14;
+        }
+        return car.progress <= geo.stopNorth - 14;
+      }
+
+      function placeAmbientCar(car, geo) {
+        let x = geo.centerX;
+        let y = geo.centerY;
+
+        if (car.direction === "east") {
+          x = car.progress;
+          y = geo.centerY - geo.hLaneOffset;
+        } else if (car.direction === "west") {
+          x = car.progress;
+          y = geo.centerY + geo.hLaneOffset;
+        } else if (car.direction === "south") {
+          x = geo.centerX - geo.vLaneOffset;
+          y = car.progress;
+        } else {
+          x = geo.centerX + geo.vLaneOffset;
+          y = car.progress;
+        }
+
+        car.el.style.left = x.toFixed(1) + "px";
+        car.el.style.top = y.toFixed(1) + "px";
+        car.el.style.transform = "translate(-50%, -50%) rotate(" + car.rotation + "deg)";
+      }
+
+      function updateAmbientCars(deltaSeconds) {
+        const geo = getAmbientGeometry();
+
+        ambientState.cars.forEach(function (car) {
+          const signal = ambientSignalForAxis(car.axis);
+          const distanceToStop = ambientDistanceToStop(car, geo);
+          const passedStop = ambientPassedStop(car, geo);
+
+          let targetSpeed = car.maxSpeed;
+          if (!passedStop && signal === "red" && distanceToStop < 120) {
+            targetSpeed = 0;
+          } else if (!passedStop && signal === "amber" && distanceToStop < 110) {
+            targetSpeed = car.maxSpeed * 0.28;
+          }
+
+          car.speed += (targetSpeed - car.speed) * Math.min(1, deltaSeconds * 3.6);
+          car.progress += ambientDirectionSign(car.direction) * car.speed * deltaSeconds;
+
+          if (car.direction === "east" && car.progress > geo.width + 110) {
+            car.progress = -110 - (Math.random() * 260);
+          } else if (car.direction === "west" && car.progress < -110) {
+            car.progress = geo.width + 110 + (Math.random() * 260);
+          } else if (car.direction === "south" && car.progress > geo.height + 110) {
+            car.progress = -110 - (Math.random() * 240);
+          } else if (car.direction === "north" && car.progress < -110) {
+            car.progress = geo.height + 110 + (Math.random() * 240);
+          }
+
+          placeAmbientCar(car, geo);
+        });
+      }
+
+      function runAmbientScene(timestamp) {
+        if (!ambientTraffic) {
+          return;
+        }
+
+        if (!ambientState.lastFrame) {
+          ambientState.lastFrame = timestamp;
+        }
+
+        const deltaSeconds = Math.min(0.05, (timestamp - ambientState.lastFrame) / 1000);
+        ambientState.lastFrame = timestamp;
+        ambientState.signalElapsed += deltaSeconds;
+
+        if (ambientState.signalElapsed >= ambientSignalProgram[ambientState.signalIndex].duration) {
+          ambientState.signalElapsed = 0;
+          ambientState.signalIndex = (ambientState.signalIndex + 1) % ambientSignalProgram.length;
+          setAmbientSignalHeads();
+        }
+
+        updateAmbientCars(deltaSeconds);
+        window.requestAnimationFrame(runAmbientScene);
+      }
+
+      buildAmbientCars();
+      setAmbientSignalHeads();
+      updateAmbientCars(0.016);
+
+      if (!reduceMotion) {
+        window.requestAnimationFrame(runAmbientScene);
+      } else {
+        window.addEventListener("resize", function () {
+          updateAmbientCars(0.016);
+        });
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      /* PIRA GIF click-to-expand */
+      (function () {
+        var gifWrap = document.getElementById("piraGifWrap");
+        var fsOverlay = document.getElementById("piraGifFullscreen");
+        var fsImg = document.getElementById("piraGifFullscreenImg");
+        if (gifWrap && fsOverlay) {
+          gifWrap.addEventListener("click", function () {
+            var img = document.getElementById("piraGifImage");
+            if (img && img.src) {
+              fsImg.src = img.src;
+              fsOverlay.classList.add("is-open");
+            }
+          });
+          fsOverlay.addEventListener("click", function () {
+            fsOverlay.classList.remove("is-open");
+          });
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>
