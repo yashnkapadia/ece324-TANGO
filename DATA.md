@@ -326,101 +326,94 @@ The baseline simulation is configured in `sumo/config/baseline.sumocfg`:
 
 ## Project Organization
 
+Only non-empty, non-gitignored paths are shown below.
+
 ```
 ├── LICENSE
 ├── Makefile
-├── README.md
-├── environment.yml
-├── requirements.txt
+├── .gitignore                <- Git ignore rules for generated outputs and local IDE/runtime artifacts
+├── DATA.md                   <- Project documentation, workflow notes, and repository map
+├── environment.yml           <- Conda environment definition for reproducible setup
 ├── pixi.toml
 ├── pyproject.toml
-├── setup.cfg
+├── requirements.txt
+├── setup.cfg                 <- Shared Python tooling and lint/test configuration
 │
-├── data
-│   ├── final              <- Final outputs for delivery or publication
-│   ├── processed
-│   │   ├── intersection_map.csv   <- Mapping of intersection names to SUMO junction IDs
-│   │   ├── tmc_parsed.csv         <- Parsed and filtered TMC turning-movement counts
-│   │   └── calibration_report.csv <- GEH validation of assigned vs TMC approach volumes
-│   └── raw
-│       └── tmc            <- Raw TMC (Traffic Monitoring Count) CSV files
+├── apps/
+│   └── demand_studio/
+│       ├── app.py               <- Dash application for generating demand/scenario files from TMC data
+│       └── assets/
+│           └── demand_studio.css <- Styling rules for the Demand Studio interface
 │
-├── docs
-│   ├── network_map.png            <- Annotated SUMO network map with signalized intersections
-│   └── assets
-│       └── images
-│           └── sumo_web_wizard.png
+├── data/
+│   ├── processed/
+│   │   ├── intersection_map.csv   <- Intersection-name to SUMO junction mapping used by calibration
+│   │   ├── tmc_parsed.csv         <- Parsed/standardized TMC turning-movement dataset
+│   │   └── calibration_report.csv <- GEH comparison report for assigned vs observed approach volumes
+│   └── raw/
+│       └── tmc/
+│           ├── tmc_most_recent_summary_data.csv <- Latest published TMC summary extract
+│           ├── tmc_raw_data_1980_1989.csv       <- Historical Toronto TMC raw counts for 1980s
+│           ├── tmc_raw_data_1990_1999.csv       <- Historical Toronto TMC raw counts for 1990s
+│           ├── tmc_raw_data_2000_2009 (1).csv   <- Historical Toronto TMC raw counts for 2000s
+│           ├── tmc_raw_data_2010_2019 (2).csv   <- Historical Toronto TMC raw counts for 2010s
+│           ├── tmc_raw_data_2020_2029 (2).csv   <- Current-era Toronto TMC raw counts for 2020s
+│           └── tmc_summary_data.csv             <- Consolidated TMC summary dataset used for filtering
 │
-├── models                 <- Trained and serialized models, predictions, summaries
+├── docs/
+│   ├── network_map.png          <- Annotated corridor network map used in documentation
+│   └── assets/
+│       └── images/
+│           ├── demand_studio_1.png <- Demand Studio overview screenshot
+│           ├── demand_studio_2.png <- Demand settings tab screenshot
+│           ├── demand_studio_3.png <- Signal and MAPPO settings tab screenshot
+│           ├── demand_studio_4.png <- Advanced vehicle settings tab screenshot
+│           └── sumo_web_wizard.png <- SUMO Web Wizard corridor selection image
 │
-├── notebooks
-│   ├── 01_inspect_network.ipynb   <- Loads the SUMO network, lists traffic-light junctions
-│   │                                 and edges, visualizes the network with signalized
-│   │                                 intersections annotated on a matplotlib plot
-│   ├── 02_inspect_tls.ipynb       <- Inspects the generated TLS override programs,
-│   │                                 checks phase durations, state string lengths,
-│   │                                 and connection coverage per traffic light
-│   └── 03_explore_tmc.ipynb       <- Loads tmc_parsed.csv and intersection_map.csv,
-│                                     filters TMC data to study-area intersections,
-│                                     and prints volume summaries
+├── ece324_tango-model/
+│   ├── __init__.py            <- Package initializer for the modeling module
+│   ├── config.py              <- Model and training configuration values
+│   ├── dataset.py             <- Dataset loading and preprocessing helpers
+│   ├── features.py            <- Feature engineering utilities for model inputs
+│   ├── plots.py               <- Plotting helpers for diagnostics and evaluation
+│   └── modeling/
+│       ├── __init__.py        <- Submodule initializer for training/prediction code
+│       ├── predict.py         <- Inference pipeline for generating predictions
+│       └── train.py           <- Training entry point for model fitting
 │
-├── references             <- Data dictionaries, manuals, explanatory materials
+├── notebooks/
+│   ├── 01_inspect_network.ipynb <- Notebook to inspect network geometry and signalized nodes
+│   ├── 02_inspect_tls.ipynb     <- Notebook to inspect generated TLS programs and phase states
+│   └── 03_explore_tmc.ipynb     <- Notebook to explore parsed TMC volumes and intersections
 │
-├── reports
-│   ├── figures
-│   ├── proposal
-│   │   └── TANGO-proposal.pdf
-│   ├── results
-│   └── final
+├── reports/
+│   └── proposal/
+│       └── TANGO-proposal.pdf <- Project proposal document defining scope and methodology
 │
-├── scripts
-│   ├── 00_smoke_test.py           <- Verifies SUMO install, loads network, runs 60 s
-│   │                                 headless sim with random trips, confirms TraCI works
-│   ├── 02_parse_tmc.py            <- Reads raw TMC CSVs, auto-detects column names,
-│   │                                 filters to Dundas corridor, writes tmc_parsed.csv
-│   ├── 03_map_intersections.py    <- Matches known intersection lat/lon to nearest SUMO
-│   │                                 junction IDs, writes intersection_map.csv
-│   ├── 04_generate_demand.py      <- Builds sample demand.rou.xml from network
-│   │                                 entry/exit edges using lane/speed heuristics
-│   │                                 (vehicles only, not TMC-calibrated)
-│   ├── 05_calibrate.py            <- Generates TMC-calibrated demand.rou.xml from
-│   │                                 turning-movement counts, validates with GEH,
-│   │                                 writes calibration_report.csv
-│   └── utils
-│       └── tls_generator.py       <- Generates fixed-cycle two-phase (EW/NS) TLS
-│                                     programs for all non-cluster signalized junctions,
-│                                     writes tls_overrides.add.xml.gz
+├── scripts/
+│   ├── 00_smoke_test.py        <- Quick SUMO/TraCI smoke test with short simulation run
+│   ├── 02_parse_tmc.py         <- Parser to normalize and filter raw TMC CSV exports
+│   ├── 03_map_intersections.py <- Mapper from named intersections to SUMO junction IDs
+│   ├── 04_generate_demand.py   <- Heuristic demand generator for baseline route flows
+│   ├── 05_calibrate.py         <- TMC-calibrated demand generation with GEH validation
+│   └── utils/
+│       └── tls_generator.py    <- Fixed-cycle TLS override generator for SUMO networks
 │
-├── sumo
-│   ├── config
-│   │   └── baseline.sumocfg       <- Main SUMO config referencing net, routes, TLS overrides
-│   ├── demand
-│   │   ├── demand.rou.xml         <- Vehicle flow definitions (generated by 05_calibrate.py)
-│   │   └── random_trips.rou.xml   <- Random trips for smoke testing only
-│   ├── network
-│   │   ├── build.bat              <- Batch script for randomTrips (passenger + pedestrian)
-│   │   ├── osm.net.xml.gz         <- Compressed SUMO network from OSM Web Wizard
-│   │   ├── osm.poly.xml.gz        <- Polygon (building/land-use) data
-│   │   ├── osm_bbox.osm.xml.gz   <- Raw OSM extract for the bounding box
-│   │   └── tls_overrides.add.xml.gz <- Custom TLS programs (generated by tls_generator.py)
-│   ├── output
-│   │   ├── baseline               <- Output from baseline scenario runs
-│   │   └── scenarios              <- Output from alternative scenario runs
-│   └── scenarios
+├── sumo/
+│   ├── config/
+│   │   └── baseline.sumocfg      <- Baseline SUMO run configuration for the corridor
+│   ├── demand/
+│   │   ├── demand.rou.xml        <- Current generated vehicle demand routes for simulation
+│   │   └── random_trips.rou.xml  <- Random trips file used by smoke testing workflow
+│   └── network/
+│       ├── build.bat             <- Windows helper script for network/build utility tasks
+│       ├── osm.net.xml.gz        <- SUMO network graph derived from OSM corridor extract
+│       ├── osm.poly.xml.gz       <- Polygon layer for land-use/building visualization
+│       ├── osm_bbox.osm.xml.gz   <- Raw OSM bounding-box extract used to build network
+│       └── tls_overrides.add.xml.gz <- Generated baseline TLS programs for signalized junctions
 │
-├── tests
-│   └── test_data.py
-│
-└── ece324_tango-model
-    ├── __init__.py
-    ├── config.py
-    ├── dataset.py
-    ├── features.py
-    ├── plots.py
-    └── modeling
-        ├── __init__.py
-        ├── predict.py
-        └── train.py
+└── tests/
+    └── test_data.py             <- Data-pipeline regression and integrity tests
 ```
 
 --------
