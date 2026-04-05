@@ -1,0 +1,17 @@
+traci
+sumolib
+lxml
+dash
+plotly
+pyproj
+pandas
+numpy
+pyarrow
+openpyxl
+requests
+jupyter
+matplotlib
+seaborn
+geopandas
+shapely
+torch
