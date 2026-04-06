@@ -24,9 +24,9 @@ def build_asce_features(
     feat = df.copy()
     feat["queue_imbalance"] = feat["queue_ns"] - feat["queue_ew"]
     feat["arrival_imbalance"] = feat["arrivals_ns"] - feat["arrivals_ew"]
-    feat["is_peak"] = (
-        (feat["time_of_day"] >= 7 / 24) & (feat["time_of_day"] <= 10 / 24)
-    ).astype(int)
+    feat["is_peak"] = ((feat["time_of_day"] >= 7 / 24) & (feat["time_of_day"] <= 10 / 24)).astype(
+        int
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     feat.to_csv(output_path, index=False)
     logger.success(f"Wrote features: {output_path}")

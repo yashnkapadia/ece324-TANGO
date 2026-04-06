@@ -84,8 +84,7 @@ def get_context(begin, end, c):
 
 def write_route_file(file, end, step):
     with open(file, "w+") as f:
-        f.write(
-            """<routes>
+        f.write("""<routes>
                 <route id="route_ns" edges="n_t t_s"/>
                 <route id="route_nw" edges="n_t t_w"/>
                 <route id="route_ne" edges="n_t t_e"/>
@@ -97,8 +96,7 @@ def write_route_file(file, end, step):
                 <route id="route_es" edges="e_t t_s"/>
                 <route id="route_sn" edges="s_t t_n"/>
                 <route id="route_se" edges="s_t t_e"/>
-                <route id="route_sw" edges="s_t t_w"/>"""
-        )
+                <route id="route_sw" edges="s_t t_w"/>""")
 
         c = 0
         for i in range(0, end, step):
@@ -109,4 +107,6 @@ def write_route_file(file, end, step):
 
 
 if __name__ == "__main__":
-    write_route_file("nets/2way-single-intersection/single-intersection-gen.rou.xml", 400000, 100000)
+    write_route_file(
+        "nets/2way-single-intersection/single-intersection-gen.rou.xml", 400000, 100000
+    )

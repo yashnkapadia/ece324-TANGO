@@ -198,27 +198,15 @@ def compute_metrics_for_agent(
         if not all_edges:
             raise RuntimeError("No approach edges found")
 
-        queue_ns = int(
-            round(_sum_edge_metric(env, ns_edges, "getLastStepHaltingNumber"))
-        )
-        queue_ew = int(
-            round(_sum_edge_metric(env, ew_edges, "getLastStepHaltingNumber"))
-        )
-        arrivals_ns = int(
-            round(_sum_edge_metric(env, ns_edges, "getLastStepVehicleNumber"))
-        )
-        arrivals_ew = int(
-            round(_sum_edge_metric(env, ew_edges, "getLastStepVehicleNumber"))
-        )
+        queue_ns = int(round(_sum_edge_metric(env, ns_edges, "getLastStepHaltingNumber")))
+        queue_ew = int(round(_sum_edge_metric(env, ew_edges, "getLastStepHaltingNumber")))
+        arrivals_ns = int(round(_sum_edge_metric(env, ns_edges, "getLastStepVehicleNumber")))
+        arrivals_ew = int(round(_sum_edge_metric(env, ew_edges, "getLastStepVehicleNumber")))
         avg_speed_ns = _mean_edge_speed(env, ns_edges)
         avg_speed_ew = _mean_edge_speed(env, ew_edges)
         delay = float(_sum_edge_metric(env, all_edges, "getWaitingTime"))
-        queue_total = int(
-            round(_sum_edge_metric(env, all_edges, "getLastStepHaltingNumber"))
-        )
-        throughput = int(
-            round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber"))
-        )
+        queue_total = int(round(_sum_edge_metric(env, all_edges, "getLastStepHaltingNumber")))
+        throughput = int(round(_sum_edge_metric(env, all_edges, "getLastStepVehicleNumber")))
         pd_ns, pt_ns = _person_weighted_edge_metrics(env, ns_edges)
         pd_ew, pt_ew = _person_weighted_edge_metrics(env, ew_edges)
         person_delay = pd_ns + pd_ew
@@ -240,9 +228,7 @@ def compute_metrics_for_agent(
             once_key=f"metrics_fallback:{scenario_id}:{agent_id}",
         )
         obs = (
-            np.zeros((1,), dtype=np.float32)
-            if obs_fallback is None
-            else np.asarray(obs_fallback)
+            np.zeros((1,), dtype=np.float32) if obs_fallback is None else np.asarray(obs_fallback)
         )
         q_ns, q_ew, arr_ns, arr_ew = split_ns_ew_from_obs(obs)
         queue_ns = int(round(q_ns))
@@ -358,16 +344,11 @@ def rewards_from_metrics(
             else:
                 local_fairness = jain_index([ns_d, ew_d])
 
-            reward = (
-                -weights.delay * delay_term
-                + weights.fairness * float(local_fairness)
-            )
+            reward = -weights.delay * delay_term + weights.fairness * float(local_fairness)
 
         if reward_mode == "residual_mp":
             if mp_deviation_by_agent is None:
-                raise ValueError(
-                    "residual_mp reward mode requires mp_deviation_by_agent values."
-                )
+                raise ValueError("residual_mp reward mode requires mp_deviation_by_agent values.")
             reward -= weights.residual * float(mp_deviation_by_agent.get(agent_id, 0.0))
         rewards[agent_id] = float(reward)
     return rewards

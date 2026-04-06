@@ -121,9 +121,7 @@ def generate_bar_chart(out_path: Path) -> None:
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(
-        [SCENARIO_LABELS[s] for s in scenarios], fontsize=12, fontweight="600"
-    )
+    ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios], fontsize=12, fontweight="600")
     ax.set_ylabel("Person-Time-Loss (×1000 s)", fontsize=12, fontweight="600")
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0f}k"))
 
@@ -191,8 +189,13 @@ def generate_training_curve(out_path: Path) -> None:
     # Boundary marker
     ax.axvline(x=200, color=INK_SOFT, linewidth=1, linestyle=":", alpha=0.5, zorder=3)
     ax.text(
-        203, -1.25, "Curriculum\nstarts",
-        color=INK_SOFT, fontsize=8, fontweight="500", va="bottom",
+        203,
+        -1.25,
+        "Curriculum\nstarts",
+        color=INK_SOFT,
+        fontsize=8,
+        fontweight="500",
+        va="bottom",
     )
 
     # Phase 2: curriculum (ep 0-599, plotted as ep 200-799)
@@ -207,20 +210,40 @@ def generate_training_curve(out_path: Path) -> None:
         ax.scatter(x_vals, subset["mean_global_reward"], color=color, alpha=0.15, s=8, zorder=1)
 
         smoothed = subset["mean_global_reward"].rolling(window, min_periods=1).mean()
-        ax.plot(x_vals, smoothed.values, color=color, linewidth=2.2, alpha=0.9,
-                label=SCENARIO_LABELS[scenario_id], zorder=2)
+        ax.plot(
+            x_vals,
+            smoothed.values,
+            color=color,
+            linewidth=2.2,
+            alpha=0.9,
+            label=SCENARIO_LABELS[scenario_id],
+            zorder=2,
+        )
 
     # Mark best checkpoint (curriculum ep 432 = total ep 632)
     best_total = 432 + 200
     ax.axvline(x=best_total, color=LANE, linewidth=1.2, linestyle="--", alpha=0.7, zorder=3)
-    ax.text(best_total + 5, ax.get_ylim()[1] * 0.97, "Best (ep 632)",
-            color=LANE, fontsize=10, fontweight="600", va="top")
+    ax.text(
+        best_total + 5,
+        ax.get_ylim()[1] * 0.97,
+        "Best (ep 632)",
+        color=LANE,
+        fontsize=10,
+        fontweight="600",
+        va="top",
+    )
 
     ax.set_xlim(0, 800)
     ax.set_xlabel("Episode", fontsize=12, fontweight="600")
     ax.set_ylabel("Mean Global Reward", fontsize=12, fontweight="600")
-    ax.legend(loc="lower right", fontsize=9, facecolor=BG_2, edgecolor=LINE_GREY,
-              labelcolor=INK_HIGH, ncol=2)
+    ax.legend(
+        loc="lower right",
+        fontsize=9,
+        facecolor=BG_2,
+        edgecolor=LINE_GREY,
+        labelcolor=INK_HIGH,
+        ncol=2,
+    )
 
     fig.tight_layout(pad=1.2)
     fig.savefig(out_path, dpi=200, facecolor=BG_0, bbox_inches="tight")
@@ -247,11 +270,24 @@ def generate_gate_fraction_curve(out_path: Path) -> None:
     if warmstart_path.exists():
         df_ws = pd.read_csv(warmstart_path).sort_values("episode")
         if "gate_fraction" in df_ws.columns:
-            ax.scatter(df_ws["episode"], df_ws["gate_fraction"] * 100,
-                       color=INK_SOFT, alpha=0.15, s=5, zorder=0)
+            ax.scatter(
+                df_ws["episode"],
+                df_ws["gate_fraction"] * 100,
+                color=INK_SOFT,
+                alpha=0.15,
+                s=5,
+                zorder=0,
+            )
             sm_ws = df_ws["gate_fraction"].rolling(window, min_periods=1).mean() * 100
-            ax.plot(df_ws["episode"].values, sm_ws.values,
-                    color=INK_SOFT, linewidth=1.8, alpha=0.6, linestyle="--", zorder=1)
+            ax.plot(
+                df_ws["episode"].values,
+                sm_ws.values,
+                color=INK_SOFT,
+                linewidth=1.8,
+                alpha=0.6,
+                linestyle="--",
+                zorder=1,
+            )
 
     # Boundary
     ax.axvline(x=200, color=INK_SOFT, linewidth=1, linestyle=":", alpha=0.4)
@@ -260,8 +296,7 @@ def generate_gate_fraction_curve(out_path: Path) -> None:
     df_sorted = df_cur.sort_values("episode")
     x_vals = df_sorted["episode"].values + 200
 
-    ax.scatter(x_vals, df_sorted["gate_fraction"] * 100,
-               color=LANE, alpha=0.2, s=6, zorder=1)
+    ax.scatter(x_vals, df_sorted["gate_fraction"] * 100, color=LANE, alpha=0.2, s=6, zorder=1)
 
     smoothed = df_sorted["gate_fraction"].rolling(window, min_periods=1).mean() * 100
     ax.plot(x_vals, smoothed.values, color=LANE, linewidth=2.5, alpha=0.9, zorder=2)

@@ -102,7 +102,7 @@ def main(
         False,
         "--reset-obs-norm/--no-reset-obs-norm",
         help="Discard the loaded obs normalizer stats after warm-start (recommended when "
-             "switching training distribution)",
+        "switching training distribution)",
     ),
     log_file: str = typer.Option(
         "",
@@ -116,7 +116,11 @@ def main(
     warnings.filterwarnings("ignore", category=UserWarning, module="gymnasium")
 
     if log_file:
-        logger.add(log_file, level="DEBUG", format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}")
+        logger.add(
+            log_file,
+            level="DEBUG",
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} | {message}",
+        )
         logger.info(f"Logging to {log_file}")
         if resume:
             logger.info("=" * 24 + " RESUME SESSION " + "=" * 24)
@@ -149,25 +153,15 @@ def main(
         )
 
     if num_workers < 1:
-        raise typer.BadParameter(
-            f"--num-workers must be >= 1, got {num_workers}."
-        )
+        raise typer.BadParameter(f"--num-workers must be >= 1, got {num_workers}.")
 
     if eval_workers < 1:
-        raise typer.BadParameter(
-            f"--eval-workers must be >= 1, got {eval_workers}."
-        )
+        raise typer.BadParameter(f"--eval-workers must be >= 1, got {eval_workers}.")
 
-    parsed_eval_baselines = [
-        b.strip().lower() for b in eval_baselines.split(",") if b.strip()
-    ]
+    parsed_eval_baselines = [b.strip().lower() for b in eval_baselines.split(",") if b.strip()]
     if not parsed_eval_baselines:
-        raise typer.BadParameter(
-            "--eval-baselines must include at least one baseline."
-        )
-    invalid_eval_baselines = [
-        b for b in parsed_eval_baselines if b not in _VALID_EVAL_BASELINES
-    ]
+        raise typer.BadParameter("--eval-baselines must include at least one baseline.")
+    invalid_eval_baselines = [b for b in parsed_eval_baselines if b not in _VALID_EVAL_BASELINES]
     if invalid_eval_baselines:
         raise typer.BadParameter(
             f"Unsupported eval baselines: {', '.join(invalid_eval_baselines)}. "
@@ -181,14 +175,10 @@ def main(
         )
 
     if warm_start_model and not Path(warm_start_model).exists():
-        raise typer.BadParameter(
-            f"--warm-start-model path does not exist: {warm_start_model}"
-        )
+        raise typer.BadParameter(f"--warm-start-model path does not exist: {warm_start_model}")
 
     if reset_obs_norm and not warm_start_model:
-        raise typer.BadParameter(
-            "--reset-obs-norm requires --warm-start-model to be set."
-        )
+        raise typer.BadParameter("--reset-obs-norm requires --warm-start-model to be set.")
 
     logger.info(f"Using SUMO net: {net_file}")
     if parsed_route_files:

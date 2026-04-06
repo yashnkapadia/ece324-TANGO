@@ -1,11 +1,20 @@
 """Q-learning Agent class."""
+
 from sumo_rl.exploration.epsilon_greedy import EpsilonGreedy
 
 
 class QLAgent:
     """Q-learning Agent class."""
 
-    def __init__(self, starting_state, state_space, action_space, alpha=0.5, gamma=0.95, exploration_strategy=EpsilonGreedy()):
+    def __init__(
+        self,
+        starting_state,
+        state_space,
+        action_space,
+        alpha=0.5,
+        gamma=0.95,
+        exploration_strategy=EpsilonGreedy(),
+    ):
         """Initialize Q-learning agent."""
         self.state = starting_state
         self.state_space = state_space

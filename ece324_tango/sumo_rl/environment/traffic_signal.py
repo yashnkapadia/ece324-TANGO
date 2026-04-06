@@ -1,8 +1,8 @@
 """This module contains the TrafficSignal class, which represents a traffic signal in the simulation."""
+
 import os
 import sys
 from typing import Callable, List, Union
-
 
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")
@@ -97,9 +97,13 @@ class TrafficSignal:
         self.lanes = list(
             dict.fromkeys(self.sumo.trafficlight.getControlledLanes(self.id))
         )  # Remove duplicates and keep order
-        self.out_lanes = [link[0][1] for link in self.sumo.trafficlight.getControlledLinks(self.id) if link]
+        self.out_lanes = [
+            link[0][1] for link in self.sumo.trafficlight.getControlledLinks(self.id) if link
+        ]
         self.out_lanes = list(set(self.out_lanes))
-        self.lanes_length = {lane: self.sumo.lane.getLength(lane) for lane in self.lanes + self.out_lanes}
+        self.lanes_length = {
+            lane: self.sumo.lane.getLength(lane) for lane in self.lanes + self.out_lanes
+        }
 
         self.observation_space = self.observation_fn.observation_space()
         self.action_space = spaces.Discrete(self.num_green_phases)
@@ -144,7 +148,10 @@ class TrafficSignal:
             new_phase (int): Index into self.green_phases [0..num_green_phases).
         """
         new_phase = int(new_phase)
-        if self.green_phase == new_phase or self.time_since_last_phase_change < self.yellow_time + self.min_green:
+        if (
+            self.green_phase == new_phase
+            or self.time_since_last_phase_change < self.yellow_time + self.min_green
+        ):
             # Hold current phase — just schedule next decision
             self.next_action_time = self.env.sim_step + self.delta_time
         else:
@@ -181,8 +188,12 @@ class TrafficSignal:
         return reward
 
     def _observation_fn_default(self):
-        phase_id = [1 if self.green_phase == i else 0 for i in range(self.num_green_phases)]  # one-hot encoding
-        min_green = [0 if self.time_since_last_phase_change < self.min_green + self.yellow_time else 1]
+        phase_id = [
+            1 if self.green_phase == i else 0 for i in range(self.num_green_phases)
+        ]  # one-hot encoding
+        min_green = [
+            0 if self.time_since_last_phase_change < self.min_green + self.yellow_time else 1
+        ]
         density = self.get_lanes_density()
         queue = self.get_lanes_queue()
         observation = np.array(phase_id + min_green + density + queue, dtype=np.float32)
@@ -205,7 +216,11 @@ class TrafficSignal:
                     self.env.vehicles[veh] = {veh_lane: acc}
                 else:
                     self.env.vehicles[veh][veh_lane] = acc - sum(
-                        [self.env.vehicles[veh][lane] for lane in self.env.vehicles[veh].keys() if lane != veh_lane]
+                        [
+                            self.env.vehicles[veh][lane]
+                            for lane in self.env.vehicles[veh].keys()
+                            if lane != veh_lane
+                        ]
                     )
                 wait_time += self.env.vehicles[veh][veh_lane]
             wait_time_per_lane.append(wait_time)

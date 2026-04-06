@@ -63,9 +63,7 @@ def test_joint_logp_gate1_equals_sum() -> None:
 
     phase_logits_masked = phase_logits.clone()
     phase_logits_masked[0, 3:] = float("-inf")  # mask invalid actions
-    phase_logp = torch.log_softmax(phase_logits_masked, dim=-1)[
-        0, outs[0]["action"]
-    ].item()
+    phase_logp = torch.log_softmax(phase_logits_masked, dim=-1)[0, outs[0]["action"]].item()
 
     expected = gate_logp + phase_logp
     assert abs(outs[0]["logp"] - expected) < 1e-5
@@ -135,9 +133,7 @@ def test_gate1_dispatches_phase_action() -> None:
         # Force phase head to always pick action 0
         for p in trainer.actor.phase_head.parameters():
             p.zero_()
-        trainer.actor.phase_head.bias.copy_(
-            torch.tensor([100.0, -100.0, -100.0])
-        )
+        trainer.actor.phase_head.bias.copy_(torch.tensor([100.0, -100.0, -100.0]))
 
     outs = trainer.act_batch_residual(
         obs_list=[np.zeros(4, dtype=np.float32)],
@@ -158,9 +154,7 @@ def test_gate_warm_start_biases_toward_zero() -> None:
     gate_probs = torch.softmax(gate_logits, dim=-1)
     # Index 1 = gate=0 (follow MP); should be > 0.85 on average
     gate0_frac = (gate_probs[:, 1] > gate_probs[:, 0]).float().mean().item()
-    assert gate0_frac > 0.85, (
-        f"Expected >85% gate=0 samples with bias=-3.0, got {gate0_frac:.2%}"
-    )
+    assert gate0_frac > 0.85, f"Expected >85% gate=0 samples with bias=-3.0, got {gate0_frac:.2%}"
 
 
 def test_residual_mode_none_unchanged() -> None:

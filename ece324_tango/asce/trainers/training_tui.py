@@ -6,6 +6,7 @@ and eval results above the normal scrolling log output.
 Falls back to a no-op when stdout is not a TTY (e.g. piped through tee).
 Use --log-file to write logs to a file directly and skip tee so the TUI works.
 """
+
 from __future__ import annotations
 
 import math
@@ -142,9 +143,7 @@ class TrainingStatus:
             self._ema_batch_wall_s = batch_wall_s
         else:
             # Smooth the batch duration so ETA stays stable across updates.
-            self._ema_batch_wall_s = (
-                0.7 * self._ema_batch_wall_s + 0.3 * batch_wall_s
-            )
+            self._ema_batch_wall_s = 0.7 * self._ema_batch_wall_s + 0.3 * batch_wall_s
         self._refresh()
 
     def update_eval_started(self):
@@ -184,8 +183,7 @@ class TrainingStatus:
 
         # Title
         grid.add_row(
-            Text(f"─ {self.scenario_id.upper()} ", style="bold cyan")
-            + Text("─" * 50, style="dim")
+            Text(f"─ {self.scenario_id.upper()} ", style="bold cyan") + Text("─" * 50, style="dim")
         )
 
         # Progress bar
@@ -196,9 +194,7 @@ class TrainingStatus:
         if remaining_episodes == 0:
             eta_str = "0s"
         elif self._ema_batch_wall_s is not None:
-            remaining_batches = math.ceil(
-                remaining_episodes / max(self.num_workers, 1)
-            )
+            remaining_batches = math.ceil(remaining_episodes / max(self.num_workers, 1))
             eta_str = _fmt_duration(self._ema_batch_wall_s * remaining_batches)
         else:
             eta_str = "\u2014"
@@ -223,9 +219,7 @@ class TrainingStatus:
         if self.eval_running:
             eval_line = " Eval: running in background ..."
         elif self.eval_ratios:
-            parts = "  ".join(
-                f"{_short_name(n)}: {r:.3f}" for n, r in self.eval_ratios.items()
-            )
+            parts = "  ".join(f"{_short_name(n)}: {r:.3f}" for n, r in self.eval_ratios.items())
             eval_line = f" Eval ep {self.eval_ep}: {parts}"
         else:
             eval_line = " Eval: pending"

@@ -39,25 +39,30 @@ from torch_geometric.nn import GATConv
 # ---------------------------------------------------------------------------
 # All 10 per-intersection features from the ASCE rollout schema (Table 1)
 NODE_FEATURE_COLUMNS = [
-    'queue_ns', 'queue_ew',
-    'arrivals_ns', 'arrivals_ew',
-    'avg_speed_ns', 'avg_speed_ew',
-    'current_phase', 'time_of_day',
-    'action_phase', 'action_green_dur',
+    "queue_ns",
+    "queue_ew",
+    "arrivals_ns",
+    "arrivals_ew",
+    "avg_speed_ns",
+    "avg_speed_ew",
+    "current_phase",
+    "time_of_day",
+    "action_phase",
+    "action_green_dur",
 ]
 
-TARGET_COLUMNS = ['delay', 'throughput', 'queue_total']
+TARGET_COLUMNS = ["delay", "throughput", "queue_total"]
 
 # Timing head outputs: recommended green durations for NS and EW phases
 NUM_TIMING_OUTPUTS = 2
 
 # Scenario disruption categories
 DISRUPTION_TYPES = [
-    'none',
-    'construction',
-    'lane_closure',
-    'transit_line',
-    'major_event',
+    "none",
+    "construction",
+    "lane_closure",
+    "transit_line",
+    "major_event",
 ]
 
 # Scenario feature vector length: one-hot disruption + capacity + demand
@@ -82,8 +87,8 @@ def parse_sumo_network(xml_file_path):
 
     node_id_to_idx = {}
     idx = 0
-    for junction in root.findall('junction'):
-        j_id = junction.get('id')
+    for junction in root.findall("junction"):
+        j_id = junction.get("id")
         if j_id and j_id not in node_id_to_idx:
             node_id_to_idx[j_id] = idx
             idx += 1
@@ -91,9 +96,9 @@ def parse_sumo_network(xml_file_path):
     src_list, dst_list = [], []
     edge_meta = []
 
-    for edge_el in root.findall('edge'):
-        from_id = edge_el.get('from')
-        to_id = edge_el.get('to')
+    for edge_el in root.findall("edge"):
+        from_id = edge_el.get("from")
+        to_id = edge_el.get("to")
         if from_id not in node_id_to_idx or to_id not in node_id_to_idx:
             continue
 
@@ -102,20 +107,22 @@ def parse_sumo_network(xml_file_path):
         src_list.append(src)
         dst_list.append(dst)
 
-        lanes = edge_el.findall('lane')
+        lanes = edge_el.findall("lane")
         num_lanes = len(lanes) if lanes else 1
-        speed = float(lanes[0].get('speed', '13.89')) if lanes else 13.89
-        length = float(lanes[0].get('length', '100.0')) if lanes else 100.0
+        speed = float(lanes[0].get("speed", "13.89")) if lanes else 13.89
+        length = float(lanes[0].get("length", "100.0")) if lanes else 100.0
 
-        edge_meta.append({
-            'from_id': from_id,
-            'to_id': to_id,
-            'src_idx': src,
-            'dst_idx': dst,
-            'num_lanes': num_lanes,
-            'speed_limit': speed,
-            'length': length,
-        })
+        edge_meta.append(
+            {
+                "from_id": from_id,
+                "to_id": to_id,
+                "src_idx": src,
+                "dst_idx": dst,
+                "num_lanes": num_lanes,
+                "speed_limit": speed,
+                "length": length,
+            }
+        )
 
     edge_index = torch.tensor([src_list, dst_list], dtype=torch.long)
     return edge_index, node_id_to_idx, edge_meta
@@ -141,9 +148,14 @@ class ScenarioDescriptor:
         Multiplicative demand shift (1.0 = baseline).
     """
 
-    def __init__(self, scenario_id, disruption_type='none',
-                 affected_edge_indices=None, capacity_reduction=1.0,
-                 demand_multiplier=1.0):
+    def __init__(
+        self,
+        scenario_id,
+        disruption_type="none",
+        affected_edge_indices=None,
+        capacity_reduction=1.0,
+        demand_multiplier=1.0,
+    ):
         self.scenario_id = scenario_id
         self.disruption_type = disruption_type
         self.affected_edge_indices = affected_edge_indices or []
@@ -182,26 +194,25 @@ class ScenarioDescriptor:
 # ===========================================================================
 def infer_scenario_metadata(parquet_path):
     """Build default :class:`ScenarioDescriptor` objects from scenario IDs."""
-    df = pd.read_parquet(parquet_path, columns=['scenario_id'])
+    df = pd.read_parquet(parquet_path, columns=["scenario_id"])
     metadata = {}
-    for sid in df['scenario_id'].unique():
+    for sid in df["scenario_id"].unique():
         s = str(sid).lower()
-        if 'construction' in s:
-            dtype = 'construction'
-        elif 'closure' in s or 'lane' in s:
-            dtype = 'lane_closure'
-        elif 'transit' in s:
-            dtype = 'transit_line'
-        elif 'event' in s:
-            dtype = 'major_event'
+        if "construction" in s:
+            dtype = "construction"
+        elif "closure" in s or "lane" in s:
+            dtype = "lane_closure"
+        elif "transit" in s:
+            dtype = "transit_line"
+        elif "event" in s:
+            dtype = "major_event"
         else:
-            dtype = 'none'
+            dtype = "none"
         metadata[sid] = ScenarioDescriptor(scenario_id=sid, disruption_type=dtype)
     return metadata
 
 
-def create_graph_dataset(parquet_path, edge_index, node_id_to_idx,
-                         scenario_metadata=None):
+def create_graph_dataset(parquet_path, edge_index, node_id_to_idx, scenario_metadata=None):
     """Build a list of :class:`torch_geometric.data.Data` from Parquet logs.
 
     Each sample corresponds to one ``(scenario_id, time_step)`` snapshot.
@@ -213,14 +224,14 @@ def create_graph_dataset(parquet_path, edge_index, node_id_to_idx,
     num_nodes = len(node_id_to_idx)
     dataset = []
 
-    for (sid, ts), grp in df.groupby(['scenario_id', 'time_step']):
-        grp = grp.sort_values('intersection_id')
+    for (sid, ts), grp in df.groupby(["scenario_id", "time_step"]):
+        grp = grp.sort_values("intersection_id")
 
         # Build per-node feature matrix (zero-padded for missing nodes)
         x_np = np.zeros((num_nodes, len(NODE_FEATURE_COLUMNS)), dtype=np.float32)
         y_np = np.zeros((num_nodes, len(TARGET_COLUMNS)), dtype=np.float32)
         for _, row in grp.iterrows():
-            iid = row['intersection_id']
+            iid = row["intersection_id"]
             if iid not in node_id_to_idx:
                 continue
             ni = node_id_to_idx[iid]
@@ -241,9 +252,14 @@ def create_graph_dataset(parquet_path, edge_index, node_id_to_idx,
 
         x = torch.cat([x, sf], dim=1)
 
-        dataset.append(Data(
-            x=x, edge_index=sc_edge_index, y=y, scenario_id=sid,
-        ))
+        dataset.append(
+            Data(
+                x=x,
+                edge_index=sc_edge_index,
+                y=y,
+                scenario_id=sid,
+            )
+        )
 
     return dataset
 
@@ -305,7 +321,7 @@ class EdgeLookup:
             df = pd.read_csv(intersection_map_csv)
             # Expected columns: intersection_name, junction_id
             for _, row in df.iterrows():
-                self._name_to_junction[row['intersection_name']] = row['junction_id']
+                self._name_to_junction[row["intersection_name"]] = row["junction_id"]
 
     def find(self, from_junction_id, to_junction_id):
         """Return all edge indices connecting two SUMO junction IDs.
@@ -323,8 +339,9 @@ class EdgeLookup:
             Indices into ``edge_meta`` (and therefore into ``edge_index``).
         """
         return [
-            i for i, e in enumerate(self._meta)
-            if e['from_id'] == from_junction_id and e['to_id'] == to_junction_id
+            i
+            for i, e in enumerate(self._meta)
+            if e["from_id"] == from_junction_id and e["to_id"] == to_junction_id
         ]
 
     def find_by_name(self, from_name, to_name):
@@ -334,8 +351,7 @@ class EdgeLookup:
         """
         if not self._name_to_junction:
             raise RuntimeError(
-                "No intersection map loaded. Pass intersection_map_csv to "
-                "build_edge_lookup()."
+                "No intersection map loaded. Pass intersection_map_csv to " "build_edge_lookup()."
             )
         fj = self._name_to_junction.get(from_name)
         tj = self._name_to_junction.get(to_name)
@@ -361,8 +377,9 @@ class EdgeLookup:
             print(f"  {name}  ->  {jid}")
 
 
-def predict_scenario(model, scenario, baseline_traffic_state,
-                     edge_index, node_id_to_idx, device='cpu'):
+def predict_scenario(
+    model, scenario, baseline_traffic_state, edge_index, node_id_to_idx, device="cpu"
+):
     """Run PIRA inference for a single scenario.
 
     This is the main entry point for interactive planning.  You do not need
@@ -405,7 +422,7 @@ def predict_scenario(model, scenario, baseline_traffic_state,
 
     if isinstance(baseline_traffic_state, pd.DataFrame):
         for _, row in baseline_traffic_state.iterrows():
-            iid = row.get('intersection_id')
+            iid = row.get("intersection_id")
             if iid in node_id_to_idx:
                 ni = node_id_to_idx[iid]
                 x_np[ni] = [row.get(c, 0.0) for c in NODE_FEATURE_COLUMNS]
@@ -441,20 +458,22 @@ def predict_scenario(model, scenario, baseline_traffic_state,
     impact_df = pd.DataFrame(
         impact_np,
         columns=TARGET_COLUMNS,
-        index=[idx_to_junction.get(i, f'node_{i}') for i in range(num_nodes)],
+        index=[idx_to_junction.get(i, f"node_{i}") for i in range(num_nodes)],
     )
-    impact_df.index.name = 'junction_id'
+    impact_df.index.name = "junction_id"
 
     timing_df = pd.DataFrame(
         timing_np,
-        columns=['green_ns_s', 'green_ew_s'],
+        columns=["green_ns_s", "green_ew_s"],
         index=impact_df.index,
     )
-    timing_df.index.name = 'junction_id'
+    timing_df.index.name = "junction_id"
 
-    print(f"Inference: {elapsed_ms:.1f} ms  "
-          f"({'PASS' if elapsed_ms < 5000 else 'FAIL'} < 5 s target)")
-    return {'impact': impact_df, 'timing': timing_df, 'elapsed_ms': elapsed_ms}
+    print(
+        f"Inference: {elapsed_ms:.1f} ms  "
+        f"({'PASS' if elapsed_ms < 5000 else 'FAIL'} < 5 s target)"
+    )
+    return {"impact": impact_df, "timing": timing_df, "elapsed_ms": elapsed_ms}
 
 
 # ===========================================================================
@@ -474,10 +493,16 @@ class PIRAModel(nn.Module):
       (``Softplus`` ensures positive outputs).
     """
 
-    def __init__(self, num_node_features, num_scenario_features=SCENARIO_FEAT_DIM,
-                 hidden_dim=128, num_heads=4,
-                 num_impact_targets=3, num_timing_outputs=NUM_TIMING_OUTPUTS,
-                 dropout=0.1):
+    def __init__(
+        self,
+        num_node_features,
+        num_scenario_features=SCENARIO_FEAT_DIM,
+        hidden_dim=128,
+        num_heads=4,
+        num_impact_targets=3,
+        num_timing_outputs=NUM_TIMING_OUTPUTS,
+        dropout=0.1,
+    ):
         super().__init__()
         in_dim = num_node_features + num_scenario_features
 
@@ -542,21 +567,31 @@ class PIRAModel(nn.Module):
 # ===========================================================================
 def curriculum_sort(dataset, baseline_num_edges):
     """Sort samples by scenario complexity (edges removed + demand shift)."""
+
     def _key(d):
         removed = baseline_num_edges - d.edge_index.shape[1]
         # scenario features are the last SCENARIO_FEAT_DIM cols of x
         demand = d.x[0, -1].item()  # demand_multiplier
         return removed + abs(demand - 1.0)
+
     return sorted(dataset, key=_key)
 
 
-def train_pira(model, train_data, val_data, optimizer,
-               epochs=100, batch_size=32, curriculum=True,
-               device='cpu', patience=15):
+def train_pira(
+    model,
+    train_data,
+    val_data,
+    optimizer,
+    epochs=100,
+    batch_size=32,
+    curriculum=True,
+    device="cpu",
+    patience=15,
+):
     """Train with optional curriculum learning and early stopping."""
     model = model.to(device)
     impact_crit = nn.MSELoss()
-    best_val = float('inf')
+    best_val = float("inf")
     wait = 0
     best_state = None
 
@@ -582,8 +617,9 @@ def train_pira(model, train_data, val_data, optimizer,
             loss_impact = impact_crit(impact_pred, batch.y)
 
             # Timing regularisation: encourage durations in [7, 60] seconds
-            loss_timing = (torch.mean(F.relu(7.0 - timing_pred))
-                           + torch.mean(F.relu(timing_pred - 60.0)))
+            loss_timing = torch.mean(F.relu(7.0 - timing_pred)) + torch.mean(
+                F.relu(timing_pred - 60.0)
+            )
 
             loss = loss_impact + 0.1 * loss_timing
             loss.backward()
@@ -604,9 +640,11 @@ def train_pira(model, train_data, val_data, optimizer,
             wait += 1
 
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"Epoch {epoch+1:>3}/{epochs} | "
-                  f"train {avg_train:.4f} | val {val_loss:.4f} | "
-                  f"samples {len(epoch_data)}/{len(train_data)}")
+            print(
+                f"Epoch {epoch+1:>3}/{epochs} | "
+                f"train {avg_train:.4f} | val {val_loss:.4f} | "
+                f"samples {len(epoch_data)}/{len(train_data)}"
+            )
 
         if wait >= patience:
             print(f"Early stopping at epoch {epoch+1}")
@@ -633,7 +671,7 @@ def _validate(model, data, batch_size, device):
 # ===========================================================================
 # 6. Evaluation
 # ===========================================================================
-def evaluate_pira(model, test_data, batch_size=32, device='cpu'):
+def evaluate_pira(model, test_data, batch_size=32, device="cpu"):
     """Evaluate against TANGO success criteria (MAPE, R^2, latency)."""
     model = model.to(device)
     model.eval()
@@ -686,19 +724,19 @@ def evaluate_pira(model, test_data, batch_size=32, device='cpu'):
     print("=" * 55)
 
     return {
-        'mape': mape.item(),
-        'r2_overall': r2_all.item(),
-        'r2_per_target': {TARGET_COLUMNS[i]: r2_each[i].item()
-                          for i in range(len(TARGET_COLUMNS))},
-        'avg_inference_ms': avg_ms,
+        "mape": mape.item(),
+        "r2_overall": r2_all.item(),
+        "r2_per_target": {
+            TARGET_COLUMNS[i]: r2_each[i].item() for i in range(len(TARGET_COLUMNS))
+        },
+        "avg_inference_ms": avg_ms,
     }
 
 
 # ===========================================================================
 # 7. Synthetic Data (for testing without SUMO data)
 # ===========================================================================
-def generate_synthetic_dataset(num_nodes=8, num_scenarios=20,
-                               steps_per_scenario=50, seed=42):
+def generate_synthetic_dataset(num_nodes=8, num_scenarios=20, steps_per_scenario=50, seed=42):
     """Create a synthetic dataset to verify the pipeline end to end.
 
     Returns ``(dataset, base_edge_index)`` where *dataset* is a list of
@@ -719,14 +757,12 @@ def generate_synthetic_dataset(num_nodes=8, num_scenarios=20,
     for s in range(num_scenarios):
         dtype = rng.choice(DISRUPTION_TYPES)
         demand = rng.uniform(0.5, 2.0)
-        cap = rng.uniform(0.0, 1.0) if dtype != 'none' else 1.0
+        cap = rng.uniform(0.0, 1.0) if dtype != "none" else 1.0
 
         sc = ScenarioDescriptor(
-            scenario_id=f'scenario_{s:03d}',
+            scenario_id=f"scenario_{s:03d}",
             disruption_type=dtype,
-            affected_edge_indices=(
-                [rng.randint(0, base_ei.shape[1])] if dtype != 'none' else []
-            ),
+            affected_edge_indices=([rng.randint(0, base_ei.shape[1])] if dtype != "none" else []),
             capacity_reduction=cap,
             demand_multiplier=demand,
         )
@@ -742,20 +778,24 @@ def generate_synthetic_dataset(num_nodes=8, num_scenarios=20,
             act_phase = rng.randint(0, 4, (num_nodes, 1)).astype(np.float32)
             act_green = rng.uniform(7, 45, (num_nodes, 1)).astype(np.float32)
 
-            x_np = np.hstack([queue, arrivals, speed, phase, tod,
-                              act_phase, act_green])
+            x_np = np.hstack([queue, arrivals, speed, phase, tod, act_phase, act_green])
             x = torch.cat([torch.tensor(x_np), sf], dim=1)
 
             # Targets with causal structure so the model can learn
             cap_safe = max(cap, 0.1)
-            delay = (queue.sum(1) * demand / cap_safe)
-            throughput = (arrivals.sum(1) * min(cap, 1.0))
+            delay = queue.sum(1) * demand / cap_safe
+            throughput = arrivals.sum(1) * min(cap, 1.0)
             q_total = queue.sum(1)
             y = torch.tensor(np.stack([delay, throughput, q_total], 1))
 
-            dataset.append(Data(
-                x=x, edge_index=sc_ei, y=y, scenario_id=sc.scenario_id,
-            ))
+            dataset.append(
+                Data(
+                    x=x,
+                    edge_index=sc_ei,
+                    y=y,
+                    scenario_id=sc.scenario_id,
+                )
+            )
 
     return dataset, base_ei
 
@@ -766,24 +806,27 @@ def generate_synthetic_dataset(num_nodes=8, num_scenarios=20,
 def main():
     import argparse
 
-    p = argparse.ArgumentParser(description='PIRA - Planning Infrastructure Response Analyzer')
-    p.add_argument('--network', type=str, default=None,
-                   help='Path to SUMO osm.net.xml')
-    p.add_argument('--data', type=str, default=None,
-                   help='Path to Parquet dataset (data/final/dataset.parquet)')
-    p.add_argument('--synthetic', action='store_true',
-                   help='Use synthetic data for testing')
-    p.add_argument('--epochs', type=int, default=100)
-    p.add_argument('--batch-size', type=int, default=32)
-    p.add_argument('--lr', type=float, default=1e-3)
-    p.add_argument('--hidden-dim', type=int, default=128)
-    p.add_argument('--no-curriculum', action='store_true')
-    p.add_argument('--device', type=str, default='auto')
-    p.add_argument('--save', type=str, default='pira_model.pt')
+    p = argparse.ArgumentParser(description="PIRA - Planning Infrastructure Response Analyzer")
+    p.add_argument("--network", type=str, default=None, help="Path to SUMO osm.net.xml")
+    p.add_argument(
+        "--data",
+        type=str,
+        default=None,
+        help="Path to Parquet dataset (data/final/dataset.parquet)",
+    )
+    p.add_argument("--synthetic", action="store_true", help="Use synthetic data for testing")
+    p.add_argument("--epochs", type=int, default=100)
+    p.add_argument("--batch-size", type=int, default=32)
+    p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--hidden-dim", type=int, default=128)
+    p.add_argument("--no-curriculum", action="store_true")
+    p.add_argument("--device", type=str, default="auto")
+    p.add_argument("--save", type=str, default="pira_model.pt")
     args = p.parse_args()
 
-    device = ('cuda' if torch.cuda.is_available() else 'cpu') \
-        if args.device == 'auto' else args.device
+    device = (
+        ("cuda" if torch.cuda.is_available() else "cpu") if args.device == "auto" else args.device
+    )
     print(f"Device: {device}")
     curriculum = not args.no_curriculum
 
@@ -818,26 +861,35 @@ def main():
     optimizer = Adam(model.parameters(), lr=args.lr)
 
     # ── Train ──
-    model = train_pira(model, train_set, test_set, optimizer,
-                       epochs=args.epochs, batch_size=args.batch_size,
-                       curriculum=curriculum, device=device)
+    model = train_pira(
+        model,
+        train_set,
+        test_set,
+        optimizer,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        curriculum=curriculum,
+        device=device,
+    )
 
     # ── Evaluate ──
-    results = evaluate_pira(model, test_set,
-                            batch_size=args.batch_size, device=device)
+    results = evaluate_pira(model, test_set, batch_size=args.batch_size, device=device)
 
     # ── Save ──
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'config': {
-            'num_node_features': len(NODE_FEATURE_COLUMNS),
-            'num_scenario_features': SCENARIO_FEAT_DIM,
-            'hidden_dim': args.hidden_dim,
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "config": {
+                "num_node_features": len(NODE_FEATURE_COLUMNS),
+                "num_scenario_features": SCENARIO_FEAT_DIM,
+                "hidden_dim": args.hidden_dim,
+            },
+            "results": results,
         },
-        'results': results,
-    }, args.save)
+        args.save,
+    )
     print(f"Saved to {args.save}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

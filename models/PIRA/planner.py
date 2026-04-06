@@ -118,19 +118,17 @@ class PIRAPlanner:
         ``'cpu'``, ``'cuda'``, or ``'auto'`` (default — picks GPU if available).
     """
 
-    def __init__(self, model_path, network_path, data_path,
-                 intersection_map=None, device='auto'):
+    def __init__(self, model_path, network_path, data_path, intersection_map=None, device="auto"):
 
         self._device = (
-            'cuda' if torch.cuda.is_available() else 'cpu'
-        ) if device == 'auto' else device
+            ("cuda" if torch.cuda.is_available() else "cpu") if device == "auto" else device
+        )
 
         print("Loading PIRA planner ...")
 
         # ── Network ──────────────────────────────────────────────────────────
         # Parse the SUMO road network to get the graph structure.
-        self._edge_index, self._node_map, self._edge_meta = \
-            parse_sumo_network(network_path)
+        self._edge_index, self._node_map, self._edge_meta = parse_sumo_network(network_path)
 
         num_nodes = len(self._node_map)
         num_edges = self._edge_index.shape[1]
@@ -151,9 +149,9 @@ class PIRAPlanner:
 
         # ── Model ─────────────────────────────────────────────────────────────
         checkpoint = torch.load(model_path, map_location=self._device)
-        cfg = checkpoint['config']
+        cfg = checkpoint["config"]
         self._model = PIRAModel(**cfg)
-        self._model.load_state_dict(checkpoint['model_state_dict'])
+        self._model.load_state_dict(checkpoint["model_state_dict"])
         self._model.eval()
         print(f"  Model   : loaded from '{model_path}'")
         print("Ready.\n")
@@ -212,8 +210,16 @@ class PIRAPlanner:
         print(f"  Found {len(indices)} road segment(s): edge index/indices {indices}")
         return indices
 
-    def run(self, disruption_type, from_intersection, to_intersection,
-            capacity=0.5, demand=1.0, scenario_id=None, verbose=True):
+    def run(
+        self,
+        disruption_type,
+        from_intersection,
+        to_intersection,
+        capacity=0.5,
+        demand=1.0,
+        scenario_id=None,
+        verbose=True,
+    ):
         """Predict the traffic impact of a disruption scenario.
 
         Parameters
@@ -259,27 +265,20 @@ class PIRAPlanner:
 
         # ── Validate capacity ────────────────────────────────────────────────
         if not (0.0 <= capacity <= 1.0):
-            raise ValueError(
-                f"capacity must be between 0.0 and 1.0, got {capacity}."
-            )
+            raise ValueError(f"capacity must be between 0.0 and 1.0, got {capacity}.")
 
         # ── Validate demand ──────────────────────────────────────────────────
         if demand <= 0.0:
-            raise ValueError(
-                f"demand must be positive, got {demand}."
-            )
+            raise ValueError(f"demand must be positive, got {demand}.")
 
         # ── Find affected edges ──────────────────────────────────────────────
-        print(f"\nScenario: {disruption_type}  |  "
-              f"capacity={capacity}  |  demand={demand}x")
+        print(f"\nScenario: {disruption_type}  |  " f"capacity={capacity}  |  demand={demand}x")
         print(f"  Segment : '{from_intersection}'  ->  '{to_intersection}'")
 
         affected_edges = self.find_edge(from_intersection, to_intersection)
 
         # ── Build descriptor ─────────────────────────────────────────────────
-        sid = scenario_id or (
-            f"{disruption_type}_{from_intersection[:20].replace(' ', '_')}"
-        )
+        sid = scenario_id or (f"{disruption_type}_{from_intersection[:20].replace(' ', '_')}")
         scenario = ScenarioDescriptor(
             scenario_id=sid,
             disruption_type=disruption_type,
@@ -311,22 +310,21 @@ class PIRAPlanner:
     def _extract_baseline(self, df):
         """Pull the latest time-step of the baseline scenario as the snapshot."""
         # Prefer 'baseline' scenario; fall back to the first scenario available.
-        baseline_ids = [s for s in df['scenario_id'].unique()
-                        if 'baseline' in str(s).lower()]
-        sid = baseline_ids[0] if baseline_ids else df['scenario_id'].iloc[0]
+        baseline_ids = [s for s in df["scenario_id"].unique() if "baseline" in str(s).lower()]
+        sid = baseline_ids[0] if baseline_ids else df["scenario_id"].iloc[0]
 
-        subset = df[df['scenario_id'] == sid]
-        latest_step = subset['time_step'].max()
-        return subset[subset['time_step'] == latest_step].copy()
+        subset = df[df["scenario_id"] == sid]
+        latest_step = subset["time_step"].max()
+        return subset[subset["time_step"] == latest_step].copy()
 
     def _print_summary(self, result, disruption_type, capacity, demand):
         """Print a formatted, human-readable results summary."""
-        impact = result['impact'].copy()
-        timing = result['timing'].copy()
-        ms = result['elapsed_ms']
+        impact = result["impact"].copy()
+        timing = result["timing"].copy()
+        ms = result["elapsed_ms"]
 
         # Sort intersections by predicted delay so worst ones are first.
-        impact_sorted = impact.sort_values('delay', ascending=False)
+        impact_sorted = impact.sort_values("delay", ascending=False)
 
         bar = "=" * 62
         print(f"\n{bar}")
@@ -343,9 +341,11 @@ class PIRAPlanner:
         print(f"  {'-'*35} {'-'*9} {'-'*11} {'-'*6}")
         for jid, row in impact_sorted.iterrows():
             # Truncate long junction IDs so the table stays readable
-            label = (jid[:33] + '..') if len(jid) > 35 else jid
-            print(f"  {label:<35} {row['delay']:>9.1f} "
-                  f"{row['throughput']:>11.1f} {row['queue_total']:>6.1f}")
+            label = (jid[:33] + "..") if len(jid) > 35 else jid
+            print(
+                f"  {label:<35} {row['delay']:>9.1f} "
+                f"{row['throughput']:>11.1f} {row['queue_total']:>6.1f}"
+            )
 
         print()
 
@@ -353,7 +353,7 @@ class PIRAPlanner:
         print(f"  {'Junction':<35} {'Green NS (s)':>13} {'Green EW (s)':>13}")
         print(f"  {'-'*35} {'-'*13} {'-'*13}")
         for jid, row in timing.iterrows():
-            label = (jid[:33] + '..') if len(jid) > 35 else jid
+            label = (jid[:33] + "..") if len(jid) > 35 else jid
             print(f"  {label:<35} {row['green_ns_s']:>13.1f} {row['green_ew_s']:>13.1f}")
 
         print(bar)
@@ -382,14 +382,13 @@ def _interactive():
     """))
 
     # ── File paths ───────────────────────────────────────────────────────────
-    model_path   = input("Path to model     [pira_model.pt]: ").strip() \
-                   or 'pira_model.pt'
-    network_path = input("Path to network   [osm.net.xml]: ").strip() \
-                   or 'osm.net.xml'
-    data_path    = input("Path to dataset   [data/final/dataset.parquet]: ").strip() \
-                   or 'data/final/dataset.parquet'
-    map_path     = input("Intersection map  [intersection_map.csv, Enter to skip]: ").strip() \
-                   or None
+    model_path = input("Path to model     [pira_model.pt]: ").strip() or "pira_model.pt"
+    network_path = input("Path to network   [osm.net.xml]: ").strip() or "osm.net.xml"
+    data_path = (
+        input("Path to dataset   [data/final/dataset.parquet]: ").strip()
+        or "data/final/dataset.parquet"
+    )
+    map_path = input("Intersection map  [intersection_map.csv, Enter to skip]: ").strip() or None
 
     try:
         planner = PIRAPlanner(
@@ -403,7 +402,7 @@ def _interactive():
 
     # ── Show available intersections ─────────────────────────────────────────
     show = input("Show available intersections? [Y/n]: ").strip().lower()
-    if show != 'n':
+    if show != "n":
         planner.list_intersections()
 
     # ── Scenario loop ────────────────────────────────────────────────────────
@@ -415,15 +414,14 @@ def _interactive():
         # Disruption type
         print(f"Disruption types: {', '.join(DISRUPTION_TYPES)}")
         while True:
-            dtype = input("Disruption type [lane_closure]: ").strip() \
-                    or 'lane_closure'
+            dtype = input("Disruption type [lane_closure]: ").strip() or "lane_closure"
             if dtype in DISRUPTION_TYPES:
                 break
             print(f"  Invalid. Choose from: {DISRUPTION_TYPES}")
 
         # Intersections
         from_int = input("From intersection (road origin ): ").strip()
-        to_int   = input("To   intersection (road destination): ").strip()
+        to_int = input("To   intersection (road destination): ").strip()
 
         # Capacity
         while True:
@@ -450,21 +448,21 @@ def _interactive():
         # Run
         try:
             planner.run(
-                disruption_type   = dtype,
-                from_intersection = from_int,
-                to_intersection   = to_int,
-                capacity          = cap,
-                demand            = dem,
+                disruption_type=dtype,
+                from_intersection=from_int,
+                to_intersection=to_int,
+                capacity=cap,
+                demand=dem,
             )
         except (ValueError, KeyError) as exc:
             print(f"\nError: {exc}")
 
         again = input("\nRun another scenario? [Y/n]: ").strip().lower()
-        if again == 'n':
+        if again == "n":
             break
 
     print("\nDone.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _interactive()

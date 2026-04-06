@@ -197,8 +197,9 @@ def _apply_surge(rou_path: Path, surge: SurgeConfig, net: Any) -> None:
     )
 
 
-def _inject_streetcars(rou_path: Path, injection: StreetcarInjection, net: Any,
-                       sim_seconds: int) -> None:
+def _inject_streetcars(
+    rou_path: Path, injection: StreetcarInjection, net: Any, sim_seconds: int
+) -> None:
     """Inject streetcar flows based on TTC schedule headways.
 
     Creates through-running streetcar flows on Dundas corridor edges.
@@ -211,7 +212,9 @@ def _inject_streetcars(rou_path: Path, injection: StreetcarInjection, net: Any,
     existing_types = {vt.get("id") for vt in root.findall("vType")}
     if "streetcar" not in existing_types:
         studio.add_vehicle_type(
-            root, "streetcar", studio.DEFAULT_VTYPE["streetcar"],
+            root,
+            "streetcar",
+            studio.DEFAULT_VTYPE["streetcar"],
             {"vClass": "tram", "guiShape": "rail"},
         )
 
@@ -285,6 +288,7 @@ def _audit_scenario(rou_path: Path, spec: ScenarioSpec) -> dict[str, Any]:
 
     # Count by type
     from collections import Counter
+
     type_vehicles = Counter()
     type_flows = Counter()
     for f in flows:
@@ -439,7 +443,12 @@ def export_settings(spec: ScenarioSpec, audit: dict[str, Any] | None = None) -> 
         lines.append("[Output Summary]")
         lines.append(f"vehicle_flows: {audit.get('total_flows', '?')}")
         lines.append(f"pedestrian_flows: {audit.get('person_flow_count', '?')}")
-        type_plurals = {"bus": "buses", "car": "cars", "truck": "trucks", "streetcar": "streetcars"}
+        type_plurals = {
+            "bus": "buses",
+            "car": "cars",
+            "truck": "trucks",
+            "streetcar": "streetcars",
+        }
         for vtype_name, count in sorted(audit.get("by_type", {}).items()):
             plural = type_plurals.get(vtype_name, f"{vtype_name}s")
             lines.append(f"total_{plural}: {count}")
@@ -453,8 +462,10 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
     print(f"\n{'='*60}")
     print(f"Generating: {spec.name}")
     print(f"  Rationale: {spec.rationale}")
-    print(f"  Time: {spec.time_window_start // 60:02d}:{spec.time_window_start % 60:02d} "
-          f"for {spec.time_window_duration} min, {spec.simulation_seconds}s sim")
+    print(
+        f"  Time: {spec.time_window_start // 60:02d}:{spec.time_window_start % 60:02d} "
+        f"for {spec.time_window_duration} min, {spec.simulation_seconds}s sim"
+    )
     print(f"  Modes: {spec.included_modes}")
 
     network_key = str(NETWORK_PATH.resolve())
@@ -492,8 +503,10 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
         print(f"  FAILED: {result.message}")
         return None
 
-    print(f"  Base demand: {result.stats['vehicle_flows_created']} flows, "
-          f"{result.stats['vehicles_by_mode']}")
+    print(
+        f"  Base demand: {result.stats['vehicle_flows_created']} flows, "
+        f"{result.stats['vehicles_by_mode']}"
+    )
 
     # Move to curriculum directory
     src = result.demand_path
@@ -520,8 +533,10 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
             print(f"    - {issue}")
     else:
         print(f"  Audit: PASS")
-    print(f"  Final: {audit['total_flows']} vehicle flows, "
-          f"{audit['person_flow_count']} ped flows ({audit['total_pedestrians']} peds)")
+    print(
+        f"  Final: {audit['total_flows']} vehicle flows, "
+        f"{audit['person_flow_count']} ped flows ({audit['total_pedestrians']} peds)"
+    )
     print(f"  By type: {audit['by_type']}")
     print(f"  Output: {dst}")
 
@@ -544,7 +559,7 @@ SCENARIOS: dict[str, ScenarioSpec] = {
     "am_peak": ScenarioSpec(
         name="am_peak",
         rationale="MP's home turf — near-stationary, car-dominated. "
-                  "Includes real AM pedestrians + 505 streetcar at 6-min headway.",
+        "Includes real AM pedestrians + 505 streetcar at 6-min headway.",
         time_window_start=420,  # 07:00
         time_window_duration=120,
         simulation_seconds=900,
@@ -564,7 +579,7 @@ SCENARIOS: dict[str, ScenarioSpec] = {
     "pm_peak": ScenarioSpec(
         name="pm_peak",
         rationale="Tidal reversal — eastbound dominance + heavy peds (~4k/hr Spadina). "
-                  "MP can't anticipate directional shift.",
+        "MP can't anticipate directional shift.",
         time_window_start=960,  # 16:00
         time_window_duration=120,
         simulation_seconds=900,
@@ -583,7 +598,7 @@ SCENARIOS: dict[str, ScenarioSpec] = {
     "midday_multimodal": ScenarioSpec(
         name="midday_multimodal",
         rationale="Peak multimodal conflict — ~3,800 peds/hr at Spadina, "
-                  "505+buses, MP ignores person-weighting.",
+        "505+buses, MP ignores person-weighting.",
         time_window_start=660,  # 11:00
         time_window_duration=180,
         simulation_seconds=1200,
@@ -603,7 +618,7 @@ SCENARIOS: dict[str, ScenarioSpec] = {
     "demand_surge": ScenarioSpec(
         name="demand_surge",
         rationale="Event dispersal — 2x eastbound surge on PM base. "
-                  "MP over-allocates to surge, starves cross-streets.",
+        "MP over-allocates to surge, starves cross-streets.",
         time_window_start=960,  # 16:00 base
         time_window_duration=120,
         simulation_seconds=1200,
@@ -629,11 +644,18 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Generate curriculum training scenarios")
-    parser.add_argument("--scenarios", nargs="*", default=None,
-                        help="Scenario names to generate (default: all initial 4)")
+    parser.add_argument(
+        "--scenarios",
+        nargs="*",
+        default=None,
+        help="Scenario names to generate (default: all initial 4)",
+    )
     parser.add_argument("--list", action="store_true", help="List available scenarios and exit")
-    parser.add_argument("--export-settings", action="store_true",
-                        help="Export settings files without regenerating .rou.xml")
+    parser.add_argument(
+        "--export-settings",
+        action="store_true",
+        help="Export settings files without regenerating .rou.xml",
+    )
     args = parser.parse_args()
 
     if args.list:

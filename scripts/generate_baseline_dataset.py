@@ -137,10 +137,7 @@ def main(
 
             for s in range(seeds):
                 seed = base_seed + s
-                logger.info(
-                    f"{ctrl_name} / {scenario_id} / seed={seed} "
-                    f"({s + 1}/{seeds})"
-                )
+                logger.info(f"{ctrl_name} / {scenario_id} / seed={seed} " f"({s + 1}/{seeds})")
                 rows = _run_baseline(
                     controller_name=ctrl_name,
                     scenario_id=scenario_id,
@@ -161,9 +158,7 @@ def main(
 
             out_path = OUT_DIR / f"{ctrl_name}_{scenario_id}.parquet"
             df.to_parquet(out_path, index=False)
-            logger.success(
-                f"Saved {len(df)} rows → {out_path.relative_to(PROJ_ROOT)}"
-            )
+            logger.success(f"Saved {len(df)} rows → {out_path.relative_to(PROJ_ROOT)}")
 
     # Also produce a single merged file for convenience
     parts = [p for p in OUT_DIR.glob("*.parquet") if p.name != "baseline_dataset.parquet"]
@@ -171,9 +166,7 @@ def main(
         merged = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
         merged_path = OUT_DIR / "baseline_dataset.parquet"
         merged.to_parquet(merged_path, index=False)
-        logger.success(
-            f"Merged {len(merged)} total rows → {merged_path.relative_to(PROJ_ROOT)}"
-        )
+        logger.success(f"Merged {len(merged)} total rows → {merged_path.relative_to(PROJ_ROOT)}")
 
 
 if __name__ == "__main__":

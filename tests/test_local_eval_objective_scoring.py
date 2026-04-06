@@ -80,9 +80,7 @@ class _FakeKPITracker:
         )
 
 
-def test_local_eval_records_objective_score_for_all_controllers(
-    monkeypatch, tmp_path: Path
-):
+def test_local_eval_records_objective_score_for_all_controllers(monkeypatch, tmp_path: Path):
     model_path = tmp_path / "model.pt"
     model_path.write_bytes(b"placeholder")
     out_csv = tmp_path / "eval.csv"

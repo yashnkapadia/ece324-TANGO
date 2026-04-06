@@ -18,5 +18,4 @@ from ece324_tango.sumo_rl.environment.resco_envs import (
     ingolstadt21,
 )
 
-
 __version__ = "1.4.5"

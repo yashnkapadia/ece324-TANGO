@@ -178,12 +178,8 @@ class MAPPOTrainer:
             if self.gobs_norm is not None
             else np.asarray(global_obs, dtype=np.float32)
         )
-        obs_t = torch.tensor(obs_n, dtype=torch.float32, device=self.device).unsqueeze(
-            0
-        )
-        gobs_t = torch.tensor(
-            gobs_n, dtype=torch.float32, device=self.device
-        ).unsqueeze(0)
+        obs_t = torch.tensor(obs_n, dtype=torch.float32, device=self.device).unsqueeze(0)
+        gobs_t = torch.tensor(gobs_n, dtype=torch.float32, device=self.device).unsqueeze(0)
         logits = self.actor(obs_t)
         if n_valid_actions is not None and n_valid_actions < logits.shape[-1]:
             logits[0, n_valid_actions:] = float("-inf")
@@ -208,9 +204,11 @@ class MAPPOTrainer:
         N = len(obs_list)
         obs_arr = np.stack(
             [
-                self.obs_norm.normalize(o)
-                if self.obs_norm is not None
-                else np.asarray(o, dtype=np.float32)
+                (
+                    self.obs_norm.normalize(o)
+                    if self.obs_norm is not None
+                    else np.asarray(o, dtype=np.float32)
+                )
                 for o in obs_list
             ]
         )
@@ -252,9 +250,7 @@ class MAPPOTrainer:
         advantages = np.zeros_like(rewards)
         gae = 0.0
         for t in reversed(range(len(rewards))):
-            delta = (
-                rewards[t] + self.gamma * values[t + 1] * (1.0 - dones[t]) - values[t]
-            )
+            delta = rewards[t] + self.gamma * values[t + 1] * (1.0 - dones[t]) - values[t]
             gae = delta + self.gamma * self.gae_lambda * (1.0 - dones[t]) * gae
             advantages[t] = gae
         returns = advantages + values[:-1]
@@ -267,14 +263,10 @@ class MAPPOTrainer:
         minibatch_size: int = 512,
     ):
         obs = torch.tensor(batch["obs"], dtype=torch.float32, device=self.device)
-        gobs = torch.tensor(
-            batch["global_obs"], dtype=torch.float32, device=self.device
-        )
+        gobs = torch.tensor(batch["global_obs"], dtype=torch.float32, device=self.device)
         actions = torch.tensor(batch["actions"], dtype=torch.long, device=self.device)
         old_logp = torch.tensor(batch["logp"], dtype=torch.float32, device=self.device)
-        returns = torch.tensor(
-            batch["returns"], dtype=torch.float32, device=self.device
-        )
+        returns = torch.tensor(batch["returns"], dtype=torch.float32, device=self.device)
         adv = torch.tensor(batch["advantages"], dtype=torch.float32, device=self.device)
         n_actions_total = int(self.actor.net[-1].out_features)
         n_valid_actions = torch.tensor(
@@ -314,9 +306,7 @@ class MAPPOTrainer:
                 logits = self.actor(obs[mb])
                 mb_valid = torch.clamp(n_valid_actions[mb], min=1, max=logits.shape[-1])
                 if torch.any(mb_valid < logits.shape[-1]):
-                    action_ids = torch.arange(
-                        logits.shape[-1], device=self.device
-                    ).unsqueeze(0)
+                    action_ids = torch.arange(logits.shape[-1], device=self.device).unsqueeze(0)
                     invalid_mask = action_ids >= mb_valid.unsqueeze(1)
                     logits = logits.masked_fill(invalid_mask, float("-inf"))
                 dist = Categorical(logits=logits)
@@ -325,13 +315,8 @@ class MAPPOTrainer:
 
                 ratio = torch.exp(logp - old_logp[mb])
                 surr1 = ratio * adv[mb]
-                surr2 = (
-                    torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps)
-                    * adv[mb]
-                )
-                actor_loss = (
-                    -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
-                )
+                surr2 = torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps) * adv[mb]
+                actor_loss = -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
 
                 values = self.critic(gobs[mb])
                 critic_loss = nn.functional.mse_loss(values, returns[mb])
@@ -395,12 +380,8 @@ class MAPPOTrainer:
         payload = {
             "actor": self.actor.state_dict(),
             "critic": self.critic.state_dict(),
-            "obs_norm": self.obs_norm.state_dict()
-            if self.obs_norm is not None
-            else None,
-            "gobs_norm": self.gobs_norm.state_dict()
-            if self.gobs_norm is not None
-            else None,
+            "obs_norm": self.obs_norm.state_dict() if self.obs_norm is not None else None,
+            "gobs_norm": self.gobs_norm.state_dict() if self.gobs_norm is not None else None,
             "use_obs_norm": bool(self.use_obs_norm),
         }
         torch.save(payload, out_path)
@@ -411,9 +392,7 @@ class MAPPOTrainer:
         if "use_obs_norm" in payload:
             return bool(payload["use_obs_norm"])
         # Backward compatibility for checkpoints predating explicit metadata.
-        return bool(
-            payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None
-        )
+        return bool(payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None)
 
     def load(self, in_path: str):
         # weights_only=False is required because the payload includes numpy/list arrays
@@ -423,8 +402,7 @@ class MAPPOTrainer:
         ckpt_use_obs_norm = bool(
             payload.get(
                 "use_obs_norm",
-                payload.get("obs_norm") is not None
-                or payload.get("gobs_norm") is not None,
+                payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None,
             )
         )
         if ckpt_use_obs_norm != bool(self.use_obs_norm):
@@ -493,9 +471,9 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
         if residual_mode == "action_gate":
             # Replace plain Actor with GatedActor; input includes MP one-hot
             augmented_dim = obs_dim + n_actions
-            self.actor = GatedActor(
-                augmented_dim, n_actions, gate_init_bias=gate_init_bias
-            ).to(self.device)
+            self.actor = GatedActor(augmented_dim, n_actions, gate_init_bias=gate_init_bias).to(
+                self.device
+            )
             # Recreate actor optimizer for the new parameters
             self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=actor_lr)
 
@@ -515,16 +493,12 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
         N = len(obs_list)
 
         # Augment observations with MP one-hot
-        obs_arr = np.stack(
-            [np.asarray(o, dtype=np.float32) for o in obs_list]
-        )
+        obs_arr = np.stack([np.asarray(o, dtype=np.float32) for o in obs_list])
         augmented = augment_obs_with_mp(obs_arr, mp_actions_list, self.n_actions)
 
         # Normalize augmented obs if normalizer is active
         if self.obs_norm is not None:
-            augmented = np.stack(
-                [self.obs_norm.normalize(a) for a in augmented]
-            )
+            augmented = np.stack([self.obs_norm.normalize(a) for a in augmented])
 
         gobs_n = (
             self.gobs_norm.normalize(global_obs)
@@ -617,18 +591,12 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
 
         # --- Action-gate PPO update with joint logp ---
         obs = torch.tensor(batch["obs"], dtype=torch.float32, device=self.device)
-        gobs = torch.tensor(
-            batch["global_obs"], dtype=torch.float32, device=self.device
-        )
+        gobs = torch.tensor(batch["global_obs"], dtype=torch.float32, device=self.device)
         actions = torch.tensor(batch["actions"], dtype=torch.long, device=self.device)
         old_logp = torch.tensor(batch["logp"], dtype=torch.float32, device=self.device)
-        returns = torch.tensor(
-            batch["returns"], dtype=torch.float32, device=self.device
-        )
+        returns = torch.tensor(batch["returns"], dtype=torch.float32, device=self.device)
         adv = torch.tensor(batch["advantages"], dtype=torch.float32, device=self.device)
-        gates = torch.tensor(
-            batch["gate_decisions"], dtype=torch.long, device=self.device
-        )
+        gates = torch.tensor(batch["gate_decisions"], dtype=torch.long, device=self.device)
         n_actions_total = self.n_actions
         n_valid_actions = torch.tensor(
             batch.get(
@@ -676,17 +644,13 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
                 gate_logp_mb = gate_dist.log_prob(gate_cat_indices[mb])
 
                 # Mask invalid phase actions
-                mb_valid = torch.clamp(
-                    n_valid_actions[mb], min=1, max=phase_logits_mb.shape[-1]
-                )
+                mb_valid = torch.clamp(n_valid_actions[mb], min=1, max=phase_logits_mb.shape[-1])
                 if torch.any(mb_valid < phase_logits_mb.shape[-1]):
                     action_ids = torch.arange(
                         phase_logits_mb.shape[-1], device=self.device
                     ).unsqueeze(0)
                     invalid_mask = action_ids >= mb_valid.unsqueeze(1)
-                    phase_logits_mb = phase_logits_mb.masked_fill(
-                        invalid_mask, float("-inf")
-                    )
+                    phase_logits_mb = phase_logits_mb.masked_fill(invalid_mask, float("-inf"))
 
                 phase_dist = Categorical(logits=phase_logits_mb)
                 # phase_logp for all rows; gate_mask zeros out gate=0 rows
@@ -695,19 +659,12 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
                 new_logp = gate_logp_mb + gate_mask_mb * phase_logp_mb
 
                 # Gate entropy + weighted phase entropy
-                entropy = gate_dist.entropy().mean() + (
-                    gate_mask_mb * phase_dist.entropy()
-                ).mean()
+                entropy = gate_dist.entropy().mean() + (gate_mask_mb * phase_dist.entropy()).mean()
 
                 ratio = torch.exp(new_logp - old_logp[mb])
                 surr1 = ratio * adv[mb]
-                surr2 = (
-                    torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps)
-                    * adv[mb]
-                )
-                actor_loss = (
-                    -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
-                )
+                surr2 = torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps) * adv[mb]
+                actor_loss = -torch.min(surr1, surr2).mean() - self.entropy_coef * entropy
 
                 values = self.critic(gobs[mb])
                 critic_loss = nn.functional.mse_loss(values, returns[mb])
@@ -734,12 +691,8 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
         payload = {
             "actor": self.actor.state_dict(),
             "critic": self.critic.state_dict(),
-            "obs_norm": self.obs_norm.state_dict()
-            if self.obs_norm is not None
-            else None,
-            "gobs_norm": self.gobs_norm.state_dict()
-            if self.gobs_norm is not None
-            else None,
+            "obs_norm": self.obs_norm.state_dict() if self.obs_norm is not None else None,
+            "gobs_norm": self.gobs_norm.state_dict() if self.gobs_norm is not None else None,
             "use_obs_norm": bool(self.use_obs_norm),
             "residual_mode": self.residual_mode,
         }
@@ -756,8 +709,7 @@ class ResidualMAPPOTrainer(MAPPOTrainer):
         ckpt_use_obs_norm = bool(
             payload.get(
                 "use_obs_norm",
-                payload.get("obs_norm") is not None
-                or payload.get("gobs_norm") is not None,
+                payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None,
             )
         )
         if ckpt_use_obs_norm != bool(self.use_obs_norm):

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import pandas as pd

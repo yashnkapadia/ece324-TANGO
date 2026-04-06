@@ -60,9 +60,7 @@ class _KPIAssertsNotCalledAfterFatal:
     def update(self, env):
         self.count += 1
         if getattr(env, "fatal_seen", False):
-            raise AssertionError(
-                "kpi.update() should not run after FatalTraCIError in eval loop"
-            )
+            raise AssertionError("kpi.update() should not run after FatalTraCIError in eval loop")
 
     def summary(self):
         return SimpleNamespace(

@@ -85,9 +85,7 @@ class _FakeKPITracker:
         )
 
 
-def test_fixed_time_baseline_resets_cursor_each_eval_episode(
-    monkeypatch, tmp_path: Path
-):
+def test_fixed_time_baseline_resets_cursor_each_eval_episode(monkeypatch, tmp_path: Path):
     _TrackingFixedTimeController.actions_seen = []
     _TrackingFixedTimeController.reset_calls = 0
 

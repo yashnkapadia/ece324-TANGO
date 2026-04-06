@@ -29,7 +29,12 @@ if __name__ == "__main__":
 
         file = sys.argv[i]
         # y = list(map(float, [e.halting for e in parse_fast(file, 'step',['halting'])]))
-        y = list(map(lambda x: float(x) * 3.6, [e.meanSpeed for e in parse_fast(file, "step", ["meanSpeed"])]))
+        y = list(
+            map(
+                lambda x: float(x) * 3.6,
+                [e.meanSpeed for e in parse_fast(file, "step", ["meanSpeed"])],
+            )
+        )
         x = [i for i in range(1, len(y) + 1)]
         # plt.plot(x, y)
         y_av = movingaverage(y, 360)

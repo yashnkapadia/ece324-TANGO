@@ -89,9 +89,7 @@ def _format_eval_summary(
 
     ratio_parts = [f"MAPPO/MP={ratio:.3f}"]
     if "nema" in results:
-        ratio_parts.append(
-            f"MAPPO/NEMA={mappo_ptl / max(results['nema'], 1.0):.3f}"
-        )
+        ratio_parts.append(f"MAPPO/NEMA={mappo_ptl / max(results['nema'], 1.0):.3f}")
 
     log_line = (
         f"  EVAL ep {train_ep} [{scenario_name}]: person-time-loss -> "
@@ -126,8 +124,7 @@ def _load_checkpoint_metadata(checkpoint_path: Path) -> dict:
         "use_obs_norm": bool(
             payload.get(
                 "use_obs_norm",
-                payload.get("obs_norm") is not None
-                or payload.get("gobs_norm") is not None,
+                payload.get("obs_norm") is not None or payload.get("gobs_norm") is not None,
             )
         ),
         "residual_mode": payload.get("residual_mode", "none"),
@@ -306,9 +303,7 @@ def _run_episode_worker(args: dict) -> dict:
             gobs = flatten_obs_by_agent(obs, active_agents)
 
             padded_obs_list = [
-                pad_observation(
-                    np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim
-                )
+                pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
                 for a in active_agents
             ]
             n_valid_list = [action_dims_dict[a] for a in active_agents]
@@ -347,24 +342,16 @@ def _run_episode_worker(args: dict) -> dict:
             else:
                 batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
 
-            actions = {
-                a: int(batch_out[i]["action"])
-                for i, a in enumerate(active_agents)
-            }
+            actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
             action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
             terminated = False
             truncated = False
             try:
-                next_obs, rewards, done, _infos, terminated, truncated = (
-                    extract_step_details(env.step(actions))
+                next_obs, rewards, done, _infos, terminated, truncated = extract_step_details(
+                    env.step(actions)
                 )
-                if (
-                    done
-                    and not terminated
-                    and not truncated
-                    and (ep_steps + 1) >= max_steps
-                ):
+                if done and not terminated and not truncated and (ep_steps + 1) >= max_steps:
                     truncated = True
             except FatalTraCIError:
                 done = True
@@ -372,13 +359,10 @@ def _run_episode_worker(args: dict) -> dict:
                 truncated = True
                 next_obs = {}
                 rewards = {a: 0.0 for a in active_agents}
-                bootstrap_obs = {
-                    a: np.asarray(obs[a], dtype=np.float32) for a in active_agents
-                }
+                bootstrap_obs = {a: np.asarray(obs[a], dtype=np.float32) for a in active_agents}
             if done and truncated and next_obs:
                 bootstrap_obs = {
-                    a: np.asarray(next_obs[a], dtype=np.float32)
-                    for a in sorted(next_obs.keys())
+                    a: np.asarray(next_obs[a], dtype=np.float32) for a in sorted(next_obs.keys())
                 }
             episode_terminated = episode_terminated or (done and terminated)
             episode_truncated = episode_truncated or (done and truncated)
@@ -397,28 +381,26 @@ def _run_episode_worker(args: dict) -> dict:
                     metrics_by_agent=metrics_by_agent,
                     mode=reward_mode,
                     weights=reward_weights,
-                    mp_deviation_by_agent={
-                        a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
-                        for a in active_agents
-                    }
-                    if reward_mode == "residual_mp"
-                    else None,
+                    mp_deviation_by_agent=(
+                        {
+                            a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
+                            for a in active_agents
+                        }
+                        if reward_mode == "residual_mp"
+                        else None
+                    ),
                 )
                 if shaped_rewards:
                     rewards = shaped_rewards
             else:
                 metrics_by_agent = {}
 
-            global_reward = (
-                float(np.mean(list(rewards.values()))) if rewards else 0.0
-            )
+            global_reward = float(np.mean(list(rewards.values()))) if rewards else 0.0
             ep_reward += global_reward
             ep_steps += 1
 
             for i, agent in enumerate(active_agents):
-                a_obs = (
-                    aug_obs_list[i] if aug_obs_list is not None else padded_obs_list[i]
-                )
+                a_obs = aug_obs_list[i] if aug_obs_list is not None else padded_obs_list[i]
                 if metrics_by_agent:
                     all_rows.append(metrics_by_agent[agent].to_row())
                 agent_reward = float(rewards.get(agent, global_reward))
@@ -677,9 +659,7 @@ class LocalMappoBackend(AsceTrainerBackend):
         if worst < best_eval_ratio:
             best_eval_ratio = worst
             self._save_model_atomic(trainer, best_model_path)
-            logger.info(
-                f"  New overall best model: MAPPO/MP={worst:.3f} → {best_model_path}"
-            )
+            logger.info(f"  New overall best model: MAPPO/MP={worst:.3f} → {best_model_path}")
 
         for res in per_scenario_results:
             scenario_name = res["scenario_name"]
@@ -739,15 +719,11 @@ class LocalMappoBackend(AsceTrainerBackend):
         last_eval_ratios: dict[str, float],
     ) -> None:
         worst_scenario = (
-            max(last_eval_ratios, key=last_eval_ratios.get)
-            if last_eval_ratios
-            else ""
+            max(last_eval_ratios, key=last_eval_ratios.get) if last_eval_ratios else ""
         )
         payload = {
             "start_episode": int(start_episode),
-            "best_eval_ratio": float(best_eval_ratio)
-            if best_eval_ratio != float("inf")
-            else None,
+            "best_eval_ratio": float(best_eval_ratio) if best_eval_ratio != float("inf") else None,
             "scenario_best_ratios": {
                 k: (float(v) if v != float("inf") else None)
                 for k, v in scenario_best_ratios.items()
@@ -790,9 +766,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 raise RuntimeError("No observations received from SUMO environment.")
 
             ordered_agents = sorted(obs.keys())
-            obs_dim = max(
-                int(np.asarray(obs[a], dtype=np.float32).size) for a in ordered_agents
-            )
+            obs_dim = max(int(np.asarray(obs[a], dtype=np.float32).size) for a in ordered_agents)
             global_obs_dim = int(flatten_obs_by_agent(obs, ordered_agents).size)
 
             action_dims = {a: int(env.action_spaces(a).n) for a in ordered_agents}
@@ -878,9 +852,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         if not existing_metrics.empty and "episode" in existing_metrics:
                             start_episode = int(existing_metrics["episode"].max()) + 1
                             recovered_start_episode = True
-                        logger.info(
-                            f"Resumed from {cfg.model_path} at episode {start_episode}"
-                        )
+                        logger.info(f"Resumed from {cfg.model_path} at episode {start_episode}")
                     except EmptyDataError:
                         logger.warning(
                             f"Episode metrics CSV is empty: {cfg.episode_metrics_csv}. "
@@ -931,9 +903,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 if cfg.route_files
                 else [Path(cfg.route_file).stem.removesuffix(".rou")]
             )
-            scenario_best_paths = _build_scenario_best_paths(
-                cfg.model_path, eval_scenario_names
-            )
+            scenario_best_paths = _build_scenario_best_paths(cfg.model_path, eval_scenario_names)
             scenario_best_ratios = {
                 scenario_name: float("inf") for scenario_name in eval_scenario_names
             }
@@ -946,9 +916,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         ep_metrics_df = pd.read_csv(cfg.episode_metrics_csv)
                         ep_metrics = ep_metrics_df.to_dict("records")
                     except EmptyDataError:
-                        logger.warning(
-                            f"Episode metrics CSV is empty: {cfg.episode_metrics_csv}"
-                        )
+                        logger.warning(f"Episode metrics CSV is empty: {cfg.episode_metrics_csv}")
                     except Exception as exc:
                         logger.warning(
                             f"Failed to restore episode metrics from {cfg.episode_metrics_csv}: {exc}"
@@ -958,9 +926,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         rollout_df = pd.read_csv(cfg.rollout_csv)
                         all_rows = rollout_df.to_dict("records")
                     except EmptyDataError:
-                        logger.warning(
-                            f"Rollout CSV is empty: {cfg.rollout_csv}"
-                        )
+                        logger.warning(f"Rollout CSV is empty: {cfg.rollout_csv}")
                     except Exception as exc:
                         logger.warning(
                             f"Failed to restore rollout rows from {cfg.rollout_csv}: {exc}"
@@ -973,15 +939,11 @@ class LocalMappoBackend(AsceTrainerBackend):
                     for scenario_name, ratio in train_state.get(
                         "scenario_best_ratios", {}
                     ).items():
-                        if (
-                            scenario_name in scenario_best_ratios
-                            and ratio is not None
-                        ):
+                        if scenario_name in scenario_best_ratios and ratio is not None:
                             scenario_best_ratios[scenario_name] = float(ratio)
                     last_eval_ep = train_state.get("last_eval_ep")
                     last_eval_ratios = {
-                        k: float(v)
-                        for k, v in train_state.get("last_eval_ratios", {}).items()
+                        k: float(v) for k, v in train_state.get("last_eval_ratios", {}).items()
                     }
 
             # Resolve effective reward mode: action_gate supersedes residual_mp
@@ -1042,12 +1004,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                     best_eval_ratio = float(train_state["best_eval_ratio"])
                 last_eval_ep = train_state.get("last_eval_ep")
                 last_eval_ratios = {
-                    k: float(v)
-                    for k, v in train_state.get("last_eval_ratios", {}).items()
+                    k: float(v) for k, v in train_state.get("last_eval_ratios", {}).items()
                 }
-                for scenario_name, ratio in train_state.get(
-                    "scenario_best_ratios", {}
-                ).items():
+                for scenario_name, ratio in train_state.get("scenario_best_ratios", {}).items():
                     if scenario_name in scenario_best_ratios and ratio is not None:
                         scenario_best_ratios[scenario_name] = float(ratio)
             else:
@@ -1091,9 +1050,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 if not obs:
                     continue
 
-                trajectories: Dict[str, List[Transition]] = {
-                    a: [] for a in sorted(obs.keys())
-                }
+                trajectories: Dict[str, List[Transition]] = {a: [] for a in sorted(obs.keys())}
                 done = False
                 max_steps = max(1, int(cfg.seconds // cfg.delta_time))
                 episode_terminated = False
@@ -1108,9 +1065,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     gobs = flatten_obs_by_agent(obs, active_agents)
 
                     padded_obs_list = [
-                        pad_observation(
-                            np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim
-                        )
+                        pad_observation(np.asarray(obs[a], dtype=np.float32), target_dim=obs_dim)
                         for a in active_agents
                     ]
                     n_valid_list = [action_dims[a] for a in active_agents]
@@ -1143,13 +1098,8 @@ class LocalMappoBackend(AsceTrainerBackend):
                             padded_obs_list, gobs, n_valid_list, mp_actions_list
                         )
                     else:
-                        batch_out = trainer.act_batch(
-                            padded_obs_list, gobs, n_valid_list
-                        )
-                    actions = {
-                        a: int(batch_out[i]["action"])
-                        for i, a in enumerate(active_agents)
-                    }
+                        batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
+                    actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)}
                     action_meta = {a: batch_out[i] for i, a in enumerate(active_agents)}
 
                     terminated = False
@@ -1183,8 +1133,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         # Use raw obs (not padded) so flatten_obs_by_agent produces
                         # the same global_obs_dim that gobs_norm was initialized with.
                         bootstrap_obs = {
-                            a: np.asarray(obs[a], dtype=np.float32)
-                            for a in active_agents
+                            a: np.asarray(obs[a], dtype=np.float32) for a in active_agents
                         }
                     if done and truncated and next_obs:
                         bootstrap_obs = {
@@ -1208,21 +1157,21 @@ class LocalMappoBackend(AsceTrainerBackend):
                             metrics_by_agent=metrics_by_agent,
                             mode=effective_reward_mode,
                             weights=reward_weights,
-                            mp_deviation_by_agent={
-                                a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
-                                for a in active_agents
-                            }
-                            if effective_reward_mode == "residual_mp"
-                            else None,
+                            mp_deviation_by_agent=(
+                                {
+                                    a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
+                                    for a in active_agents
+                                }
+                                if effective_reward_mode == "residual_mp"
+                                else None
+                            ),
                         )
                         if shaped_rewards:
                             rewards = shaped_rewards
                     else:
                         metrics_by_agent = {}
 
-                    global_reward = (
-                        float(np.mean(list(rewards.values()))) if rewards else 0.0
-                    )
+                    global_reward = float(np.mean(list(rewards.values()))) if rewards else 0.0
                     ep_reward += global_reward
                     ep_steps += 1
 
@@ -1296,11 +1245,7 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 gate_fraction = 0.0
                 if cfg.residual_mode == "action_gate":
-                    all_gates = [
-                        t.gate
-                        for traj in trajectories.values()
-                        for t in traj
-                    ]
+                    all_gates = [t.gate for traj in trajectories.values() for t in traj]
                     gate_fraction = float(np.mean(all_gates)) if all_gates else 0.0
 
                 ep_metrics.append(
@@ -1326,9 +1271,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 # Periodic checkpoint
                 if cfg.checkpoint_every > 0 and (ep + 1) % cfg.checkpoint_every == 0:
                     self._save_model_atomic(trainer, cfg.model_path)
-                    self._save_dataframe_atomic(
-                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
-                    )
+                    self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
                     self._save_train_state(
                         state_path=train_state_path,
                         start_episode=ep + 1,
@@ -1342,8 +1285,15 @@ class LocalMappoBackend(AsceTrainerBackend):
                 # Periodic baseline evaluation
                 if cfg.eval_every > 0 and (ep + 1) % cfg.eval_every == 0:
                     eval_res = self._run_inline_eval(
-                        cfg, env, trainer, obs_dim, global_obs_dim, action_dims,
-                        n_actions, ordered_agents, ep,
+                        cfg,
+                        env,
+                        trainer,
+                        obs_dim,
+                        global_obs_dim,
+                        action_dims,
+                        n_actions,
+                        ordered_agents,
+                        ep,
                         route_files=cfg.route_files if cfg.route_files else None,
                     )
                     best_eval_ratio = self._update_best_eval_checkpoints(
@@ -1356,8 +1306,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     )
                     last_eval_ep = ep
                     last_eval_ratios = {
-                        res["scenario_name"]: res["ratio"]
-                        for res in eval_res["per_scenario"]
+                        res["scenario_name"]: res["ratio"] for res in eval_res["per_scenario"]
                     }
                     self._save_train_state(
                         state_path=train_state_path,
@@ -1370,13 +1319,9 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Graceful exit on interrupt
                 if _interrupt_requested:
-                    logger.warning(
-                        f"Interrupted after episode {ep} — saving checkpoint ..."
-                    )
+                    logger.warning(f"Interrupted after episode {ep} — saving checkpoint ...")
                     self._save_model_atomic(trainer, cfg.model_path)
-                    self._save_dataframe_atomic(
-                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
-                    )
+                    self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
                     rollout_df = pd.DataFrame(all_rows)
                     if not rollout_df.empty:
                         rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
@@ -1396,9 +1341,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     break
 
             if cfg.num_workers == 1:
-                completed_training = (
-                    ran_training_episode and not _interrupt_requested
-                )
+                completed_training = ran_training_episode and not _interrupt_requested
 
             self._save_model_atomic(trainer, cfg.model_path)
             logger.success(f"Saved MAPPO model: {cfg.model_path}")
@@ -1428,9 +1371,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     "Increase --episodes to continue training."
                 )
             elif cfg.final_eval_seeds > 0 and completed_training and not _interrupt_requested:
-                logger.info(
-                    f"Running {cfg.final_eval_seeds}-seed final evaluation ..."
-                )
+                logger.info(f"Running {cfg.final_eval_seeds}-seed final evaluation ...")
                 final_ratios = []
                 for s in range(cfg.final_eval_seeds):
                     if _interrupt_requested:
@@ -1438,8 +1379,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                         break
                     eval_seed = cfg.seed + 1000 + s
                     eval_res = self._run_inline_eval(
-                        cfg, env, trainer, obs_dim, global_obs_dim,
-                        action_dims, n_actions, ordered_agents,
+                        cfg,
+                        env,
+                        trainer,
+                        obs_dim,
+                        global_obs_dim,
+                        action_dims,
+                        n_actions,
+                        ordered_agents,
                         train_ep=f"final-s{s}",
                         eval_seed=eval_seed,
                         route_files=cfg.route_files if cfg.route_files else None,
@@ -1505,11 +1452,13 @@ class LocalMappoBackend(AsceTrainerBackend):
         eval_workers = max(1, cfg.eval_workers)
         mp_ctx = multiprocessing.get_context("spawn")
         pool = mp_ctx.Pool(
-            processes=cfg.num_workers, maxtasksperchild=1,
+            processes=cfg.num_workers,
+            maxtasksperchild=1,
             initializer=_worker_init,
         )
         eval_pool = mp_ctx.Pool(
-            processes=eval_workers, maxtasksperchild=1,
+            processes=eval_workers,
+            maxtasksperchild=1,
             initializer=_worker_init,
         )
         bg_eval_result = None
@@ -1540,33 +1489,25 @@ class LocalMappoBackend(AsceTrainerBackend):
         next_episode_to_run = start_episode
 
         try:
-            for ep_batch_start in range(
-                start_episode, cfg.episodes, cfg.num_workers
-            ):
+            for ep_batch_start in range(start_episode, cfg.episodes, cfg.num_workers):
                 batch_t0 = _time.time()
                 batch_size = min(cfg.num_workers, cfg.episodes - ep_batch_start)
 
                 # Serialize current model state (CPU tensors for pickling)
                 model_state_dict = {
-                    "actor": {
-                        k: v.cpu() for k, v in trainer.actor.state_dict().items()
-                    },
-                    "critic": {
-                        k: v.cpu() for k, v in trainer.critic.state_dict().items()
-                    },
-                    "obs_norm": trainer.obs_norm.state_dict()
-                    if trainer.obs_norm is not None
-                    else None,
-                    "gobs_norm": trainer.gobs_norm.state_dict()
-                    if trainer.gobs_norm is not None
-                    else None,
+                    "actor": {k: v.cpu() for k, v in trainer.actor.state_dict().items()},
+                    "critic": {k: v.cpu() for k, v in trainer.critic.state_dict().items()},
+                    "obs_norm": (
+                        trainer.obs_norm.state_dict() if trainer.obs_norm is not None else None
+                    ),
+                    "gobs_norm": (
+                        trainer.gobs_norm.state_dict() if trainer.gobs_norm is not None else None
+                    ),
                 }
 
                 # Determine scenario pool for curriculum round-robin
                 scenario_pool = cfg.route_files if cfg.route_files else [cfg.route_file]
-                scenario_ids = [
-                    Path(rf).stem.removesuffix(".rou") for rf in scenario_pool
-                ]
+                scenario_ids = [Path(rf).stem.removesuffix(".rou") for rf in scenario_pool]
 
                 # Log scenario assignments for this batch
                 if len(scenario_pool) > 1:
@@ -1582,15 +1523,11 @@ class LocalMappoBackend(AsceTrainerBackend):
                 worker_args = [
                     {
                         "net_file": cfg.net_file,
-                        "route_file": scenario_pool[
-                            (ep_batch_start + i) % len(scenario_pool)
-                        ],
+                        "route_file": scenario_pool[(ep_batch_start + i) % len(scenario_pool)],
                         "seed": cfg.seed + ep_batch_start + i,
                         "seconds": cfg.seconds,
                         "delta_time": cfg.delta_time,
-                        "scenario_id": scenario_ids[
-                            (ep_batch_start + i) % len(scenario_pool)
-                        ],
+                        "scenario_id": scenario_ids[(ep_batch_start + i) % len(scenario_pool)],
                         "model_state_dict": model_state_dict,
                         "obs_dim": obs_dim,
                         "global_obs_dim": global_obs_dim,
@@ -1618,13 +1555,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                     pool.join()
                     # Save what we have
                     logger.warning(
-                        f"Interrupted during batch ep {ep_batch_start} "
-                        f"— saving checkpoint ..."
+                        f"Interrupted during batch ep {ep_batch_start} " f"— saving checkpoint ..."
                     )
                     self._save_model_atomic(trainer, cfg.model_path)
-                    self._save_dataframe_atomic(
-                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
-                    )
+                    self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
                     if train_state_path is not None:
                         self._save_train_state(
                             state_path=train_state_path,
@@ -1635,8 +1569,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             last_eval_ratios=last_eval_ratios,
                         )
                     logger.success(
-                        f"Checkpoint saved. "
-                        f"Resume with --resume --episodes {cfg.episodes}"
+                        f"Checkpoint saved. " f"Resume with --resume --episodes {cfg.episodes}"
                     )
                     tui.stop()
                     eval_pool.terminate()
@@ -1664,10 +1597,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         batches.append(batch)
 
                 if batches:
-                    merged_batch = {
-                        k: np.concatenate([b[k] for b in batches])
-                        for k in batches[0]
-                    }
+                    merged_batch = {k: np.concatenate([b[k] for b in batches]) for k in batches[0]}
                     losses = trainer.update(
                         batch=merged_batch,
                         ppo_epochs=cfg.ppo_epochs,
@@ -1696,8 +1626,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "episode": ep_num,
                             "seed": cfg.seed + ep_num,
                             "scenario_id": res["scenario_id"],
-                            "mean_global_reward": res["ep_reward"]
-                            / max(1, res["ep_steps"]),
+                            "mean_global_reward": res["ep_reward"] / max(1, res["ep_steps"]),
                             "steps": res["ep_steps"],
                             "actor_loss": losses["actor_loss"],
                             "critic_loss": losses["critic_loss"],
@@ -1714,9 +1643,7 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Update TUI panel
                 batch_gate_fracs = [r["gate_fraction"] for r in results]
-                batch_rewards = [
-                    r["ep_reward"] / max(1, r["ep_steps"]) for r in results
-                ]
+                batch_rewards = [r["ep_reward"] / max(1, r["ep_steps"]) for r in results]
                 tui.update_batch(
                     last_ep=ep_batch_start + batch_size - 1,
                     batch_wall_s=batch_elapsed,
@@ -1734,9 +1661,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                     else (last_ep + 1) >= cfg.checkpoint_every
                 ):
                     self._save_model_atomic(trainer, cfg.model_path)
-                    self._save_dataframe_atomic(
-                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
-                    )
+                    self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
                     if train_state_path is not None:
                         self._save_train_state(
                             state_path=train_state_path,
@@ -1781,8 +1706,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         )
                         last_eval_ep = ev_res["train_ep"]
                         last_eval_ratios = {
-                            res["scenario_name"]: res["ratio"]
-                            for res in ev_res["per_scenario"]
+                            res["scenario_name"]: res["ratio"] for res in ev_res["per_scenario"]
                         }
                         if train_state_path is not None:
                             self._save_train_state(
@@ -1817,18 +1741,18 @@ class LocalMappoBackend(AsceTrainerBackend):
                     else:
                         eval_routes = cfg.route_files if cfg.route_files else [cfg.route_file]
                         eval_model_state_dict = {
-                            "actor": {
-                                k: v.cpu() for k, v in trainer.actor.state_dict().items()
-                            },
-                            "critic": {
-                                k: v.cpu() for k, v in trainer.critic.state_dict().items()
-                            },
-                            "obs_norm": trainer.obs_norm.state_dict()
-                            if trainer.obs_norm is not None
-                            else None,
-                            "gobs_norm": trainer.gobs_norm.state_dict()
-                            if trainer.gobs_norm is not None
-                            else None,
+                            "actor": {k: v.cpu() for k, v in trainer.actor.state_dict().items()},
+                            "critic": {k: v.cpu() for k, v in trainer.critic.state_dict().items()},
+                            "obs_norm": (
+                                trainer.obs_norm.state_dict()
+                                if trainer.obs_norm is not None
+                                else None
+                            ),
+                            "gobs_norm": (
+                                trainer.gobs_norm.state_dict()
+                                if trainer.gobs_norm is not None
+                                else None
+                            ),
                         }
                         eval_args = [
                             {
@@ -1850,9 +1774,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             }
                             for eval_route in eval_routes
                         ]
-                        bg_eval_result = eval_pool.map_async(
-                            _run_eval_worker, eval_args
-                        )
+                        bg_eval_result = eval_pool.map_async(_run_eval_worker, eval_args)
                         logger.info(
                             f"  Background eval launched for ep {last_ep} "
                             f"({len(eval_routes)} scenarios, {eval_workers} eval workers)"
@@ -1861,9 +1783,7 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                 # Graceful exit on interrupt
                 if _interrupt_requested_ref():
-                    logger.warning(
-                        f"Interrupted after episode {last_ep} — saving checkpoint ..."
-                    )
+                    logger.warning(f"Interrupted after episode {last_ep} — saving checkpoint ...")
                     # Kill background eval immediately
                     if bg_eval_result is not None and not bg_eval_result.ready():
                         logger.info("  Terminating background eval ...")
@@ -1871,14 +1791,13 @@ class LocalMappoBackend(AsceTrainerBackend):
                         eval_pool.join()
                         # Recreate pool so finally block doesn't error
                         eval_pool = mp_ctx.Pool(
-                            processes=eval_workers, maxtasksperchild=1,
+                            processes=eval_workers,
+                            maxtasksperchild=1,
                             initializer=_worker_init,
                         )
                         bg_eval_result = None
                     self._save_model_atomic(trainer, cfg.model_path)
-                    self._save_dataframe_atomic(
-                        pd.DataFrame(ep_metrics), cfg.episode_metrics_csv
-                    )
+                    self._save_dataframe_atomic(pd.DataFrame(ep_metrics), cfg.episode_metrics_csv)
                     rollout_df = pd.DataFrame(all_rows)
                     if not rollout_df.empty:
                         rollout_df = rollout_df[ASCE_DATASET_COLUMNS]
@@ -1923,8 +1842,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                         )
                         last_eval_ep = ev_res["train_ep"]
                         last_eval_ratios = {
-                            res["scenario_name"]: res["ratio"]
-                            for res in ev_res["per_scenario"]
+                            res["scenario_name"]: res["ratio"] for res in ev_res["per_scenario"]
                         }
                         if train_state_path is not None:
                             self._save_train_state(
@@ -1949,11 +1867,21 @@ class LocalMappoBackend(AsceTrainerBackend):
             eval_pool.join()
         return best_eval_ratio, completed_training
 
-    def _run_inline_eval(self, cfg, train_env, trainer, obs_dim, global_obs_dim,
-                         action_dims, n_actions, ordered_agents, train_ep,
-                         eval_seed: int | None = None,
-                         route_files: list[str] | None = None,
-                         interrupt_requested_ref=None):
+    def _run_inline_eval(
+        self,
+        cfg,
+        train_env,
+        trainer,
+        obs_dim,
+        global_obs_dim,
+        action_dims,
+        n_actions,
+        ordered_agents,
+        train_ep,
+        eval_seed: int | None = None,
+        route_files: list[str] | None = None,
+        interrupt_requested_ref=None,
+    ):
         """Run one-episode eval for MAPPO vs baselines on the training scenario(s).
 
         When route_files is provided, evaluates on ALL scenarios and returns the
@@ -1971,16 +1899,22 @@ class LocalMappoBackend(AsceTrainerBackend):
                 break
             scenario_name = Path(eval_route).stem.removesuffix(".rou")
             ratio = self._run_single_eval(
-                cfg, trainer, obs_dim, global_obs_dim, action_dims, n_actions,
-                ordered_agents, train_ep, eval_route, scenario_name,
+                cfg,
+                trainer,
+                obs_dim,
+                global_obs_dim,
+                action_dims,
+                n_actions,
+                ordered_agents,
+                train_ep,
+                eval_route,
+                scenario_name,
                 eval_seed=eval_seed,
                 interrupt_requested_ref=interrupt_requested_ref,
             )
             if ratio is None:
                 break
-            per_scenario_results.append(
-                {"scenario_name": scenario_name, "ratio": ratio}
-            )
+            per_scenario_results.append({"scenario_name": scenario_name, "ratio": ratio})
 
         if not per_scenario_results:
             return {
@@ -2003,11 +1937,21 @@ class LocalMappoBackend(AsceTrainerBackend):
             "per_scenario": per_scenario_results,
         }
 
-    def _run_single_eval(self, cfg, trainer, obs_dim, global_obs_dim,
-                         action_dims, n_actions, ordered_agents, train_ep,
-                         route_file: str, scenario_name: str,
-                         eval_seed: int | None = None,
-                         interrupt_requested_ref=None):
+    def _run_single_eval(
+        self,
+        cfg,
+        trainer,
+        obs_dim,
+        global_obs_dim,
+        action_dims,
+        n_actions,
+        ordered_agents,
+        train_ep,
+        route_file: str,
+        scenario_name: str,
+        eval_seed: int | None = None,
+        interrupt_requested_ref=None,
+    ):
         """Run one-episode eval on a single scenario for MAPPO vs baselines."""
         import torch
         from ece324_tango.sumo_rl.environment.env import SumoEnvironment
@@ -2078,15 +2022,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                         if cfg.residual_mode == "action_gate":
                             mp_acts = mp.actions(obs, env=eval_env)
                             mp_list = [mp_acts.get(a, 0) for a in active]
-                            batch_out = trainer.act_batch_residual(
-                                padded, gobs, n_valid, mp_list
-                            )
+                            batch_out = trainer.act_batch_residual(padded, gobs, n_valid, mp_list)
                         else:
                             batch_out = trainer.act_batch(padded, gobs, n_valid)
-                        actions = {
-                            a: int(batch_out[i]["action"])
-                            for i, a in enumerate(active)
-                        }
+                        actions = {a: int(batch_out[i]["action"]) for i, a in enumerate(active)}
                     elif controller_name == "max_pressure":
                         actions = mp.actions(obs, env=eval_env)
                     elif controller_name == "fixed_time":
@@ -2098,7 +2037,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                         result = eval_env.step(actions)
                         if controller_name == "nema":
                             obs, _, dones, _ = result
-                            done = dones.get("__all__", False) if isinstance(dones, dict) else dones
+                            done = (
+                                dones.get("__all__", False) if isinstance(dones, dict) else dones
+                            )
                         else:
                             obs, _, done, _ = result
                             done = done.get("__all__", False) if isinstance(done, dict) else done
@@ -2144,9 +2085,7 @@ class LocalMappoBackend(AsceTrainerBackend):
             try:
                 obs = extract_reset_obs(env.reset(seed=cfg.seed))
                 if not obs:
-                    raise RuntimeError(
-                        "No observations received from SUMO environment."
-                    )
+                    raise RuntimeError("No observations received from SUMO environment.")
 
                 ordered_agents = sorted(obs.keys())
                 action_dims = {a: int(env.action_spaces(a).n) for a in ordered_agents}
@@ -2165,8 +2104,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                 trainer = None
                 if controller_name == "mappo":
                     obs_dim = max(
-                        int(np.asarray(obs[a], dtype=np.float32).size)
-                        for a in ordered_agents
+                        int(np.asarray(obs[a], dtype=np.float32).size) for a in ordered_agents
                     )
                     global_obs_dim = int(flatten_obs_by_agent(obs, ordered_agents).size)
                     n_actions = max(action_dims.values())
@@ -2209,10 +2147,7 @@ class LocalMappoBackend(AsceTrainerBackend):
 
                     while not done:
                         active_agents = sorted(obs.keys())
-                        prev_obs = {
-                            a: np.asarray(obs[a], dtype=np.float32)
-                            for a in active_agents
-                        }
+                        prev_obs = {a: np.asarray(obs[a], dtype=np.float32) for a in active_agents}
                         skip_kpi_update = False
 
                         # Compute MP actions BEFORE env.step (Pitfall C5)
@@ -2229,9 +2164,7 @@ class LocalMappoBackend(AsceTrainerBackend):
                             ]
                             n_valid_list = [action_dims[a] for a in active_agents]
                             if cfg.residual_mode == "action_gate":
-                                mp_actions_list = [
-                                    mp_actions.get(a, 0) for a in active_agents
-                                ]
+                                mp_actions_list = [mp_actions.get(a, 0) for a in active_agents]
                                 batch_out = trainer.act_batch_residual(
                                     padded_obs_list, gobs, n_valid_list, mp_actions_list
                                 )
@@ -2242,12 +2175,9 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 ep_gate_total += sum(gate_vals)
                                 ep_gate_steps += len(gate_vals)
                             else:
-                                batch_out = trainer.act_batch(
-                                    padded_obs_list, gobs, n_valid_list
-                                )
+                                batch_out = trainer.act_batch(padded_obs_list, gobs, n_valid_list)
                             actions = {
-                                a: int(batch_out[i]["action"])
-                                for i, a in enumerate(active_agents)
+                                a: int(batch_out[i]["action"]) for i, a in enumerate(active_agents)
                             }
                         elif controller_name == "fixed_time":
                             actions = fixed.actions(obs)
@@ -2281,12 +2211,14 @@ class LocalMappoBackend(AsceTrainerBackend):
                                 metrics_by_agent=metrics_by_agent,
                                 mode=cfg.reward_mode,
                                 weights=reward_weights,
-                                mp_deviation_by_agent={
-                                    a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
-                                    for a in active_agents
-                                }
-                                if cfg.reward_mode == "residual_mp"
-                                else None,
+                                mp_deviation_by_agent=(
+                                    {
+                                        a: float(int(actions.get(a, 0) != mp_actions.get(a, 0)))
+                                        for a in active_agents
+                                    }
+                                    if cfg.reward_mode == "residual_mp"
+                                    else None
+                                ),
                             )
                             objective_shaped_rewards = (
                                 shaped_rewards
@@ -2302,17 +2234,16 @@ class LocalMappoBackend(AsceTrainerBackend):
                         if rewards:
                             ep_rewards.append(float(np.mean(list(rewards.values()))))
                             for a, r in rewards.items():
-                                per_agent_reward_totals[a] = (
-                                    per_agent_reward_totals.get(a, 0.0) + float(r)
-                                )
+                                per_agent_reward_totals[a] = per_agent_reward_totals.get(
+                                    a, 0.0
+                                ) + float(r)
                         if objective_shaped_rewards:
                             objective_ep_rewards.append(
                                 float(np.mean(list(objective_shaped_rewards.values())))
                             )
                             for a, r in objective_shaped_rewards.items():
                                 objective_per_agent_reward_totals[a] = (
-                                    objective_per_agent_reward_totals.get(a, 0.0)
-                                    + float(r)
+                                    objective_per_agent_reward_totals.get(a, 0.0) + float(r)
                                 )
                         steps += 1
                         if not skip_kpi_update:
@@ -2325,15 +2256,10 @@ class LocalMappoBackend(AsceTrainerBackend):
                     delay_proxy = float(-avg_reward)
                     fairness = jain_index(list(per_agent_reward_totals.values()))
                     objective_avg_reward = (
-                        float(np.mean(objective_ep_rewards))
-                        if objective_ep_rewards
-                        else 0.0
+                        float(np.mean(objective_ep_rewards)) if objective_ep_rewards else 0.0
                     )
                     objective_throughput_proxy = float(
-                        sum(
-                            max(0.0, v)
-                            for v in objective_per_agent_reward_totals.values()
-                        )
+                        sum(max(0.0, v) for v in objective_per_agent_reward_totals.values())
                     )
                     objective_delay_proxy = float(-objective_avg_reward)
                     objective_fairness = jain_index(
@@ -2360,9 +2286,11 @@ class LocalMappoBackend(AsceTrainerBackend):
                             "avg_trip_time_s": k.avg_trip_time_s,
                             "arrived_vehicles": k.arrived_vehicles,
                             "vehicle_delay_jain": k.vehicle_delay_jain,
-                            "gate_fraction": float(ep_gate_total / max(1, ep_gate_steps))
-                            if cfg.residual_mode == "action_gate"
-                            else 0.0,
+                            "gate_fraction": (
+                                float(ep_gate_total / max(1, ep_gate_steps))
+                                if cfg.residual_mode == "action_gate"
+                                else 0.0
+                            ),
                         }
                     )
             finally:
