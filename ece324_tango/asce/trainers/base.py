@@ -1,0 +1,74 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+@dataclass
+class TrainConfig:
+    model_path: Path
+    rollout_csv: Path
+    episode_metrics_csv: Path
+    net_file: str
+    route_file: str
+    scenario_id: str
+    episodes: int
+    seconds: int
+    delta_time: int
+    ppo_epochs: int
+    minibatch_size: int
+    seed: int
+    use_gui: bool
+    device: str
+    backend_verbose: bool
+    reward_mode: str
+    reward_delay_weight: float
+    reward_throughput_weight: float
+    reward_fairness_weight: float
+    reward_residual_weight: float
+    use_obs_norm: bool = False
+    residual_mode: str = "none"
+    checkpoint_every: int = 0  # save checkpoint every N episodes (0 = end only)
+    eval_every: int = 0  # run baseline eval every N episodes (0 = disabled)
+    resume: bool = False  # resume from model_path if it exists
+    warm_start_model: str = ""  # load weights from this path as a prior (no episode resume)
+    reset_obs_norm: bool = False  # discard loaded obs normalizer stats (use with warm_start_model)
+    num_workers: int = 1  # parallel SUMO workers for episode collection (1=sequential)
+    eval_workers: int = 2  # background eval workers for scenario-parallel train-time evaluation
+    eval_baselines: list[str] = field(default_factory=lambda: ["max_pressure"])
+    scale_lr_by_workers: bool = True  # scale LR by 1/sqrt(num_workers) for batched training
+    final_eval_seeds: int = 5  # multi-seed eval after training (0 = disabled)
+    log_file: str = ""
+    route_files: list[str] = field(default_factory=list)  # curriculum scenario route files
+
+
+@dataclass
+class EvalConfig:
+    model_path: Path
+    out_csv: Path
+    net_file: str
+    route_file: str
+    seconds: int
+    delta_time: int
+    episodes: int
+    seed: int
+    use_gui: bool
+    device: str
+    backend_verbose: bool
+    reward_mode: str
+    reward_delay_weight: float
+    reward_throughput_weight: float
+    reward_fairness_weight: float
+    reward_residual_weight: float
+    use_obs_norm: bool = False
+    residual_mode: str = "none"
+
+
+class AsceTrainerBackend:
+    name: str = "base"
+
+    def train(self, cfg: TrainConfig) -> None:
+        raise NotImplementedError
+
+    def evaluate(self, cfg: EvalConfig) -> None:
+        raise NotImplementedError

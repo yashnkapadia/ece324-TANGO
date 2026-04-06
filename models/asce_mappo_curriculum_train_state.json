@@ -1,0 +1,18 @@
+{
+  "best_eval_ratio": 0.891036723846258,
+  "best_eval_scenario": "am_peak",
+  "last_eval_ep": 528,
+  "last_eval_ratios": {
+    "am_peak": 0.9199762508242778,
+    "demand_surge": 0.87400785344472,
+    "midday_multimodal": 0.8483136579078465,
+    "pm_peak": 0.9068304441215852
+  },
+  "scenario_best_ratios": {
+    "am_peak": 0.8731245267990546,
+    "demand_surge": 0.870389978621566,
+    "midday_multimodal": 0.825367651215971,
+    "pm_peak": 0.8654535136140289
+  },
+  "start_episode": 600
+}

@@ -1,9 +1,9 @@
-[project]
+[workspace]
 name = "ece324-TANGO"
 description = "Traffic Adaptive Network Guidance & Optimization - real-time adaptive signal control and cenario planning module that evaluates how nearby projects (construction, lane closures, new public transit lines) alter demand/capacity to recommend signal timing/phasing updates"
 version = "0.1.0"
-channels = ['conda-forge']
-platforms = ['linux-64', 'osx-64', 'osx-arm64', 'win-64']
+channels = ["conda-forge"]
+platforms = ["linux-64"]
 
 [dependencies]
 python = "~=3.12.0"
@@ -22,6 +22,11 @@ scikit-learn = "*"
 tqdm = "*"
 typer = "*"
 pip = "*"
+pytorch-gpu = "*"
+cuda-version = "12.8.*"
+openmpi = ">=5.0.8,<6"
+ruff = ">=0.15.4,<0.16"
+pyarrow = ">=20.0.0,<21"
 
 [pypi-dependencies]
 python-dotenv = "*"
@@ -32,3 +37,20 @@ sumolib = "*"
 traci = "*"
 lxml = "*"
 ece324_tango = { path = ".", editable = true }
+sumo-rl = ">=1.4.5, <2"
+dash = "*"
+plotly = "*"
+lxml = "*"
+pyproj = "*"
+
+[system-requirements]
+cuda = "12"
+
+[tasks]
+train-asce = "python -m ece324_tango.modeling.train --episodes 2 --seconds 1200 --delta-time 5"
+eval-asce = "python -m ece324_tango.modeling.predict --episodes 2 --seconds 1200 --delta-time 5"
+train-asce-toronto-demand = "python -m ece324_tango.modeling.train --net-file sumo/network/osm.net.xml --route-file sumo/demand/demand.rou.xml --scenario-id toronto_demand --episodes 30 --seconds 300 --delta-time 5 --reward-mode objective --use-obs-norm --model-path models/asce_mappo_toronto_demand.pt --rollout-csv data/processed/asce_rollout_toronto_demand.csv --episode-metrics-csv reports/results/asce_train_episode_metrics_toronto_demand.csv"
+eval-asce-toronto-demand = "python -m ece324_tango.modeling.predict --net-file sumo/network/osm.net.xml --route-file sumo/demand/demand.rou.xml --episodes 1 --seconds 120 --delta-time 5 --reward-mode objective --model-path models/asce_mappo_toronto_demand.pt --out-csv reports/results/asce_eval_metrics_toronto_demand.csv"
+validate-asce-schema = "python -m ece324_tango.dataset"
+plot-interim-figures = "python -m ece324_tango.plots"
+generate-curriculum = "python scripts/generate_curriculum.py"

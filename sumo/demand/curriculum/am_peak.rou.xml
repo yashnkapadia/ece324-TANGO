@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<routes>
+  <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="13.89" vClass="passenger"/>
+  <vType id="truck" accel="1.2" decel="3.5" sigma="0.5" length="10.5" maxSpeed="12.5" vClass="truck"/>
+  <vType id="bus" accel="1.3" decel="4" sigma="0.5" length="12" maxSpeed="12.5" vClass="bus"/>
+  <flow id="cars_0" type="car" begin="0" end="1200" number="81" from="-222151618#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="cars_1" type="car" begin="0" end="1200" number="122" from="-222151618#1" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_2" type="car" begin="0" end="1200" number="41" from="-222151618#1" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_3" type="car" begin="0" end="1200" number="35" from="222151619#1" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_4" type="car" begin="0" end="1200" number="340" from="222151619#1" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_5" type="car" begin="0" end="1200" number="22" from="222151619#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="cars_6" type="car" begin="0" end="1200" number="94" from="222151621" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_7" type="car" begin="0" end="1200" number="482" from="222151621" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_8" type="car" begin="0" end="1200" number="42" from="222151621" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_9" type="car" begin="0" end="1200" number="36" from="-222151622#1" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_10" type="car" begin="0" end="1200" number="1054" from="-222151622#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="cars_11" type="car" begin="0" end="1200" number="2" from="-222151622#1" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_12" type="truck" begin="0" end="1200" number="2" from="-222151618#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="trucks_13" type="truck" begin="0" end="1200" number="8" from="-222151618#1" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_14" type="truck" begin="0" end="1200" number="3" from="-222151618#1" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_15" type="truck" begin="0" end="1200" number="2" from="222151619#1" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_16" type="truck" begin="0" end="1200" number="5" from="222151619#1" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_17" type="truck" begin="0" end="1200" number="1" from="222151619#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="trucks_18" type="truck" begin="0" end="1200" number="8" from="222151621" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_19" type="truck" begin="0" end="1200" number="15" from="222151621" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_20" type="truck" begin="0" end="1200" number="1" from="222151621" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_21" type="truck" begin="0" end="1200" number="4" from="-222151622#1" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_22" type="truck" begin="0" end="1200" number="23" from="-222151622#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="buses_23" type="bus" begin="0" end="1200" number="1" from="-222151618#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="buses_24" type="bus" begin="0" end="1200" number="2" from="-222151618#1" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_25" type="bus" begin="0" end="1200" number="3" from="222151619#1" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_26" type="bus" begin="0" end="1200" number="2" from="222151621" to="-222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_27" type="bus" begin="0" end="1200" number="11" from="222151621" to="222151622#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_28" type="bus" begin="0" end="1200" number="1" from="222151621" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_29" type="bus" begin="0" end="1200" number="1" from="-222151622#1" to="222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_30" type="bus" begin="0" end="1200" number="6" from="-222151622#1" to="-1176470383#0" departLane="best" departSpeed="max"/>
+  <flow id="cars_31" type="car" begin="0" end="1200" number="99" from="-445865882#0" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="cars_32" type="car" begin="0" end="1200" number="601" from="-445865882#0" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="cars_33" type="car" begin="0" end="1200" number="22" from="-445865882#0" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_34" type="car" begin="0" end="1200" number="121" from="1096900277#0" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_35" type="car" begin="0" end="1200" number="46" from="1096900277#0" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="cars_36" type="car" begin="0" end="1200" number="168" from="493830471#5" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="cars_37" type="car" begin="0" end="1200" number="338" from="493830471#5" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_38" type="car" begin="0" end="1200" number="45" from="493830471#5" to="851809955#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_39" type="car" begin="0" end="1200" number="120" from="-493830469#2" to="851809955#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_40" type="car" begin="0" end="1200" number="670" from="-493830469#2" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="cars_41" type="car" begin="0" end="1200" number="108" from="-493830469#2" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="trucks_42" type="truck" begin="0" end="1200" number="5" from="-445865882#0" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="trucks_43" type="truck" begin="0" end="1200" number="11" from="-445865882#0" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="trucks_44" type="truck" begin="0" end="1200" number="4" from="-445865882#0" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_45" type="truck" begin="0" end="1200" number="3" from="1096900277#0" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_46" type="truck" begin="0" end="1200" number="4" from="493830471#5" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="trucks_47" type="truck" begin="0" end="1200" number="5" from="493830471#5" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_48" type="truck" begin="0" end="1200" number="5" from="493830471#5" to="851809955#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_49" type="truck" begin="0" end="1200" number="5" from="-493830469#2" to="851809955#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_50" type="truck" begin="0" end="1200" number="7" from="-493830469#2" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="trucks_51" type="truck" begin="0" end="1200" number="5" from="-493830469#2" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="buses_52" type="bus" begin="0" end="1200" number="1" from="-445865882#0" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="buses_53" type="bus" begin="0" end="1200" number="3" from="1096900277#0" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_54" type="bus" begin="0" end="1200" number="2" from="1096900277#0" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="buses_55" type="bus" begin="0" end="1200" number="2" from="493830471#5" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <flow id="buses_56" type="bus" begin="0" end="1200" number="4" from="493830471#5" to="493830469#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_57" type="bus" begin="0" end="1200" number="1" from="493830471#5" to="851809955#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_58" type="bus" begin="0" end="1200" number="1" from="-493830469#2" to="851809955#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_59" type="bus" begin="0" end="1200" number="3" from="-493830469#2" to="-493830471#6" departLane="best" departSpeed="max"/>
+  <flow id="buses_60" type="bus" begin="0" end="1200" number="1" from="-493830469#2" to="-1096900277#2" departLane="best" departSpeed="max"/>
+  <personFlow id="ped_0" begin="0" end="1200" number="426">
+    <walk from="544576271#0" to="544576271#3"/>
+  </personFlow>
+  <personFlow id="ped_1" begin="0" end="1200" number="258">
+    <walk from="544576268#0" to="544576268#4"/>
+  </personFlow>
+  <personFlow id="ped_2" begin="0" end="1200" number="342">
+    <walk from="1076227859" to="544576269#3"/>
+  </personFlow>
+  <personFlow id="ped_3" begin="0" end="1200" number="276">
+    <walk from="1076227862" to="544576266#3"/>
+  </personFlow>
+  <flow id="cars_61" type="car" begin="0" end="1200" number="42" from="-4651746#1" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_62" type="car" begin="0" end="1200" number="619" from="-4651746#1" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="cars_63" type="car" begin="0" end="1200" number="72" from="-4651746#1" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_64" type="car" begin="0" end="1200" number="63" from="5686834#2" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_65" type="car" begin="0" end="1200" number="548" from="5686834#2" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_66" type="car" begin="0" end="1200" number="171" from="5686834#2" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_67" type="car" begin="0" end="1200" number="51" from="445862068#4" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="cars_68" type="car" begin="0" end="1200" number="536" from="445862068#4" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_69" type="car" begin="0" end="1200" number="4" from="445862068#4" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_70" type="car" begin="0" end="1200" number="86" from="30759232#0" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_71" type="car" begin="0" end="1200" number="840" from="30759232#0" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_72" type="car" begin="0" end="1200" number="3" from="30759232#0" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="trucks_73" type="truck" begin="0" end="1200" number="4" from="-4651746#1" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_74" type="truck" begin="0" end="1200" number="24" from="-4651746#1" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="trucks_75" type="truck" begin="0" end="1200" number="4" from="-4651746#1" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_76" type="truck" begin="0" end="1200" number="9" from="5686834#2" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_77" type="truck" begin="0" end="1200" number="25" from="5686834#2" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_78" type="truck" begin="0" end="1200" number="16" from="5686834#2" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_79" type="truck" begin="0" end="1200" number="1" from="445862068#4" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="trucks_80" type="truck" begin="0" end="1200" number="13" from="445862068#4" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_81" type="truck" begin="0" end="1200" number="2" from="445862068#4" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_82" type="truck" begin="0" end="1200" number="5" from="30759232#0" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_83" type="truck" begin="0" end="1200" number="19" from="30759232#0" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_84" type="truck" begin="0" end="1200" number="1" from="30759232#0" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="buses_85" type="bus" begin="0" end="1200" number="1" from="-4651746#1" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_86" type="bus" begin="0" end="1200" number="10" from="-4651746#1" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="buses_87" type="bus" begin="0" end="1200" number="1" from="-4651746#1" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_88" type="bus" begin="0" end="1200" number="4" from="5686834#2" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_89" type="bus" begin="0" end="1200" number="2" from="5686834#2" to="28823583#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_90" type="bus" begin="0" end="1200" number="1" from="445862068#4" to="-5686834#2" departLane="best" departSpeed="max"/>
+  <flow id="buses_91" type="bus" begin="0" end="1200" number="5" from="445862068#4" to="28823582#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_92" type="bus" begin="0" end="1200" number="1" from="30759232#0" to="4651746#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_93" type="bus" begin="0" end="1200" number="2" from="30759232#0" to="28823583#1" departLane="best" departSpeed="max"/>
+  <personFlow id="ped_4" begin="0" end="1200" number="394">
+    <walk from="680230375#0" to="680230375#1"/>
+  </personFlow>
+  <flow id="cars_94" type="car" begin="0" end="1200" number="25" from="-547861653#3" to="-547861653#0" departLane="best" departSpeed="max"/>
+  <flow id="cars_95" type="car" begin="0" end="1200" number="33" from="-547861653#3" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_96" type="car" begin="0" end="1200" number="71" from="547861653#0" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_97" type="car" begin="0" end="1200" number="2" from="547861653#0" to="547861653#3" departLane="best" departSpeed="max"/>
+  <flow id="cars_98" type="car" begin="0" end="1200" number="1" from="541564302#2" to="-547861653#0" departLane="best" departSpeed="max"/>
+  <flow id="cars_99" type="car" begin="0" end="1200" number="653" from="541564302#2" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_100" type="car" begin="0" end="1200" number="69" from="541564302#2" to="547861653#3" departLane="best" departSpeed="max"/>
+  <flow id="cars_101" type="car" begin="0" end="1200" number="54" from="-541564301#1" to="547861653#3" departLane="best" departSpeed="max"/>
+  <flow id="trucks_102" type="truck" begin="0" end="1200" number="2" from="-547861653#3" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_103" type="truck" begin="0" end="1200" number="2" from="547861653#0" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_104" type="truck" begin="0" end="1200" number="22" from="541564302#2" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_105" type="truck" begin="0" end="1200" number="1" from="-541564301#1" to="547861653#3" departLane="best" departSpeed="max"/>
+  <flow id="buses_106" type="bus" begin="0" end="1200" number="1" from="-547861653#3" to="-547861653#0" departLane="best" departSpeed="max"/>
+  <flow id="buses_107" type="bus" begin="0" end="1200" number="1" from="547861653#0" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_108" type="bus" begin="0" end="1200" number="20" from="541564302#2" to="541564301#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_109" type="bus" begin="0" end="1200" number="2" from="541564302#2" to="547861653#3" departLane="best" departSpeed="max"/>
+  <flow id="buses_110" type="bus" begin="0" end="1200" number="5" from="-541564301#1" to="547861653#3" departLane="best" departSpeed="max"/>
+  <flow id="cars_111" type="car" begin="0" end="1200" number="16" from="-222151618#4" to="-222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_112" type="car" begin="0" end="1200" number="22" from="-222151618#4" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_113" type="car" begin="0" end="1200" number="79" from="222151618#1" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_114" type="car" begin="0" end="1200" number="575" from="5686881#0" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_115" type="car" begin="0" end="1200" number="132" from="5686881#0" to="222151618#4" departLane="best" departSpeed="max"/>
+  <flow id="cars_116" type="car" begin="0" end="1200" number="87" from="4652040#1" to="222151618#4" departLane="best" departSpeed="max"/>
+  <flow id="cars_117" type="car" begin="0" end="1200" number="1" from="4652040#1" to="-222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_118" type="truck" begin="0" end="1200" number="2" from="-222151618#4" to="-222151618#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_119" type="truck" begin="0" end="1200" number="2" from="-222151618#4" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_120" type="truck" begin="0" end="1200" number="4" from="222151618#1" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_121" type="truck" begin="0" end="1200" number="20" from="5686881#0" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_122" type="truck" begin="0" end="1200" number="1" from="5686881#0" to="222151618#4" departLane="best" departSpeed="max"/>
+  <flow id="trucks_123" type="truck" begin="0" end="1200" number="1" from="4652040#1" to="222151618#4" departLane="best" departSpeed="max"/>
+  <flow id="buses_124" type="bus" begin="0" end="1200" number="13" from="5686881#0" to="-4652040#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_125" type="bus" begin="0" end="1200" number="3" from="5686881#0" to="222151618#4" departLane="best" departSpeed="max"/>
+  <personFlow id="ped_5" begin="0" end="1200" number="244">
+    <walk from="1202658351#0" to="1202658351#1"/>
+  </personFlow>
+  <flow id="cars_126" type="car" begin="0" end="1200" number="29" from="-222151619#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_127" type="car" begin="0" end="1200" number="195" from="-222151619#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="cars_128" type="car" begin="0" end="1200" number="74" from="-222151619#1" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_129" type="car" begin="0" end="1200" number="53" from="285248539#6" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_130" type="car" begin="0" end="1200" number="236" from="285248539#6" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_131" type="car" begin="0" end="1200" number="24" from="285248539#6" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_132" type="car" begin="0" end="1200" number="81" from="1263683890#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="cars_133" type="car" begin="0" end="1200" number="442" from="1263683890#1" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_134" type="car" begin="0" end="1200" number="47" from="1263683890#1" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_135" type="car" begin="0" end="1200" number="108" from="-1263683889#1" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_136" type="car" begin="0" end="1200" number="973" from="-1263683889#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_137" type="car" begin="0" end="1200" number="22" from="-1263683889#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="trucks_138" type="truck" begin="0" end="1200" number="4" from="-222151619#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="trucks_139" type="truck" begin="0" end="1200" number="3" from="-222151619#1" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_140" type="truck" begin="0" end="1200" number="2" from="285248539#6" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_141" type="truck" begin="0" end="1200" number="3" from="285248539#6" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_142" type="truck" begin="0" end="1200" number="2" from="285248539#6" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_143" type="truck" begin="0" end="1200" number="3" from="1263683890#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="trucks_144" type="truck" begin="0" end="1200" number="15" from="1263683890#1" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_145" type="truck" begin="0" end="1200" number="1" from="1263683890#1" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_146" type="truck" begin="0" end="1200" number="3" from="-1263683889#1" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_147" type="truck" begin="0" end="1200" number="19" from="-1263683889#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_148" type="bus" begin="0" end="1200" number="2" from="-222151619#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_149" type="bus" begin="0" end="1200" number="3" from="-222151619#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="buses_150" type="bus" begin="0" end="1200" number="2" from="-222151619#1" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_151" type="bus" begin="0" end="1200" number="4" from="285248539#6" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_152" type="bus" begin="0" end="1200" number="4" from="1263683890#1" to="-285248539#6" departLane="best" departSpeed="max"/>
+  <flow id="buses_153" type="bus" begin="0" end="1200" number="7" from="1263683890#1" to="1263683889#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_154" type="bus" begin="0" end="1200" number="1" from="1263683890#1" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_155" type="bus" begin="0" end="1200" number="1" from="-1263683889#1" to="222151619#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_156" type="bus" begin="0" end="1200" number="6" from="-1263683889#1" to="-1263683890#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_157" type="car" begin="0" end="1200" number="45" from="-5686883#2" to="5686885#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_158" type="car" begin="0" end="1200" number="439" from="-5686883#2" to="-222151618#5" departLane="best" departSpeed="max"/>
+  <flow id="cars_159" type="car" begin="0" end="1200" number="29" from="222151618#5" to="5080129#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_160" type="car" begin="0" end="1200" number="466" from="222151618#5" to="5686883#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_161" type="car" begin="0" end="1200" number="10" from="61760482#0" to="-222151618#5" departLane="best" departSpeed="max"/>
+  <flow id="cars_162" type="car" begin="0" end="1200" number="127" from="61760482#0" to="5080129#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_163" type="car" begin="0" end="1200" number="57" from="223420013#1" to="5686883#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_164" type="car" begin="0" end="1200" number="141" from="223420013#1" to="5686885#1" departLane="best" departSpeed="max"/>
+  <flow id="cars_165" type="car" begin="0" end="1200" number="2" from="223420013#1" to="-222151618#5" departLane="best" departSpeed="max"/>
+  <flow id="trucks_166" type="truck" begin="0" end="1200" number="6" from="-5686883#2" to="-222151618#5" departLane="best" departSpeed="max"/>
+  <flow id="trucks_167" type="truck" begin="0" end="1200" number="2" from="222151618#5" to="5080129#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_168" type="truck" begin="0" end="1200" number="9" from="222151618#5" to="5686883#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_169" type="truck" begin="0" end="1200" number="5" from="61760482#0" to="5080129#1" departLane="best" departSpeed="max"/>
+  <flow id="trucks_170" type="truck" begin="0" end="1200" number="5" from="223420013#1" to="5686885#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_171" type="bus" begin="0" end="1200" number="1" from="-5686883#2" to="-222151618#5" departLane="best" departSpeed="max"/>
+  <flow id="buses_172" type="bus" begin="0" end="1200" number="11" from="61760482#0" to="5080129#1" departLane="best" departSpeed="max"/>
+  <flow id="buses_173" type="bus" begin="0" end="1200" number="9" from="223420013#1" to="5686885#1" departLane="best" departSpeed="max"/>
+  <personFlow id="ped_6" begin="0" end="1200" number="65">
+    <walk from="1192161996#0" to="1192161996#1"/>
+  </personFlow>
+  <personFlow id="ped_7" begin="0" end="1200" number="91">
+    <walk from="680230369#0" to="680230369#1"/>
+  </personFlow>
+<vType id="streetcar" accel="1" decel="2.5" sigma="0.4" length="30" maxSpeed="16" vClass="tram" guiShape="rail"/></routes>

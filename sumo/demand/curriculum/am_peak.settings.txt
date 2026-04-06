@@ -1,0 +1,61 @@
+TANGO Curriculum Scenario Settings
+scenario: am_peak
+generated_by: scripts/generate_curriculum.py
+
+[Rationale]
+MP's home turf — near-stationary, car-dominated. Includes real AM pedestrians + 505 streetcar at 6-min headway.
+
+[Layer 1 — Demand Studio Parameters]
+network_file: sumo/network/osm.net.xml
+tmc_source: data/processed/tmc_parsed.csv
+date_policy: latest
+time_window_start: 420
+time_window_duration_min: 120
+simulation_seconds: 900
+simulation_end: 1200
+global_demand_scale: 1.0
+strict_route_check: True
+min_count_threshold: 1
+streetcar_share_from_bus: 0.0
+included_modes: buses, cars, pedestrians, streetcars, trucks
+
+[Mode Scales]
+buses: 1.0
+cars: 1.0
+pedestrians: 1.0
+trucks: 1.0
+
+[Vehicle Types]
+car: accel=2.6, decel=4.5, length=4.5, maxSpeed=11.11, sigma=0.5
+truck: accel=1.2, decel=3.5, length=10.5, maxSpeed=11.11, sigma=0.5
+bus: accel=1.3, decel=4.0, length=12.0, maxSpeed=11.11, sigma=0.5
+streetcar: accel=1.0, decel=2.5, length=30.0, maxSpeed=11.11, sigma=0.4
+
+[Approach Heading Ranges]
+n: 160.0 – 230.0
+s: 340.0 – 40.0
+e: 250.0 – 310.0
+w: 70.0 – 130.0
+
+[Corridor Intersections]
+1. University Ave / Dundas St W
+2. Dundas St W / St Patrick St
+3. Dundas St W / McCaul St
+4. Dundas St W / Beverley St
+5. Dundas St W / Huron St
+6. Spadina Ave / Dundas St W
+7. Dundas St W / Denison Ave
+8. Bathurst St / Dundas St W
+
+[Layer 2 — SUMO-Native Modifications]
+streetcar_injection.headway_seconds: 360
+streetcar_injection.directions: eastbound, westbound
+surge: None
+
+[Output Summary]
+vehicle_flows: 174
+pedestrian_flows: 8
+total_buses: 168
+total_cars: 13144
+total_trucks: 388
+total_pedestrians: 2096

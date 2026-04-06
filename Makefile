@@ -29,22 +29,22 @@ clean:
 ## Lint using flake8, black, and isort (use `make format` to do formatting)
 .PHONY: lint
 lint:
-	flake8 ece324_tango
-	isort --check --diff ece324_tango
-	black --check ece324_tango
+	pixi run flake8 ece324_tango
+	pixi run isort --check --diff ece324_tango
+	pixi run black --check ece324_tango
 
 ## Format source code with black
 .PHONY: format
 format:
-	isort ece324_tango
-	black ece324_tango
+	pixi run isort ece324_tango
+	pixi run black ece324_tango
 
 
 
 ## Run tests
 .PHONY: test
 test:
-	python -m pytest tests
+	pixi run pytest tests
 
 
 ## Set up Python interpreter environment
@@ -66,7 +66,17 @@ create_environment:
 ## Make dataset
 .PHONY: data
 data: requirements
-	$(PYTHON_INTERPRETER) ece324_tango/dataset.py
+	pixi run python -m ece324_tango.dataset
+
+## Train ASCE MAPPO prototype
+.PHONY: train_asce
+train_asce: requirements
+	pixi run train-asce
+
+## Evaluate ASCE MAPPO prototype against baselines
+.PHONY: eval_asce
+eval_asce: requirements
+	pixi run eval-asce
 
 
 #################################################################################
