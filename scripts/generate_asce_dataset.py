@@ -51,7 +51,7 @@ from ece324_tango.config import PROJ_ROOT
 
 app = typer.Typer(add_completion=False)
 
-NET_FILE = str(PROJ_ROOT / "sumo" / "network" / "osm.net.xml")
+NET_FILE = str(PROJ_ROOT / "sumo" / "network" / "osm.net.xml.gz")
 SCENARIO_DIR = PROJ_ROOT / "sumo" / "demand" / "curriculum"
 DEFAULT_MODEL = PROJ_ROOT / "models" / "asce_mappo_curriculum_best.pt"
 OUT_DIR = PROJ_ROOT / "data" / "pira"
@@ -64,22 +64,32 @@ SCENARIOS = {
 }
 
 
-def _load_trainer(model_path: Path) -> tuple[ResidualMAPPOTrainer, dict, bool]:
+def _load_trainer(model_path: Path) -> tuple[ResidualMAPPOTrainer, int, bool]:
     """Load a checkpoint into a fresh trainer in eval mode.
 
-    Returns ``(trainer, payload, use_action_gate)``. The payload dict is
-    returned so the caller can read back ``obs_dim`` / ``n_actions`` etc.
+    Returns ``(trainer, obs_dim, use_action_gate)``. The curriculum
+    checkpoints stored on disk are bare ``model_state_dict``-style
+    payloads with keys ``actor``, ``critic``, ``obs_norm``,
+    ``gobs_norm``, ``use_obs_norm``, ``residual_mode`` — no separate
+    metadata wrapper — so the network dims are recovered from the
+    actor / critic weight shapes.
     """
-    payload = torch.load(model_path, map_location="cpu", weights_only=False)
-    state = payload["model_state_dict"]
+    state = torch.load(model_path, map_location="cpu", weights_only=False)
 
-    # The checkpoint stores the dims it was trained with; fall back to
-    # actor weight shapes if the older format is missing them.
-    obs_dim = int(payload.get("obs_dim") or state["actor"]["net.0.weight"].shape[1])
-    global_obs_dim = int(payload.get("global_obs_dim") or state["critic"]["net.0.weight"].shape[1])
-    n_actions = int(payload.get("n_actions") or state["actor"]["phase_head.weight"].shape[0])
-    residual_mode = payload.get("residual_mode", "action_gate")
-    use_obs_norm = bool(payload.get("use_obs_norm", True))
+    # Recover dims from weight shapes. The actor MLP's first Linear is
+    # ``net.0`` (input -> hidden); the phase head's output dim is the
+    # padded action space.
+    n_actions = int(state["actor"]["phase_head.weight"].shape[0])
+    global_obs_dim = int(state["critic"]["net.0.weight"].shape[1])
+    residual_mode = state.get("residual_mode", "action_gate")
+    use_obs_norm = bool(state.get("use_obs_norm", True))
+
+    # In action_gate mode the GatedActor input is (obs_dim + n_actions),
+    # because the trainer concatenates the Max-Pressure one-hot to each
+    # observation internally. Recover the un-augmented obs_dim so the
+    # observation padding below matches what the trainer expects.
+    actor_in = int(state["actor"]["body.0.weight"].shape[1])
+    obs_dim = actor_in - n_actions if residual_mode == "action_gate" else actor_in
 
     trainer = ResidualMAPPOTrainer(
         obs_dim=obs_dim,
@@ -97,7 +107,7 @@ def _load_trainer(model_path: Path) -> tuple[ResidualMAPPOTrainer, dict, bool]:
         trainer.gobs_norm.load_state_dict(state["gobs_norm"])
     trainer.actor.eval()
     trainer.critic.eval()
-    return trainer, payload, residual_mode == "action_gate"
+    return trainer, obs_dim, residual_mode == "action_gate"
 
 
 def _run_asce(
@@ -184,27 +194,29 @@ def main(
     model_path: Path = typer.Option(
         DEFAULT_MODEL, help="Path to the trained ASCE checkpoint to roll out."
     ),
-    seconds: int = typer.Option(300, help="Simulation duration per episode (s)"),
+    seconds: int = typer.Option(900, help="Simulation duration per episode (s)"),
     delta_time: int = typer.Option(5, help="Decision interval (s)"),
-    seeds: int = typer.Option(1, help="Number of random seeds per scenario"),
+    seeds: int = typer.Option(5, help="Number of random seeds per scenario"),
     base_seed: int = typer.Option(42, help="Starting seed"),
     scenario: str = typer.Option(
         "all", help="Single scenario id, or 'all' for the full curriculum"
     ),
 ):
-    """Generate ASCE rollout dataset for PIRA (smoke-test by default).
+    """Generate ASCE rollout dataset for PIRA training.
 
-    The defaults (1 seed, 300 s) are deliberately small so this script
-    can act as a smoke-check that the trained checkpoint loads, the
-    schema matches, and a Parquet lands on disk. Bump ``--seeds`` and
-    ``--seconds`` to produce real training data.
+    Defaults match ``generate_baseline_dataset.py`` (5 seeds × 900 s ×
+    4 scenarios) so the ASCE rollouts can be paired one-to-one with the
+    Max-Pressure / Fixed-Time baseline rollouts. PIRA training is
+    deferred (final report Section 4.6); this script is the dataset
+    side of that pipeline. Validate end-to-end with a thin smoke run::
+
+        pixi run generate-asce-dataset --seeds 1 --seconds 60 --scenario am_peak
     """
     if not model_path.exists():
         raise typer.BadParameter(f"Checkpoint not found: {model_path}")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    trainer, payload, use_action_gate = _load_trainer(model_path)
-    obs_dim = int(payload.get("obs_dim") or trainer.actor.net[0].in_features)
+    trainer, obs_dim, use_action_gate = _load_trainer(model_path)
     logger.info(
         f"Loaded {model_path.name}: obs_dim={obs_dim}, "
         f"residual_mode={'action_gate' if use_action_gate else 'none'}"
