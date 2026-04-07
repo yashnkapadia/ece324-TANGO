@@ -2,6 +2,15 @@
 
 Second layer of the **TANGO** traffic optimization system.
 
+> **Status: deferred / future work.** PIRA's architecture, training loop,
+> scenario predictor, and synthetic dataset generator are all implemented and
+> run end-to-end on synthetic data, but training on the real ASCE-generated
+> baseline dataset converged poorly within the project timeline due to
+> feature-engineering issues mapping ASCE rollouts into PIRA's expected graph
+> input format. Completing dataset integration is the primary remaining work
+> item. See final report Section 4.6 ("PIRA: Scenario Planning Surrogate
+> (Incomplete)") and the Statement of Scope Changes for full context.
+
 PIRA is a graph neural network surrogate that answers "what-if" infrastructure
 questions — *if we close this lane, what happens to delay and queue across the
 corridor?* — without re-running a full SUMO simulation. Given a description of
@@ -14,8 +23,10 @@ metrics and recommends updated signal timing, in milliseconds instead of minutes
 
 | File | Purpose |
 |---|---|
-| `pira.py` | Model definition, training, evaluation, dataset construction |
-| `planner.py` | User-facing interface for running scenarios on a trained model |
+| `ece324_tango/pira/pira.py` | Model definition, training, evaluation, dataset construction |
+| `ece324_tango/pira/planner.py` | User-facing interface for running scenarios on a trained model |
+| `scripts/generate_baseline_dataset.py` | Roll out **Max-Pressure** and **Fixed-Time** baselines across the four curriculum scenarios and write `data/pira/{controller}_{scenario}.parquet` matching `ASCE_DATASET_COLUMNS`. Run via `pixi run generate-baseline-dataset`. |
+| `scripts/generate_asce_dataset.py` | Companion to the baseline generator: rolls out a trained ASCE checkpoint (default: `models/asce_mappo_curriculum_best.pt`) and writes `data/pira/asce_{scenario}.parquet`. Defaults match the baseline generator (5 seeds × 900 s × 4 scenarios). Run via `pixi run generate-asce-dataset`. Smoke-validate end-to-end with `pixi run generate-asce-dataset --seeds 1 --seconds 60 --scenario am_peak`. |
 
 ---
 
@@ -177,14 +188,13 @@ exact names, and think of the segment as *traffic flowing from → to*.
 
 ## Dependencies
 
-```
-torch
-torch_geometric
-pandas
-numpy
-```
+PIRA's runtime deps (PyTorch, pandas, numpy) are already part of the
+project's pixi environment &mdash; running `pixi install` from the repo root
+gives you everything ASCE needs plus PIRA. The one extra dependency that is
+**not** in `pixi.toml` is `torch_geometric`, because the upstream wheels are
+GPU/PyTorch-version-specific and the package is only needed once PIRA
+training resumes. When that work picks up, install it inside the pixi env:
 
-Install:
 ```bash
-pip install torch torch_geometric pandas numpy
+pixi run pip install torch_geometric
 ```

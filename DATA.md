@@ -16,22 +16,37 @@ The figure above shows the initial chosen area on SUMO web wizard. The initial s
 
 ## Environment Setup
 
-This project environment is reproducible using either Conda (recommended) or pip. 
+This project uses [**pixi**](https://pixi.sh) as the single source of truth for the entire environment &mdash; data pipeline, ASCE training, evaluation, and Demand Studio all run from one lockfile (`pixi.lock`). The legacy `environment.yml` and `requirements.txt` files are kept as fallbacks but are no longer the recommended path.
 
-### Option 1: Conda
+### Recommended: pixi
 
-Requires [Anaconda](https://www.anaconda.com/download) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
+Requires [pixi](https://pixi.sh/latest/installation/) (one-line installer; works on Linux, macOS, and Windows).
+
+```bash
+pixi install
+```
+
+That's it &mdash; pixi reads `pixi.toml`, solves against `pixi.lock`, and creates a fully reproducible environment under `.pixi/envs/default/` containing PyTorch with CUDA 12.8, SUMO Python bindings (`sumolib`, `traci`), the Demand Studio web app dependencies (`dash`, `plotly`, `geopandas`, `shapely`, `pyproj`, `lxml`, `openpyxl`), and the project package itself in editable mode. Run any project command with `pixi run <task>` (see `pixi.toml` for the full task list) or drop into the env with `pixi shell`.
+
+> **CPU-only fallback.** Pixi will still install PyTorch on a CPU-only machine, but training is impractical without a GPU. CUDA 12.x is required for the curriculum-training pipeline.
+
+### Legacy fallbacks (not recommended)
+
+These remain so older instructions still work, but new development should target pixi.
+
+<details>
+<summary>Conda</summary>
 
 ```bash
 conda env create -f environment.yml
 conda activate tango
 ```
 
-> **Note:** The environment includes PyTorch with CUDA 12.1 support. If you do not have a compatible GPU, remove the `pytorch-cuda` line from `environment.yml` before creating the environment and install the CPU-only PyTorch build instead.
+`environment.yml` predates the pixi consolidation and pins PyTorch with CUDA 12.1 instead of 12.8. If you do not have a compatible GPU, remove the `pytorch-cuda` line before creating the environment and install the CPU-only PyTorch build instead.
+</details>
 
-### Option 2: Pip
-
-Requires Python 3.11+ and a virtual environment.
+<details>
+<summary>pip / venv</summary>
 
 ```bash
 python -m venv .venv
@@ -43,7 +58,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> **Note:** `requirements.txt` does not pin a specific PyTorch variant. Visit [pytorch.org](https://pytorch.org/get-started/locally/) to install the correct build for your platform before running the above command.
+`requirements.txt` does not pin a specific PyTorch variant. Visit [pytorch.org](https://pytorch.org/get-started/locally/) to install the correct build for your platform before running the above command.
+</details>
 
 --------
 
