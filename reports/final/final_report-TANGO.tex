@@ -51,14 +51,14 @@
 \maketitle
 
 \begin{abstract}
-This project aimed to build a two-model system to optimize traffic by reducing the total amount of time spent waiting at intersections, and help predict traffic change as irregular conditions such as lane closure or opening of new transit lines. Only the first layer (ASCE), which reduces the time spent waiting at intersections, could be completed within the timeframe, and the transit planner layer (PIRA) could not be finished. ASCE has been proven to function and outperform the Max-Pressure algorithm under all four scenarios tested, with the largest gains on out-of-distribution conditions. Across 5 random seeds, the reductions in person-time-loss compared to Max-Pressure are as follows: AM Peak: $-10.1\%$; PM Peak: $-6.3\%$; Demand Surge: $-11.0\%$; Midday Multimodal: $-13.8\%$. ASCE additionally outperforms two further baselines on every scenario---SUMO's auto-generated Actuated Default signal programs and a naive Fixed-Time controller---while improving vehicle delay fairness (Jain index) by ${\sim}30\%$ relative to Max-Pressure. The project code and trained models are publicly available.\footnote{\url{https://github.com/yashnkapadia/ece324-TANGO}}
+This project set out to build a two-model traffic optimization system for a corridor of 12 signalized intersections in Toronto: a real-time controller (ASCE) and a scenario-planning surrogate (PIRA). Only ASCE was completed and evaluated; PIRA's pipeline runs end-to-end on synthetic data but did not converge on real ASCE rollouts within the project timeline and is not evaluated in this report. ASCE is an action-gate residual MAPPO controller that consistently outperforms Max-Pressure across four TMC-calibrated scenarios. Across 5 matched random seeds, paired-test reductions in person-time-loss relative to Max-Pressure are: AM Peak $-10.1\%$ ($p\!=\!0.003$); PM Peak $-6.3\%$ ($p\!=\!0.048$); Demand Surge $-11.0\%$ ($p\!=\!0.013$); Midday Multimodal $-13.8\%$ ($p\!=\!0.007$). ASCE also has the lowest mean person-time-loss against SUMO's auto-generated Actuated Default and a naive Fixed-Time controller on every scenario, although it is statistically tied with Actuated Default on three of four (significant gain only on AM Peak). Vehicle-delay fairness (Jain index) improves by ${\sim}30\%$ relative to Max-Pressure but remains below the proposal's aspirational 0.8 target. The project code and trained models are publicly available.\footnote{\url{https://github.com/yashnkapadia/ece324-TANGO}}
 \end{abstract}
 
 \section{Introduction}
 
-Urban traffic congestion costs Toronto an estimated \$6 billion annually in lost productivity~\cite{cbc_gridlock}. This project was intended to be a two-model traffic optimization system for a corridor of 12 to 15 intersections in Toronto, specifically aiming to reduce total delay (first layer, Adaptive Signal Control Engine or ``ASCE'') and help predict traffic change due to a change in the infrastructure (second layer, or Planning Infrastructure Response Analyzer ``PIRA'').
+Urban traffic congestion costs Toronto an estimated \$6 billion annually in lost productivity~\cite{cbc_gridlock}. This project was intended to be a two-model traffic optimization system for a corridor of 12 signalized intersections in Toronto, specifically aiming to reduce total delay (first layer, Adaptive Signal Control Engine or ``ASCE'') and help predict traffic change due to a change in the infrastructure (second layer, or Planning Infrastructure Response Analyzer ``PIRA'').
 
-ASCE proved to be a success---however, building the PIRA layer, which depended on the completion of the ASCE layer, proved to be ambitious within the given timeframe. This report will focus on the design and the results of the ASCE.
+ASCE met its primary success criterion---however, building the PIRA layer, which depended on the completion of the ASCE layer, proved to be ambitious within the given timeframe. This report focuses on the design and results of ASCE, with PIRA's incomplete state documented in Section~\ref{sec:pira} and the Statement of Scope Changes.
 
 There are two baseline signal cycling systems which ASCE aimed to beat: Fixed-Time and Max-Pressure. Fixed-Time is simply letting intersections run blindly on a predefined timer. This is the most basic (and cheapest) system that should be easy to beat with any kind of adaptive signalling. Max-Pressure~\cite{max_pressure_optimal} is a decentralized (i.e.\ each intersection has no access to global traffic data) heuristic-based algorithm that prioritizes relieving the road with higher traffic. While this model performs well under regular traffic conditions it was trained on, it fails to adapt under irregular conditions (e.g.\ lane closure, sports event, subway disruptions).
 
@@ -177,7 +177,7 @@ Training proceeds in two phases, both using the \texttt{person\_objective} rewar
 The policy is trained from scratch on the AM Peak scenario to establish basic signal coordination before encountering harder scenarios. This phase uses a single SUMO worker and base learning rates (actor: $3 \times 10^{-4}$, critic: $1 \times 10^{-3}$). By episode 200, MAPPO achieves a person-time-loss ratio of approximately 0.90 relative to Max-Pressure on the AM Peak scenario.
 
 \paragraph{Phase 2: Curriculum training (600 episodes, 4 scenarios).}
-Starting from the warm-start checkpoint, the policy trains on all four scenarios from Section~\ref{sec:scenarios} in round-robin order, using 8 parallel SUMO workers via Python multiprocessing with \texttt{libsumo}. Learning rates are scaled by $1/\sqrt{8}$ to compensate for the larger effective batch size from parallel collection~\cite{schulman_ppo}, yielding actor $1.06 \times 10^{-4}$ and critic $3.54 \times 10^{-4}$. Episodes run for 900\,s (AM/PM Peak) or 1200\,s (Demand Surge, Midday Multimodal) at 5\,s decision intervals.
+Starting from the warm-start checkpoint, the policy trains on all four scenarios from Section~\ref{sec:scenarios} in round-robin order, using 8 parallel SUMO workers via Python multiprocessing with \texttt{libsumo}. Learning rates are scaled by $1/\sqrt{8}$ to compensate for the larger effective batch size from parallel collection (square-root scaling rule of~\citet{hoffer_train_longer}), yielding actor $1.06 \times 10^{-4}$ and critic $3.54 \times 10^{-4}$. Episodes run for 900\,s (AM/PM Peak) or 1200\,s (Demand Surge, Midday Multimodal) at 5\,s decision intervals.
 
 A best-model checkpoint is saved whenever inline evaluation (run every 48 episodes) achieves a new minimum worst-case MAPPO/MP ratio across all four scenarios. The best checkpoint occurs at curriculum episode 432 (total episode 632), after which training regresses due to conflicting gradient directions across scenarios---a known challenge in round-robin curriculum training. The final model (episode 600) performs measurably worse than the best checkpoint (Table~\ref{tab:results}), confirming that early stopping on worst-case evaluation is essential for curriculum MAPPO.
 
@@ -192,40 +192,40 @@ Table~\ref{tab:results} reports person-time-loss (mean $\pm$ standard deviation 
 \begin{table}[t]
   \centering
   \small
-  \caption{Person-time-loss (seconds, mean $\pm$ std over 5 seeds) across four evaluation scenarios. Three baselines are compared: Max-Pressure (reactive, queue-differential), Actuated Default (SUMO's auto-generated actuated programs from OSM), and Fixed-Time (uniform 30\,s green cycle). MAPPO/MP values below 0.90 meet the proposal target (bold).}
+  \caption{Person-time-loss (seconds, mean $\pm$ std over 5 matched seeds) across four evaluation scenarios. Three baselines are compared: Max-Pressure (reactive, queue-differential), Actuated Default (SUMO's auto-generated actuated programs from OSM), and Fixed-Time (uniform 30\,s green cycle). The MAPPO/MP column reports the ratio of mean person-time-loss; the $p$ column gives the two-sided paired $t$-test against Max-Pressure across the 5 matched seeds. Bold ratios meet the proposal's 10\% target.}
   \label{tab:results}
   \begin{tabular}{@{}llrrc@{}}
     \toprule
-    \textbf{Scenario} & \textbf{Controller} & \textbf{PTL (s)} & \textbf{MAPPO/MP} & \textbf{$\geq$10\%?} \\
+    \textbf{Scenario} & \textbf{Controller} & \textbf{PTL (s)} & \textbf{MAPPO/MP} & \textbf{$p$ vs MP} \\
     \midrule
     \multirow{4}{*}{AM Peak}
-      & Max-Pressure     & $427{,}943 \pm 12{,}390$ & --- & \\
-      & Actuated Default & $439{,}932 \pm 15{,}442$ & --- & \\
-      & Fixed-Time       & $456{,}689 \pm 16{,}047$ & --- & \\
-      & MAPPO (best)     & $384{,}598 \pm \phantom{0}5{,}946$ & \textbf{0.899} & \checkmark \\
+      & Max-Pressure     & $427{,}943 \pm 12{,}390$ & --- & --- \\
+      & Actuated Default & $439{,}932 \pm 15{,}442$ & --- & --- \\
+      & Fixed-Time       & $456{,}689 \pm 16{,}047$ & --- & --- \\
+      & MAPPO (best)     & $384{,}598 \pm \phantom{0}5{,}946$ & \textbf{0.899} & 0.003 \\
     \midrule
     \multirow{4}{*}{PM Peak}
-      & Actuated Default & $490{,}484 \pm \phantom{0}9{,}981$ & --- & \\
-      & Fixed-Time       & $492{,}550 \pm 15{,}828$ & --- & \\
-      & Max-Pressure     & $518{,}755 \pm 15{,}072$ & --- & \\
-      & MAPPO (best)     & $486{,}226 \pm 28{,}139$ & 0.937 & \\
+      & Actuated Default & $490{,}484 \pm \phantom{0}9{,}981$ & --- & --- \\
+      & Fixed-Time       & $492{,}550 \pm 15{,}828$ & --- & --- \\
+      & Max-Pressure     & $518{,}755 \pm 15{,}072$ & --- & --- \\
+      & MAPPO (best)     & $486{,}226 \pm 28{,}139$ & 0.937 & 0.048 \\
     \midrule
     \multirow{4}{*}{Demand Surge}
-      & Actuated Default & $453{,}349 \pm \phantom{0}9{,}555$ & --- & \\
-      & Fixed-Time       & $462{,}132 \pm \phantom{0}7{,}210$ & --- & \\
-      & Max-Pressure     & $503{,}202 \pm 29{,}971$ & --- & \\
-      & MAPPO (best)     & $447{,}626 \pm \phantom{0}7{,}284$ & \textbf{0.890} & \checkmark \\
+      & Actuated Default & $453{,}349 \pm \phantom{0}9{,}555$ & --- & --- \\
+      & Fixed-Time       & $462{,}132 \pm \phantom{0}7{,}210$ & --- & --- \\
+      & Max-Pressure     & $503{,}202 \pm 29{,}971$ & --- & --- \\
+      & MAPPO (best)     & $447{,}626 \pm \phantom{0}7{,}284$ & \textbf{0.890} & 0.013 \\
     \midrule
     \multirow{4}{*}{Midday Mult.}
-      & Fixed-Time       & $500{,}876 \pm \phantom{0}4{,}888$ & --- & \\
-      & Actuated Default & $508{,}168 \pm 29{,}727$ & --- & \\
-      & Max-Pressure     & $544{,}741 \pm 18{,}160$ & --- & \\
-      & MAPPO (best)     & $469{,}303 \pm 16{,}586$ & \textbf{0.862} & \checkmark \\
+      & Fixed-Time       & $500{,}876 \pm \phantom{0}4{,}888$ & --- & --- \\
+      & Actuated Default & $508{,}168 \pm 29{,}727$ & --- & --- \\
+      & Max-Pressure     & $544{,}741 \pm 18{,}160$ & --- & --- \\
+      & MAPPO (best)     & $469{,}303 \pm 16{,}586$ & \textbf{0.862} & 0.007 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The best curriculum checkpoint meets the 10\% improvement target on AM Peak, Demand Surge, and Midday Multimodal traffic. PM Peak, the scenario with the highest total volume and a tidal reversal pattern, shows a 6.3\% improvement over Max-Pressure. We hypothesize that the relative under-performance of MAPPO in PM Peak is due to the complexity of managing high-volume, reversed flow traffic conditions and expect it to be ameliorated with further training. The relative ordering of baselines shifts across scenarios: Max-Pressure is the strongest baseline on AM Peak and Midday Multimodal, while Actuated Default is strongest on PM Peak and Demand Surge---the two high-volume arterial-dominant scenarios where its built-in phase extension provides an advantage similar to Max-Pressure's queue responsiveness. MAPPO beats all baselines on every scenario regardless of which baseline is strongest.
+MAPPO is significantly better than Max-Pressure on all four scenarios ($p<0.05$, paired), with AM~Peak, Demand Surge, and Midday Multimodal additionally clearing the proposal's 10\% target. PM~Peak---the highest-volume scenario, with a tidal reversal pattern---reaches a 6.3\% improvement that is significant ($p\!=\!0.048$) but does not clear the target; we attribute this to insufficient curriculum allocation to the highest-volume scenario and revisit it in Section~\ref{sec:future}. Max-Pressure is the strongest baseline on AM~Peak and Midday Multimodal; Actuated Default is strongest on PM~Peak and Demand Surge, where its built-in phase extension provides an advantage similar to Max-Pressure's queue responsiveness. MAPPO has the lowest mean PTL against every baseline on every scenario, but against Actuated Default the PTL gap is significant only on AM~Peak (statistically tied on the other three). On fairness MAPPO dominates Actuated Default decisively---vehicle-delay Jain index improves by 41--54\% relative across all four scenarios (e.g.\ 0.506 vs 0.360 on PM~Peak)---because the person-weighted reward holds individual cars briefly to clear queued transit, trading slightly higher per-vehicle trip time for substantially more equitable per-person delay (full secondary metrics in Appendix~\ref{app:full_metrics}).
 
 \paragraph{Secondary metrics.}
 MAPPO also improves on secondary metrics relative to Max-Pressure (full table in Appendix~\ref{app:full_metrics}). Throughput increases by 9--16\% (more vehicles complete trips). Vehicle delay fairness (Jain index) improves from 0.34--0.40 (MP) to 0.43--0.52 (MAPPO)---a relative improvement of ${\sim}$30\%, though no controller reaches the proposal's aspirational target of 0.8. The low absolute Jain values reflect the inherent heterogeneity of a real corridor where some approaches consistently experience more delay than others.
@@ -234,11 +234,11 @@ MAPPO also improves on secondary metrics relative to Max-Pressure (full table in
 The final curriculum model (episode 600) achieves MAPPO/MP ratios of 0.929 (AM), 0.926 (PM), 0.930 (Surge), and 0.882 (Midday)---uniformly worse than the best checkpoint. This regression after episode 432 reflects gradient interference from the round-robin curriculum: updates that improve one scenario's objective can degrade another's. Best-model checkpointing is therefore essential.
 
 \paragraph{Gate behavior.}
-The gate fraction (proportion of time steps where the agent overrides Max-Pressure) starts near 2\% due to the initialization bias and rises to approximately 30\% by the end of curriculum training (Appendix~\ref{app:training_dynamics}, Figure~\ref{fig:training}). This confirms that the policy learns to selectively override rather than replacing Max-Pressure wholesale. The override rate is highest during demand transitions (surge onset, tidal reversal) and lowest during stable steady-state flow---consistent with the hypothesis that Max-Pressure is near-optimal under stationary demand but suboptimal during transients.
+The mean gate-override fraction starts near 2\% (initialization bias) and rises to ${\sim}$30\% by end of training. Instrumenting a fresh best-checkpoint rollout shows the override is correlated with demand transitions: on Demand Surge the mean fraction is 24.9\% pre-surge, 30.3\% during the eastbound surge window (300--600\,s), and 32.6\% afterward as displaced queues clear, versus only 25.0\%$\to$28.3\% on a matched AM~Peak control (Appendix~\ref{app:training_dynamics}, Figures~\ref{fig:training}--\ref{fig:gate_timeseries}). This is consistent with Max-Pressure being near-optimal under stationary demand but suboptimal during transients.
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.85\columnwidth]{asce_bar_chart.pdf}
+  \includegraphics[width=0.62\columnwidth]{asce_bar_chart.pdf}
   \caption{Person-time-loss by scenario and controller for the best curriculum checkpoint. Error bars show $\pm$1 standard deviation over 5 seeds. Percentage labels indicate MAPPO improvement relative to Max-Pressure.}
   \label{fig:bar_chart}
 \end{figure}
@@ -257,19 +257,19 @@ The training curve does not converge smoothly; round-robin curriculum causes osc
 \subsection{PIRA: Scenario Planning Surrogate (Incomplete)}
 \label{sec:pira}
 
-Although incomplete, some progress was made on the PIRA layer. The general pipeline was established under \texttt{ece324\_tango/pira/}: \texttt{pira.py} takes a Parquet rollout file from ASCE together with the OSM file used for SUMO, converts the road network into a graph neural network over intersections (nodes) and road segments (edges), and exports a trained model that the companion \texttt{planner.py} consumes for road-infrastructure scenarios. Dataset preparation is handled by \texttt{scripts/generate\_baseline\_dataset.py} and \texttt{scripts/generate\_asce\_dataset.py}. However, the model and the planner were trained on synthetic data only, to show that the pipeline runs end-to-end; the planner used in the presentation GIF was likewise running on synthetic data, and served only as a communication aid for the audience. PIRA's accuracy and inference-time targets (MAPE~$\leq$~10\%, $<$5\,s) are therefore not evaluated, and completing real-data integration is the primary remaining work item.
+Although incomplete, some progress was made on the PIRA layer. The general pipeline is in place under \texttt{ece324\_tango/pira/}: \texttt{pira.py} takes a Parquet rollout from ASCE together with the SUMO OSM file, converts the road network into a graph neural network over intersection nodes and road-segment edges, and exports a trained model that the companion \texttt{planner.py} consumes for road-infrastructure scenarios; dataset preparation is handled by \texttt{generate\_baseline\_dataset.py} and \texttt{generate\_asce\_dataset.py}. The model and planner were trained on synthetic data only, to show the pipeline runs end-to-end, and the planner shown in the presentation GIF was likewise running on synthetic data as a communication aid. PIRA's accuracy and inference-time targets (MAPE~$\leq$~10\%, $<$5\,s) are therefore not evaluated; real-data integration is the primary remaining work item.
 
 
 \section{Future Work and Potential Impacts}
 \label{sec:future}
 
-The two outstanding items relative to the proposal are completing PIRA and validating ASCE against real traffic: while real TMC statistics drive demand, much of the policy was trained against SUMO output as ground truth, and closing that loop is not realistic without an instrumented deployment. ASCE has the potential to reduce total intersection delay and the productivity losses that come with it; conversely, faster vehicle traffic could induce additional car demand and lower the perceived need for public transit, so any deployment should be paired with a multimodal monitoring plan.
+The two outstanding items relative to the proposal are completing PIRA and validating ASCE against real traffic; PM~Peak's sub-target gain is a closely related future-work item, as it suggests reweighting the curriculum toward the highest-volume scenario. ASCE could reduce intersection delay and the productivity losses tied to it, but faster vehicle traffic risks inducing additional car demand and weakening the case for transit investment, so any deployment should be paired with a multimodal monitoring plan.
 
 
 \section{Reproducibility}
 \label{sec:reproducibility}
 
-All code, trained models, and evaluation scripts are available at \url{https://github.com/yashnkapadia/ece324-TANGO}. Reproducing the headline results is \texttt{pixi install} followed by \texttt{pixi run eval-matrix}; the headline checkpoint is \texttt{models/asce\_mappo\_curriculum\_best.pt} and the four curriculum demand scenarios live under \texttt{sumo/demand/curriculum/}. The full warm-start + curriculum pipeline takes ${\sim}$8~h on an NVIDIA RTX~4070 Laptop; total compute for all reported experiments is ${\sim}$40 GPU-hours.
+All code, models, and eval scripts are at \url{https://github.com/yashnkapadia/ece324-TANGO}: \texttt{pixi install} then \texttt{pixi run eval-matrix} reproduces the headline numbers from \texttt{asce\_mappo\_curriculum\_best.pt}. Full pipeline ${\sim}$8~h on an RTX~4070 Laptop; total reported compute ${\sim}$40 GPU-hours.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
@@ -285,7 +285,7 @@ The following changes were made relative to the original proposal:
 
 \begin{enumerate}[nosep]
   \item \textbf{PIRA training not completed.} The GNN architecture, training loop, and synthetic dataset generator are implemented and run end-to-end, but training on the real ASCE-generated baseline dataset converged poorly within the project timeline due to feature-engineering issues mapping ASCE rollouts into the GNN's expected graph input format. The scenario planning capability described in the proposal is therefore not evaluated.
-  \item \textbf{IPPO baseline replaced with action-gate ablation.} The proposal listed Independent PPO as a baseline to ablate the centralized critic. We instead focused on the action-gate residual architecture, which provides a more informative ablation of the Max-Pressure initialization benefit. The centralized critic ablation remains future work.
+  \item \textbf{IPPO baseline replaced with action-gate architecture.} The proposal listed Independent PPO as a baseline to ablate the centralized critic. We instead substituted in the action-gate residual architecture, which warm-starts the policy at the Max-Pressure baseline (Section~\ref{sec:training}); the centralized-critic ablation and a no-gate ablation of the action-gate itself both remain future work.
   \item \textbf{Stretch goals not attempted.} CityLight-style neighborhood rewards, IG-RL transfer, CoLight graph attention, and DSA-QMIX were not implemented. Time was spent instead on reward engineering and the action-gate architecture, which proved sufficient to meet the primary success criterion.
   \item \textbf{Actuated Default baseline added.} SUMO's auto-generated actuated signal programs from the OSM network were added as a third baseline (alongside Max-Pressure and Fixed-Time), enabled by the vendored \texttt{sumo-rl} modifications that preserve native traffic-light programs.
   \item \textbf{Evaluation expanded to four scenarios.} The proposal described evaluation on a single scenario; the final evaluation covers four distinct demand patterns (AM Peak, PM Peak, Demand Surge, Midday Multimodal) with multimodal traffic including pedestrians and TTC streetcars, generated through the custom Demand Studio interface (Section~\ref{sec:scenarios}).
@@ -316,6 +316,13 @@ Figure~\ref{fig:training} shows the training-time evolution of the global reward
   \end{subfigure}
   \caption{ASCE training dynamics. (a)~Reward per episode colored by scenario; the first 200 episodes are warm-start on AM Peak only, followed by round-robin curriculum. The dashed line marks the best checkpoint at episode 632. (b)~Fraction of time steps where the agent overrides Max-Pressure, rising from ${\sim}$2\% (initialization bias) to ${\sim}$30\%.}
   \label{fig:training}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\columnwidth]{asce_gate_timeseries.pdf}
+  \caption{Per-step gate-override fraction for the best curriculum checkpoint on Demand Surge versus an AM~Peak control rollout. The shaded band marks the eastbound demand surge window (300--600\,s). The override rate rises by ${\sim}5$ percentage points during the surge and persists post-surge as queues clear, while the AM~Peak control rises only gradually as the network warms up.}
+  \label{fig:gate_timeseries}
 \end{figure}
 
 
@@ -507,8 +514,6 @@ This also means that the model now includes the effect of buses, pedestrians, an
 % =============================================================================
 \section*{NeurIPS Paper Checklist}
 
-% TODO: Fill checklist (same structure as interim, updated for final results)
-
 \begin{enumerate}
 
 \item {\bf Claims}
@@ -539,7 +544,7 @@ This also means that the model now includes the effect of buses, pedestrians, an
 
 \item {\bf Experiment Statistical Significance}
     \item[] Answer: \answerYes{}
-    \item[] Justification: All results report mean $\pm$ std over 5 random seeds.
+    \item[] Justification: All headline results report mean $\pm$ std over 5 matched random seeds, and Table~\ref{tab:results} additionally reports two-sided paired $t$-test $p$-values against Max-Pressure for each scenario.
 
 \item {\bf Experiments Compute Resources}
     \item[] Answer: \answerYes{}
