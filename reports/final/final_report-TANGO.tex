@@ -510,7 +510,7 @@ This also means that the model now includes the effect of buses, pedestrians, an
 
 
 % =============================================================================
-% CHECKLIST — to be filled
+% CHECKLIST
 % =============================================================================
 \section*{NeurIPS Paper Checklist}
 
@@ -519,62 +519,82 @@ This also means that the model now includes the effect of buses, pedestrians, an
 \item {\bf Claims}
     \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The abstract states specific MAPPO/MP improvement percentages that are directly supported by Table~\ref{tab:results}. The incomplete status of PIRA is explicitly noted.
+    \item[] Justification: The abstract states specific MAPPO-vs-Max-Pressure improvement percentages with paired $p$-values per scenario, which are directly supported by Table~\ref{tab:results}. The incomplete status of PIRA is stated in the abstract, in Section~\ref{sec:pira}, and in the Statement of Scope Changes.
 
 \item {\bf Limitations}
     \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~\ref{sec:analysis} discusses PM Peak underperformance, curriculum instability, and remaining engineering limitations. Section~\ref{sec:scope} lists scope reductions.
+    \item[] Justification: Section~\ref{sec:analysis} discusses PM~Peak underperformance, the tie with Actuated~Default on three of four scenarios, curriculum instability, and gate-override behaviour; Section~\ref{sec:scope} lists scope reductions relative to the proposal.
 
-\item {\bf Theory Assumptions and Proofs}
+\item {\bf Theory assumptions and proofs}
+    \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
     \item[] Answer: \answerNA{}
-    \item[] Justification: No theoretical results are claimed.
+    \item[] Justification: The paper reports an empirical study; no theorems or proofs are claimed.
 
-\item {\bf Experimental Result Reproducibility}
+\item {\bf Experimental result reproducibility}
+    \item[] Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Full code, trained models, locked dependencies, and reproduction commands are provided (Section~7).
+    \item[] Justification: Full hyperparameters (Appendix~\ref{app:hyperparams}), observation features (Appendix~\ref{app:obs_features}), reward iterations (Appendix~\ref{app:reward_iterations}), scenario definitions (Section~\ref{sec:scenarios}), and the exact reproduction command (\texttt{pixi run eval-matrix}) are provided along with a locked \texttt{pixi.lock} environment and the trained checkpoint.
 
 \item {\bf Open access to data and code}
+    \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
     \item[] Answer: \answerYes{}
-    \item[] Justification: GitHub repository linked in Section~7 with all code, models, and data.
+    \item[] Justification: All code, trained models, calibrated demand, SUMO network, and evaluation scripts are released at \url{https://github.com/yashnkapadia/ece324-TANGO}. Section~7 gives the exact \texttt{pixi install}/\texttt{pixi run eval-matrix} commands that reproduce the headline numbers from the committed best checkpoint.
 
-\item {\bf Experimental Setting/Details}
+\item {\bf Experimental setting/details}
+    \item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer) necessary to understand the results?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Hyperparameters in Appendix~\ref{app:hyperparams}, training pipeline in Section~\ref{sec:training}, evaluation protocol in Section~\ref{sec:results}.
+    \item[] Justification: The training pipeline (optimizer, learning rate, rollout and update schedule, curriculum) is in Section~\ref{sec:training} and Appendix~\ref{app:hyperparams}; the evaluation protocol (5 matched seeds, paired $t$-test, baselines) is in Section~\ref{sec:results}.
 
-\item {\bf Experiment Statistical Significance}
+\item {\bf Experiment statistical significance}
+    \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: All headline results report mean $\pm$ std over 5 matched random seeds, and Table~\ref{tab:results} additionally reports two-sided paired $t$-test $p$-values against Max-Pressure for each scenario.
+    \item[] Justification: All headline results in Table~\ref{tab:results} report mean~$\pm$~standard deviation across 5 matched random seeds, along with two-sided paired $t$-test $p$-values against Max-Pressure. The matched-seeds design is described in Section~\ref{sec:results}.
 
-\item {\bf Experiments Compute Resources}
+\item {\bf Experiments compute resources}
+    \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: GPU type, training time, and total compute budget reported in Section~7.
+    \item[] Justification: Section~7 reports the hardware (RTX~4070 Laptop GPU), wall-clock runtime for the full pipeline ($\sim$8~h), and the total project compute budget ($\sim$40 GPU-hours including failed runs).
 
-\item {\bf Code Of Ethics}
+\item {\bf Code of ethics}
+    \item[] Question: Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics \url{https://neurips.cc/public/EthicsGuidelines}?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Research uses only publicly available traffic statistics and open-source simulation tools.
+    \item[] Justification: The research uses only publicly available, aggregated traffic counts and open-source simulation tools. No human subjects, personal data, or dual-use models are involved.
 
-\item {\bf Broader Impacts}
+\item {\bf Broader impacts}
+    \item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~6 discusses both positive (delay reduction) and negative (induced demand) potential impacts.
+    \item[] Justification: Section~\ref{sec:future} / the discussion in Section~\ref{sec:analysis} note both the potential benefit (reduced person-delay and improved vehicle-delay fairness) and the risk that reducing travel time can induce demand; the paper also flags that results are only validated in simulation and should not be deployed without real-world safety review.
 
 \item {\bf Safeguards}
+    \item[] Question: Does the paper describe safeguards that have been put in place for responsible release of data or models that have a high risk for misuse (e.g., pre-trained language models, image generators, or scraped datasets)?
     \item[] Answer: \answerNA{}
-    \item[] Justification: The project uses anonymized, aggregated traffic statistics with no privacy or misuse risk.
+    \item[] Justification: The released artefacts are a traffic-signal control policy trained on aggregated public statistics and a calibrated SUMO scenario; they do not pose a misuse risk comparable to generative models or scraped datasets.
 
 \item {\bf Licenses for existing assets}
+    \item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?
     \item[] Answer: \answerYes{}
-    \item[] Justification: SUMO (EPL-2.0), SUMO-RL (MIT), MAPPO reference implementation (MIT) are cited.
+    \item[] Justification: SUMO (EPL-2.0), SUMO-RL (MIT), the MAPPO reference implementation, and the City of Toronto TMC dataset are cited in the text and bibliography; the vendored fork of SUMO-RL preserves the upstream MIT license in-tree.
 
-\item {\bf New Assets}
+\item {\bf New assets}
+    \item[] Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Trained models and vendored SUMO-RL modifications released under the project repository.
+    \item[] Justification: The trained ASCE checkpoint, calibrated demand scenarios, vendored sumo-rl modifications, and the Demand Studio UI are released in the repository with top-level \texttt{README.md}, \texttt{ASCE.md}, \texttt{DATA.md}, and \texttt{PIRA.md} documenting layout, reproduction commands, and limitations.
 
-\item {\bf Crowdsourcing and Research with Human Subjects}
+\item {\bf Crowdsourcing and research with human subjects}
+    \item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation (if any)?
     \item[] Answer: \answerNA{}
+    \item[] Justification: The project does not involve crowdsourcing or human subjects.
 
-\item {\bf IRB Approvals}
+\item {\bf Institutional review board (IRB) approvals or equivalent for research with human subjects}
+    \item[] Question: Does the paper describe potential risks incurred by study participants, whether such risks were disclosed to the subjects, and whether Institutional Review Board (IRB) approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?
     \item[] Answer: \answerNA{}
+    \item[] Justification: The project does not involve human subjects, so no IRB review was required.
+
+\item {\bf Declaration of LLM usage}
+    \item[] Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research? Note that if the LLM is used only for writing, editing, or formatting purposes and does \emph{not} impact the core methodology, scientific rigor, or originality of the research, declaration is not required.
+    \item[] Answer: \answerYes{}
+    \item[] Justification: LLMs were used only as a development assistant (code scaffolding, debugging, and prose editing), not as part of the core method. See the Generative AI Usage Statement below for details.
 
 \end{enumerate}
 
