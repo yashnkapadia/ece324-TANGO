@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.environ.setdefault("LIBSUMO_AS_TRACI", "1")
 
 PROJ_ROOT = Path(__file__).resolve().parent.parent
-NET_FILE = str(PROJ_ROOT / "sumo" / "network" / "osm.net.xml")
+NET_FILE = str(PROJ_ROOT / "sumo" / "network" / "osm.net.xml.gz")
 SCENARIOS = {
     "am_peak": str(PROJ_ROOT / "sumo" / "demand" / "curriculum" / "am_peak.rou.xml"),
     "pm_peak": str(PROJ_ROOT / "sumo" / "demand" / "curriculum" / "pm_peak.rou.xml"),
@@ -28,7 +28,8 @@ SCENARIOS = {
         PROJ_ROOT / "sumo" / "demand" / "curriculum" / "midday_multimodal.rou.xml"
     ),
 }
-SEEDS = [2000, 2001, 2002, 2003, 2004]
+DEFAULT_SEED_BASE = 1000
+DEFAULT_NUM_SEEDS = 5
 OUT_DIR = PROJ_ROOT / "reports" / "results" / "eval_matrix"
 DELTA_TIME = 5
 
@@ -99,8 +100,32 @@ def _run_single(args):
 
 
 def main():
+    import argparse
     import json
     import subprocess
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--seed-base",
+        type=int,
+        default=DEFAULT_SEED_BASE,
+        help="First seed (subsequent seeds are seed-base+1, +2, ...).",
+    )
+    parser.add_argument(
+        "--num-seeds",
+        type=int,
+        default=DEFAULT_NUM_SEEDS,
+        help="Number of seeds per scenario.",
+    )
+    parser.add_argument(
+        "--out-suffix",
+        type=str,
+        default="",
+        help="Suffix for output CSV name (e.g. '_v2'); default writes nema__<scenario>.csv.",
+    )
+    args = parser.parse_args()
+
+    SEEDS = [args.seed_base + i for i in range(args.num_seeds)]
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     fieldnames = [
@@ -110,7 +135,7 @@ def main():
     ]
 
     for scenario_name, route_file in SCENARIOS.items():
-        out_csv = OUT_DIR / f"nema_v2__{scenario_name}.csv"
+        out_csv = OUT_DIR / f"nema{args.out_suffix}__{scenario_name}.csv"
         print(f"=== NEMA eval: {scenario_name} ===")
 
         rows = []

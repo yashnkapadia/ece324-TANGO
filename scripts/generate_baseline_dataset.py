@@ -31,7 +31,7 @@ from ece324_tango.config import PROJ_ROOT
 
 app = typer.Typer(add_completion=False)
 
-NET_FILE = str(PROJ_ROOT / "sumo" / "network" / "osm.net.xml")
+NET_FILE = str(PROJ_ROOT / "sumo" / "network" / "osm.net.xml.gz")
 SCENARIO_DIR = PROJ_ROOT / "sumo" / "demand" / "curriculum"
 OUT_DIR = PROJ_ROOT / "data" / "pira"
 

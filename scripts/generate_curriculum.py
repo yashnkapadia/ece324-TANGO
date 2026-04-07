@@ -26,7 +26,7 @@ import sumolib  # noqa: E402
 from lxml import etree  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-NETWORK_PATH = REPO_ROOT / "sumo" / "network" / "osm.net.xml"
+NETWORK_PATH = REPO_ROOT / "sumo" / "network" / "osm.net.xml.gz"
 TMC_PATH = REPO_ROOT / "data" / "processed" / "tmc_parsed.csv"
 OUTPUT_DIR = REPO_ROOT / "sumo" / "demand" / "curriculum"
 
