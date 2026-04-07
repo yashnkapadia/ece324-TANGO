@@ -9,6 +9,8 @@
     "sumo/demand/curriculum/demand_surge.rou.xml"
     "sumo/demand/curriculum/midday_multimodal.rou.xml"
   )
+  # Canonical eval set — only the checkpoints documented in models/README.md.
+  # Older experimental checkpoints have been moved to models/_archive/.
   MODELS=(
     "models/asce_mappo_curriculum_best.pt"
     "models/asce_mappo_curriculum.pt"
@@ -16,9 +18,6 @@
     "models/asce_mappo_curriculum_best_pm_peak.pt"
     "models/asce_mappo_curriculum_best_demand_surge.pt"
     "models/asce_mappo_curriculum_best_midday_multimodal.pt"
-    "models/asce_mappo_curriculum - Copy.pt"
-    "models/asce_mappo_curriculum_best - Copy.pt"
-    "models/asce_mappo_person_obj.pt"
   )
 
   OUTDIR="reports/results/eval_matrix"

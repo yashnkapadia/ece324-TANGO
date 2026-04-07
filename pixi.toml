@@ -6,40 +6,50 @@ channels = ["conda-forge"]
 platforms = ["linux-64"]
 
 [dependencies]
+# Core
 python = "~=3.12.0"
-black = "*"
-flake8 = "*"
-ipython = "*"
-isort = "*"
-jupyterlab = "*"
-loguru = "*"
-matplotlib = "*"
-notebook = "*"
-numpy = "*"
-pandas = "*"
-pytest = "*"
-scikit-learn = "*"
-tqdm = "*"
-typer = "*"
 pip = "*"
+# ML / training
 pytorch-gpu = "*"
 cuda-version = "12.8.*"
-openmpi = ">=5.0.8,<6"
-ruff = ">=0.15.4,<0.16"
+numpy = "*"
+pandas = "*"
 pyarrow = ">=20.0.0,<21"
+scikit-learn = "*"
+matplotlib = "*"
+loguru = "*"
+tqdm = "*"
+typer = "*"
+openmpi = ">=5.0.8,<6"
+# Demand Studio / data pipeline (merged from data-setup environment.yml)
+geopandas = "*"
+shapely = "*"
+openpyxl = "*"
+seaborn = "*"
+requests = "*"
+jupyter = "*"
+# Notebooks / dev
+jupyterlab = "*"
+notebook = "*"
+ipython = "*"
+# Lint / format / test
+black = "*"
+isort = "*"
+flake8 = "*"
+ruff = ">=0.15.4,<0.16"
+pytest = "*"
 
 [pypi-dependencies]
-python-dotenv = "*"
-dash = "*"
-plotly = "*"
-pyproj = "*"
-sumolib = "*"
-traci = "*"
-lxml = "*"
 ece324_tango = { path = ".", editable = true }
 sumo-rl = ">=1.4.5, <2"
+python-dotenv = "*"
+# Demand Studio web app
 dash = "*"
 plotly = "*"
+# SUMO Python bindings (mirrored on PyPI; conda-forge has them too but the
+# pip wheels track the SUMO release we pin in CI)
+sumolib = "*"
+traci = "*"
 lxml = "*"
 pyproj = "*"
 
@@ -47,10 +57,31 @@ pyproj = "*"
 cuda = "12"
 
 [tasks]
-train-asce = "python -m ece324_tango.modeling.train --episodes 2 --seconds 1200 --delta-time 5"
-eval-asce = "python -m ece324_tango.modeling.predict --episodes 2 --seconds 1200 --delta-time 5"
-train-asce-toronto-demand = "python -m ece324_tango.modeling.train --net-file sumo/network/osm.net.xml --route-file sumo/demand/demand.rou.xml --scenario-id toronto_demand --episodes 30 --seconds 300 --delta-time 5 --reward-mode objective --use-obs-norm --model-path models/asce_mappo_toronto_demand.pt --rollout-csv data/processed/asce_rollout_toronto_demand.csv --episode-metrics-csv reports/results/asce_train_episode_metrics_toronto_demand.csv"
-eval-asce-toronto-demand = "python -m ece324_tango.modeling.predict --net-file sumo/network/osm.net.xml --route-file sumo/demand/demand.rou.xml --episodes 1 --seconds 120 --delta-time 5 --reward-mode objective --model-path models/asce_mappo_toronto_demand.pt --out-csv reports/results/asce_eval_metrics_toronto_demand.csv"
-validate-asce-schema = "python -m ece324_tango.dataset"
-plot-interim-figures = "python -m ece324_tango.plots"
+# ---- Smoke tests (small grids, fast) -------------------------------------
+train-asce-smoke = "python -m ece324_tango.modeling.train --episodes 2 --seconds 1200 --delta-time 5"
+eval-asce-smoke  = "python -m ece324_tango.modeling.predict --episodes 2 --seconds 1200 --delta-time 5"
+
+# ---- Data pipeline -------------------------------------------------------
 generate-curriculum = "python scripts/generate_curriculum.py"
+validate-asce-schema = "python -m ece324_tango.dataset"
+
+# ---- Canonical Toronto curriculum reproduction (final report) ------------
+# Phase 1: warm-start on AM Peak only (200 episodes, single worker).
+warm-start-asce = "python -m ece324_tango.modeling.train --net-file sumo/network/osm.net.xml --route-file sumo/demand/curriculum/am_peak.rou.xml --scenario-id am_peak --episodes 200 --seconds 900 --delta-time 5 --reward-mode person_objective --residual-mode action_gate --use-obs-norm --model-path models/asce_mappo_curriculum_best.pt --rollout-csv data/processed/asce_warm_start.csv --episode-metrics-csv reports/results/asce_train_episode_metrics_warm_start.csv"
+
+# Phase 2: 4-scenario round-robin curriculum (600 episodes, 8 parallel workers).
+train-asce-curriculum = "python -m ece324_tango.modeling.train --net-file sumo/network/osm.net.xml --curriculum-dir sumo/demand/curriculum --episodes 600 --seconds 900 --delta-time 5 --reward-mode person_objective --residual-mode action_gate --use-obs-norm --num-workers 8 --resume --model-path models/asce_mappo_curriculum_best.pt --episode-metrics-csv reports/results/asce_train_episode_metrics_curriculum.csv"
+
+# Single-scenario eval against the headline checkpoint (override SCENARIO).
+eval-asce-curriculum-best = "python -m ece324_tango.modeling.predict --model-path models/asce_mappo_curriculum_best.pt --net-file sumo/network/osm.net.xml --route-file sumo/demand/curriculum/am_peak.rou.xml --episodes 5 --seconds 900 --delta-time 5 --seed 1000 --reward-mode person_objective --residual-mode action_gate --use-obs-norm --out-csv reports/results/eval_matrix/asce_mappo_curriculum_best__am_peak.csv"
+
+# Full 5-seed × 4-scenario × 4-controller eval matrix (≈45 min on RTX 4070).
+eval-matrix = "bash scripts/eval_matrix.sh"
+
+# ---- PIRA (deferred — see PIRA.md and final report Section 4.6) ----------
+generate-baseline-dataset = "python scripts/generate_baseline_dataset.py"
+generate-asce-dataset = "python scripts/generate_asce_dataset.py"
+
+# ---- Reporting -----------------------------------------------------------
+plot-interim-figures = "python -m ece324_tango.plots"
+generate-report-figures = "python scripts/generate_report_figures.py"
