@@ -90,13 +90,16 @@ def _run_single(args):
     """Run a single NEMA eval in a subprocess to avoid libsumo state leaks."""
     scenario_name, route_file, seed, ep_idx = args
     import json
+
     try:
         result = run_nema_episode(NET_FILE, route_file, 900, seed)
-        return json.dumps({"ok": True, "scenario": scenario_name, "seed": seed,
-                           "ep": ep_idx, **result})
+        return json.dumps(
+            {"ok": True, "scenario": scenario_name, "seed": seed, "ep": ep_idx, **result}
+        )
     except Exception as e:
-        return json.dumps({"ok": False, "scenario": scenario_name, "seed": seed,
-                           "ep": ep_idx, "error": str(e)})
+        return json.dumps(
+            {"ok": False, "scenario": scenario_name, "seed": seed, "ep": ep_idx, "error": str(e)}
+        )
 
 
 def main():
@@ -129,9 +132,15 @@ def main():
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     fieldnames = [
-        "controller", "episode", "seed", "steps",
-        "time_loss_s", "person_time_loss_s", "avg_trip_time_s",
-        "arrived_vehicles", "vehicle_delay_jain",
+        "controller",
+        "episode",
+        "seed",
+        "steps",
+        "time_loss_s",
+        "person_time_loss_s",
+        "avg_trip_time_s",
+        "arrived_vehicles",
+        "vehicle_delay_jain",
     ]
 
     for scenario_name, route_file in SCENARIOS.items():
@@ -143,7 +152,8 @@ def main():
             print(f"  Seed {seed} ({ep_idx+1}/5)...", end=" ", flush=True)
             # Run each seed in a subprocess to avoid libsumo state issues
             cmd = [
-                sys.executable, "-c",
+                sys.executable,
+                "-c",
                 f"""
 import os, sys, json
 sys.path.insert(0, '{PROJ_ROOT}')
@@ -154,11 +164,14 @@ try:
     print(json.dumps({{"ok": True, **r}}))
 except Exception as e:
     print(json.dumps({{"ok": False, "error": str(e)}}))
-"""
+""",
             ]
             try:
                 proc = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=120,
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
                     env={**os.environ, "LIBSUMO_AS_TRACI": "1"},
                 )
                 # Find the JSON line in stdout
@@ -173,7 +186,9 @@ except Exception as e:
                     result = json.loads(result_line)
                     if result.get("ok"):
                         row = {
-                            "controller": "nema", "episode": ep_idx, "seed": seed,
+                            "controller": "nema",
+                            "episode": ep_idx,
+                            "seed": seed,
                             "steps": result["steps"],
                             "time_loss_s": result["time_loss_s"],
                             "person_time_loss_s": result["person_time_loss_s"],
@@ -182,9 +197,11 @@ except Exception as e:
                             "vehicle_delay_jain": result["vehicle_delay_jain"],
                         }
                         rows.append(row)
-                        print(f"PTL={result['person_time_loss_s']:,.0f}  "
-                              f"Jain={result['vehicle_delay_jain']:.3f}  "
-                              f"arrived={result['arrived_vehicles']}")
+                        print(
+                            f"PTL={result['person_time_loss_s']:,.0f}  "
+                            f"Jain={result['vehicle_delay_jain']:.3f}  "
+                            f"arrived={result['arrived_vehicles']}"
+                        )
                     else:
                         print(f"FAILED: {result.get('error', 'unknown')}")
                 else:

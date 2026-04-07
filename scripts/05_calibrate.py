@@ -27,7 +27,6 @@ Running:
 
 import sumolib
 import pandas as pd
-import numpy as np
 import os
 import math
 from lxml import etree

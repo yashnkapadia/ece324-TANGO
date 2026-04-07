@@ -8,6 +8,7 @@
 /reports/results/error_events.jsonl
 /reports/interim/*
 !/reports/interim/.gitkeep
+/reports/final/checklist.tex
 
 # Generated model checkpoints (reproduced via pixi tasks)
 #/models/*.pt

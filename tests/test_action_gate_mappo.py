@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 import torch
 
 from ece324_tango.asce.mappo import GatedActor, ResidualMAPPOTrainer, augment_obs_with_mp

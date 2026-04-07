@@ -1,4 +1,4 @@
-"""
+r"""
 Purpose
     Generate static, two-direction (EW/NS) TLS programs for all signalized intersections in the study network.
     The resulting programs are written to an additional file for use with SUMO.
@@ -24,10 +24,11 @@ Inputs
 Outputs
     - sumo/network/tls_overrides.add.xml.gz
 
-Running: 
+Running:
     python scripts\utils\tls_generator.py
     sumo-gui -n "sumo/network/osm.net.xml.gz" --additional-files "sumo/network/tls_overrides.add.xml.gz"
 """
+
 # Interim phase of the project only focuses on demand flows of passenger vehicles.
 
 import os
@@ -159,11 +160,11 @@ def main() -> None:
 
         phases = [
             (EW_GREEN, _state_string(n_links, ew, "g")),
-            (YELLOW,   _state_string(n_links, ew, "y")),
-            (ALL_RED,  ped_green_str),
+            (YELLOW, _state_string(n_links, ew, "y")),
+            (ALL_RED, ped_green_str),
             (NS_GREEN, _state_string(n_links, ns, "g")),
-            (YELLOW,   _state_string(n_links, ns, "y")),
-            (ALL_RED,  ped_green_str),
+            (YELLOW, _state_string(n_links, ns, "y")),
+            (ALL_RED, ped_green_str),
         ]
 
         tl_elem = etree.SubElement(
@@ -177,7 +178,9 @@ def main() -> None:
 
         for dur, st in phases:
             if len(st) != n_links:
-                raise RuntimeError(f"{tls_id}: generated state length {len(st)} != expected {n_links}")
+                raise RuntimeError(
+                    f"{tls_id}: generated state length {len(st)} != expected {n_links}"
+                )
             etree.SubElement(tl_elem, "phase", duration=str(dur), state=st)
 
     out_path = os.path.join(base_dir, "sumo", "network", "tls_overrides.add.xml.gz")

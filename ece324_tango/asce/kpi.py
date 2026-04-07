@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List
 
-import numpy as np
 
 from ece324_tango.asce.runtime import jain_index
 from ece324_tango.error_reporting import report_exception

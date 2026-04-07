@@ -22,7 +22,6 @@ FLOW_END_BUFFER_S = 300
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "demand_studio"))
 
 import app as studio  # noqa: E402
-import sumolib  # noqa: E402
 from lxml import etree  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -124,10 +123,6 @@ def _get_dundas_edges(net: Any) -> dict[str, list[str]]:
         length = math.sqrt(dx * dx + dy * dy)
         if length < 20:  # skip very short edges
             continue
-
-        # Check if this edge connects to any of our TLS junctions
-        to_node = edge.getToNode()
-        from_node = edge.getFromNode()
 
         # Eastbound: heading roughly 250-310 (demand studio "e" approach means
         # traffic coming FROM the east, but edge heading is direction of travel)
@@ -377,7 +372,7 @@ def export_settings(spec: ScenarioSpec, audit: dict[str, Any] | None = None) -> 
     lines = [
         "TANGO Curriculum Scenario Settings",
         f"scenario: {spec.name}",
-        f"generated_by: scripts/generate_curriculum.py",
+        "generated_by: scripts/generate_curriculum.py",
         "",
         "[Rationale]",
         spec.rationale,
@@ -385,14 +380,14 @@ def export_settings(spec: ScenarioSpec, audit: dict[str, Any] | None = None) -> 
         "[Layer 1 — Demand Studio Parameters]",
         f"network_file: {NETWORK_PATH.relative_to(REPO_ROOT)}",
         f"tmc_source: {TMC_PATH.relative_to(REPO_ROOT)}",
-        f"date_policy: latest",
+        "date_policy: latest",
         f"time_window_start: {spec.time_window_start}",
         f"time_window_duration_min: {spec.time_window_duration}",
         f"simulation_seconds: {spec.simulation_seconds}",
         f"simulation_end: {spec.simulation_seconds + FLOW_END_BUFFER_S}",
         f"global_demand_scale: {spec.global_demand_scale}",
-        f"strict_route_check: True",
-        f"min_count_threshold: 1",
+        "strict_route_check: True",
+        "min_count_threshold: 1",
         f"streetcar_share_from_bus: {spec.streetcar_share_from_bus}",
         f"included_modes: {', '.join(sorted(spec.included_modes))}",
     ]
@@ -528,11 +523,11 @@ def generate_scenario(spec: ScenarioSpec, net: Any) -> Path | None:
     # Audit
     audit = _audit_scenario(dst, spec)
     if audit["issues"]:
-        print(f"  AUDIT ISSUES:")
+        print("  AUDIT ISSUES:")
         for issue in audit["issues"]:
             print(f"    - {issue}")
     else:
-        print(f"  Audit: PASS")
+        print("  Audit: PASS")
     print(
         f"  Final: {audit['total_flows']} vehicle flows, "
         f"{audit['person_flow_count']} ped flows ({audit['total_pedestrians']} peds)"

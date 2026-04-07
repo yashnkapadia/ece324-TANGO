@@ -187,12 +187,22 @@ def main(
             continue
         t = sub["sim_time_s"].to_numpy()
         g = sub["gate_fraction"].to_numpy()
-        ax.plot(t, smooth(g, 5), color=colors.get(scenario, "k"), lw=1.4,
-                label=labels.get(scenario, scenario))
+        ax.plot(
+            t,
+            smooth(g, 5),
+            color=colors.get(scenario, "k"),
+            lw=1.4,
+            label=labels.get(scenario, scenario),
+        )
 
     if "demand_surge" in scenarios:
-        ax.axvspan(SURGE_START_S, SURGE_END_S, color="#d62728", alpha=0.10,
-                   label="Eastbound surge (300–600 s)")
+        ax.axvspan(
+            SURGE_START_S,
+            SURGE_END_S,
+            color="#d62728",
+            alpha=0.10,
+            label="Eastbound surge (300–600 s)",
+        )
 
     ax.set_xlabel("Simulation time (s)")
     ax.set_ylabel("Override fraction")

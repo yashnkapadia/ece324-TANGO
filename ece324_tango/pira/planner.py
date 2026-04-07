@@ -84,9 +84,9 @@ try:
         ScenarioDescriptor,
         predict_scenario,
         PIRAModel,
-        NODE_FEATURE_COLUMNS,
+        NODE_FEATURE_COLUMNS,  # noqa: F401 — re-exported for downstream scripts
         DISRUPTION_TYPES,
-        SCENARIO_FEAT_DIM,
+        SCENARIO_FEAT_DIM,  # noqa: F401 — re-exported for downstream scripts
     )
 except ImportError as exc:
     sys.exit(

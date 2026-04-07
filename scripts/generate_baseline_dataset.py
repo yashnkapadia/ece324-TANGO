@@ -17,7 +17,6 @@ from pathlib import Path
 # Ensure project root is importable when running as a script.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import numpy as np
 import pandas as pd
 import typer
 from loguru import logger

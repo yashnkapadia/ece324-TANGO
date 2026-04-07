@@ -209,7 +209,7 @@ def _run_episode_worker(args: dict) -> dict:
     global_obs_dim = args["global_obs_dim"]
     n_actions = args["n_actions"]
     action_dims_dict = args["action_dims_dict"]
-    ordered_agents = args["ordered_agents"]
+    _ordered_agents = args["ordered_agents"]  # noqa: F841 — kept for worker arg schema parity
     reward_mode = args["reward_mode"]
     reward_weights_dict = args["reward_weights_dict"]
     residual_mode = args["residual_mode"]
@@ -478,7 +478,6 @@ def _run_eval_worker(args: dict) -> dict:
         sys.path.insert(0, libsumo_path)
 
     import numpy as np_w
-    import torch
 
     from ece324_tango.asce.baselines import (
         FixedTimeController as FTC,
@@ -501,8 +500,8 @@ def _run_eval_worker(args: dict) -> dict:
     obs_dim = args["obs_dim"]
     global_obs_dim = args["global_obs_dim"]
     n_actions = args["n_actions"]
-    action_dims = args["action_dims"]
-    ordered_agents = args["ordered_agents"]
+    _action_dims = args["action_dims"]  # noqa: F841 — arg schema parity
+    _ordered_agents = args["ordered_agents"]  # noqa: F841 — arg schema parity
     train_ep = args["train_ep"]
     seconds = args["seconds"]
     delta_time = args["delta_time"]
@@ -1437,8 +1436,6 @@ class LocalMappoBackend(AsceTrainerBackend):
         import multiprocessing
         import time as _time
 
-        import torch
-
         scenario_best_ratios = scenario_best_ratios or {}
         scenario_best_paths = scenario_best_paths or {}
         last_eval_ratios = last_eval_ratios or {}
@@ -1953,7 +1950,6 @@ class LocalMappoBackend(AsceTrainerBackend):
         interrupt_requested_ref=None,
     ):
         """Run one-episode eval on a single scenario for MAPPO vs baselines."""
-        import torch
         from ece324_tango.sumo_rl.environment.env import SumoEnvironment
 
         seed = eval_seed if eval_seed is not None else cfg.seed

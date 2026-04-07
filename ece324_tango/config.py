@@ -1,14 +1,14 @@
+import multiprocessing as _mp
 from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
-from ece324_tango.error_reporting import report_exception
+
+from ece324_tango.error_reporting import report_exception  # noqa: F401
 
 load_dotenv()
 
 PROJ_ROOT = Path(__file__).resolve().parents[1]
-
-import multiprocessing as _mp
 
 if _mp.current_process().name == "MainProcess":
     logger.info(f"PROJ_ROOT path is: {PROJ_ROOT}")

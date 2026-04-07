@@ -48,7 +48,7 @@ def main():
     raw = pd.concat(dfs, ignore_index=True)
     print(f"\nTotal raw rows: {len(raw)}")
     print(f"Columns: {list(raw.columns)}")
-    print(f"\nSample rows:")
+    print("\nSample rows:")
     print(raw.head())
 
     # The TMC dataset columns vary by year. Common patterns:

@@ -75,8 +75,10 @@ def main():
     net_file = os.path.join(base_dir, "sumo", "network", "osm.net.xml.gz")
     net = sumolib.net.readNet(net_file)
 
-    tmc = pd.read_csv(os.path.join(base_dir, "data", "processed", "tmc_parsed.csv"))
-    int_map = pd.read_csv(os.path.join(base_dir, "data", "processed", "intersection_map.csv"))
+    # Load TMC + intersection map to verify calibration inputs are present; heuristic
+    # flows below don't consume them (05_calibrate.py does the real fit).
+    pd.read_csv(os.path.join(base_dir, "data", "processed", "tmc_parsed.csv"))
+    pd.read_csv(os.path.join(base_dir, "data", "processed", "intersection_map.csv"))
 
     entry_edges = get_entry_edges(net)
     exit_edges = get_exit_edges(net)

@@ -81,7 +81,7 @@ def generate_bar_chart(out_path: Path) -> None:
     _apply_theme(ax)
 
     # MP bars (muted)
-    bars_mp = ax.bar(
+    ax.bar(
         x + width / 2,
         [v / 1000 for v in mp_ptl],
         width,
