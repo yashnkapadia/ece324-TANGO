@@ -340,96 +340,73 @@ The baseline simulation is configured in `sumo/config/baseline.sumocfg`:
 
 --------
 
-## Project Organization
+## Data pipeline files
 
-Only non-empty, non-gitignored paths are shown below.
+Files relevant to the data pipeline (TMC parsing, network preparation, Demand
+Studio, and curriculum scenario generation):
 
 ```
-├── LICENSE
-├── Makefile
-├── .gitignore                <- Git ignore rules for generated outputs and local IDE/runtime artifacts
-├── DATA.md                   <- Project documentation, workflow notes, and repository map
-├── environment.yml           <- Conda environment definition for reproducible setup
-├── pixi.toml
-├── pyproject.toml
-├── requirements.txt
-├── setup.cfg                 <- Shared Python tooling and lint/test configuration
+ece324-TANGO/
+├── DATA.md                    ← this document
+├── pixi.toml                  ← single env for the whole project
+├── environment.yml            ← legacy conda fallback (kept; pixi is canonical)
+├── requirements.txt           ← legacy pip fallback
 │
-├── apps/
-│   └── demand_studio/
-│       ├── app.py               <- Dash application for generating demand/scenario files from TMC data
-│       └── assets/
-│           └── demand_studio.css <- Styling rules for the Demand Studio interface
-│
-├── data/
-│   ├── processed/
-│   │   ├── intersection_map.csv   <- Intersection-name to SUMO junction mapping used by calibration
-│   │   ├── tmc_parsed.csv         <- Parsed/standardized TMC turning-movement dataset
-│   │   └── calibration_report.csv <- GEH comparison report for assigned vs observed approach volumes
-│   └── raw/
-│       └── tmc/
-│           ├── tmc_most_recent_summary_data.csv <- Latest published TMC summary extract
-│           ├── tmc_raw_data_1980_1989.csv       <- Historical Toronto TMC raw counts for 1980s
-│           ├── tmc_raw_data_1990_1999.csv       <- Historical Toronto TMC raw counts for 1990s
-│           ├── tmc_raw_data_2000_2009 (1).csv   <- Historical Toronto TMC raw counts for 2000s
-│           ├── tmc_raw_data_2010_2019 (2).csv   <- Historical Toronto TMC raw counts for 2010s
-│           ├── tmc_raw_data_2020_2029 (2).csv   <- Current-era Toronto TMC raw counts for 2020s
-│           └── tmc_summary_data.csv             <- Consolidated TMC summary dataset used for filtering
-│
-├── docs/
-│   ├── network_map.png          <- Annotated corridor network map used in documentation
-│   └── assets/
-│       └── images/
-│           ├── demand_studio_1.png <- Demand Studio overview screenshot
-│           ├── demand_studio_2.png <- Demand settings tab screenshot
-│           ├── demand_studio_3.png <- Signal and MAPPO settings tab screenshot
-│           ├── demand_studio_4.png <- Advanced vehicle settings tab screenshot
-│           └── sumo_web_wizard.png <- SUMO Web Wizard corridor selection image
-│
-├── ece324_tango-model/
-│   ├── __init__.py            <- Package initializer for the modeling module
-│   ├── config.py              <- Model and training configuration values
-│   ├── dataset.py             <- Dataset loading and preprocessing helpers
-│   ├── features.py            <- Feature engineering utilities for model inputs
-│   ├── plots.py               <- Plotting helpers for diagnostics and evaluation
-│   └── modeling/
-│       ├── __init__.py        <- Submodule initializer for training/prediction code
-│       ├── predict.py         <- Inference pipeline for generating predictions
-│       └── train.py           <- Training entry point for model fitting
-│
-├── notebooks/
-│   ├── 01_inspect_network.ipynb <- Notebook to inspect network geometry and signalized nodes
-│   ├── 02_inspect_tls.ipynb     <- Notebook to inspect generated TLS programs and phase states
-│   └── 03_explore_tmc.ipynb     <- Notebook to explore parsed TMC volumes and intersections
-│
-├── reports/
-│   └── proposal/
-│       └── TANGO-proposal.pdf <- Project proposal document defining scope and methodology
+├── apps/demand_studio/
+│   ├── app.py                       ← Dash app: TMC → SUMO scenario generator
+│   └── assets/demand_studio.css     ← UI styling
 │
 ├── scripts/
-│   ├── 00_smoke_test.py        <- Quick SUMO/TraCI smoke test with short simulation run
-│   ├── 02_parse_tmc.py         <- Parser to normalize and filter raw TMC CSV exports
-│   ├── 03_map_intersections.py <- Mapper from named intersections to SUMO junction IDs
-│   ├── 04_generate_demand.py   <- Heuristic demand generator for baseline route flows
-│   ├── 05_calibrate.py         <- TMC-calibrated demand generation with GEH validation
-│   └── utils/
-│       └── tls_generator.py    <- Fixed-cycle TLS override generator for SUMO networks
+│   ├── 00_smoke_test.py             ← SUMO + TraCI smoke run (60 s, random trips)
+│   ├── 02_parse_tmc.py              ← Parse raw TMC CSVs → tmc_parsed.csv
+│   ├── 03_map_intersections.py      ← Match named intersections to SUMO junctions
+│   ├── 04_generate_demand.py        ← Heuristic demand for smoke tests
+│   ├── 05_calibrate.py              ← TMC-calibrated demand with GEH validation
+│   ├── generate_curriculum.py       ← Build the four curriculum scenarios via Demand Studio
+│   └── utils/tls_generator.py       ← Fixed-cycle TLS override generator
+│
+├── notebooks/
+│   ├── 01_inspect_network.ipynb     ← Network geometry and signalized nodes
+│   ├── 02_inspect_tls.ipynb         ← Inspect generated TLS programs / phase states
+│   └── 03_explore_tmc.ipynb         ← Explore parsed TMC volumes
+│
+├── data/
+│   ├── raw/tmc/                     ← City of Toronto raw TMC CSVs (1980s–2020s)
+│   │   ├── tmc_most_recent_summary_data.csv
+│   │   ├── tmc_raw_data_1980_1989.csv
+│   │   ├── tmc_raw_data_1990_1999.csv
+│   │   ├── tmc_raw_data_2000_2009 (1).csv
+│   │   ├── tmc_raw_data_2010_2019 (2).csv
+│   │   ├── tmc_raw_data_2020_2029 (2).csv
+│   │   └── tmc_summary_data.csv
+│   └── processed/
+│       ├── tmc_parsed.csv           ← Filtered, standardised TMC dataset
+│       ├── intersection_map.csv     ← Intersection name → SUMO junction
+│       └── calibration_report.csv   ← GEH validation report
 │
 ├── sumo/
-│   ├── config/
-│   │   └── baseline.sumocfg      <- Baseline SUMO run configuration for the corridor
+│   ├── network/
+│   │   ├── osm.net.xml.gz           ← SUMO network derived from OSM corridor
+│   │   ├── osm.poly.xml.gz          ← Building polygons (visualisation)
+│   │   ├── osm_bbox.osm.xml.gz      ← Raw OSM bounding-box extract
+│   │   ├── tls_overrides.add.xml.gz ← Generated/fallback TLS programs
+│   │   └── build.bat                ← Windows helper for network rebuilds
+│   ├── config/baseline.sumocfg      ← Baseline SUMO config used by smoke runs
 │   ├── demand/
-│   │   ├── demand.rou.xml        <- Current generated vehicle demand routes for simulation
-│   │   └── random_trips.rou.xml  <- Random trips file used by smoke testing workflow
-│   └── network/
-│       ├── build.bat             <- Windows helper script for network/build utility tasks
-│       ├── osm.net.xml.gz        <- SUMO network graph derived from OSM corridor extract
-│       ├── osm.poly.xml.gz       <- Polygon layer for land-use/building visualization
-│       ├── osm_bbox.osm.xml.gz   <- Raw OSM bounding-box extract used to build network
-│       └── tls_overrides.add.xml.gz <- Generated baseline TLS programs for signalized junctions
+│   │   ├── demand.rou.xml           ← Latest generated baseline demand (overwritten by 05_calibrate.py)
+│   │   ├── random_trips.rou.xml     ← Smoke-test random trips
+│   │   └── curriculum/              ← Four TMC-calibrated scenarios used for ASCE training
+│   │       ├── am_peak.rou.xml + .settings.txt
+│   │       ├── pm_peak.rou.xml + .settings.txt
+│   │       ├── demand_surge.rou.xml + .settings.txt
+│   │       └── midday_multimodal.rou.xml + .settings.txt
+│   └── scenarios/generated/         ← Demand Studio scenario metadata exports
 │
-└── tests/
-    └── test_data.py             <- Data-pipeline regression and integrity tests
+├── docs/assets/images/              ← Demand Studio screenshots, network map, OSM wizard
+│   ├── demand_studio_1.png ... demand_studio_4.png
+│   └── sumo_web_wizard.png
+│
+└── tests/test_data.py               ← Data-pipeline regression and integrity tests
 ```
 
 --------

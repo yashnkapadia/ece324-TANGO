@@ -97,20 +97,71 @@ These are the items called out in the final report's Limitations and Future Acti
 4. **Safety constraints are not enforced** on MAPPO's phase selections (minimum green, maximum green, pedestrian recall). Required for any real-world deployment.
 5. **PIRA scenario-planning surrogate is incomplete.** Architecture and training loop exist; real ASCE-rollout dataset integration is deferred. See [`PIRA.md`](./PIRA.md).
 
-## Project Organization
+## ASCE files
+
+Files relevant to the ASCE training, evaluation, and reporting pipeline:
 
 ```
-├── ece324_tango/           <- Source code (ASCE env, MAPPO, baselines, plotting)
-│   ├── asce/               <- ASCE env adapters, baselines, MAPPO, schema
-│   ├── modeling/           <- Train and predict entry points
-│   └── plots.py            <- Interim report figure generation
-├── sumo/                   <- SUMO network and demand files
-│   ├── network/            <- Toronto OSM network
-│   └── demand/             <- TMC-calibrated and random-trip demand
+ece324-TANGO/
+├── ASCE.md                                           ← this document
+├── pixi.toml                                         ← env + task definitions
+│
+├── ece324_tango/
+│   ├── asce/
+│   │   ├── env.py                ← SUMO env factory, obs flatten/pad helpers
+│   │   ├── mappo.py              ← Actor / GatedActor / Critic, PPO update
+│   │   ├── baselines.py          ← FixedTimeController, MaxPressureController
+│   │   ├── kpi.py                ← Per-episode KPI tracker
+│   │   ├── traffic_metrics.py    ← Person-weighted delay/throughput, Jain
+│   │   ├── obs_norm.py           ← Welford running normaliser
+│   │   ├── runtime.py            ← Step-output normalisation, phase helpers
+│   │   ├── schema.py             ← ASCE_DATASET_COLUMNS contract
+│   │   └── trainers/
+│   │       ├── base.py                ← TrainConfig / EvalConfig dataclasses
+│   │       ├── factory.py             ← Backend selection
+│   │       ├── local_mappo_backend.py ← Episode loop, parallel eval, ckpt I/O
+│   │       ├── noise_control.py       ← Quiet-output context manager
+│   │       └── training_tui.py        ← rich.Live training dashboard
+│   ├── modeling/
+│   │   ├── train.py              ← `python -m ece324_tango.modeling.train`
+│   │   └── predict.py            ← `python -m ece324_tango.modeling.predict`
+│   ├── sumo_rl/                  ← Vendored sumo-rl with native-TLS patches
+│   ├── plots.py                  ← Interim figure generation
+│   └── config.py                 ← PROJ_ROOT, MODELS_DIR, RESULTS_DIR
+│
+├── scripts/
+│   ├── generate_curriculum.py    ← Build the four curriculum scenarios
+│   ├── eval_matrix.sh            ← Full 5-seed × 4-scenario × 4-controller sweep
+│   ├── eval_nema.py              ← Standalone Actuated Default eval driver
+│   └── generate_report_figures.py ← Bar chart, training curve, gate fraction
+│
+├── sumo/
+│   ├── network/
+│   │   ├── osm.net.xml.gz        ← Toronto Dundas corridor SUMO network
+│   │   └── tls_overrides.add.xml.gz ← Native TLS programs preserved by sumo-rl
+│   └── demand/curriculum/        ← am_peak / pm_peak / demand_surge / midday_multimodal .rou.xml
+│
+├── models/
+│   ├── README.md                          ← canonical-checkpoint layout
+│   ├── asce_mappo_curriculum_best.pt      ← HEADLINE checkpoint (ep 632)
+│   ├── asce_mappo_curriculum.pt           ← Final ep-600 (regression comparison)
+│   ├── asce_mappo_curriculum_best_{am,pm,demand_surge,midday_multimodal}.pt
+│   ├── asce_mappo_curriculum_train_state.json
+│   └── _archive/20260406_pre_final_report/  ← stale experimental ckpts
+│
 ├── reports/
-│   ├── results/            <- Evaluation CSVs
-│   └── figures/            <- Generated plots (reproducible via pixi)
-├── tests/                  <- Unit tests
-├── pixi.toml               <- Environment, dependencies, and task definitions
-└── docs/                   <- Notes, runbook, plans
+│   ├── final/
+│   │   ├── final_report-TANGO.tex / .pdf
+│   │   ├── references.bib / neurips_2024.sty
+│   │   ├── asce_architecture.tex          ← TikZ architecture diagram
+│   │   ├── asce_bar_chart.pdf             ← Figure: bar chart by scenario
+│   │   ├── asce_training_curve.pdf        ← Figure: reward per episode
+│   │   └── asce_gate_fraction.pdf         ← Figure: override fraction
+│   └── results/eval_matrix/
+│       ├── asce_mappo_curriculum_best__{scenario}.csv  ← 5-seed headline matrix
+│       ├── asce_mappo_curriculum__{scenario}.csv       ← Final-ep regression
+│       ├── nema__{scenario}.csv                        ← Actuated Default seeds 1000-1004
+│       └── nema_v2__{scenario}.csv                     ← Actuated Default verification
+│
+└── tests/                                ← Unit and regression tests
 ```

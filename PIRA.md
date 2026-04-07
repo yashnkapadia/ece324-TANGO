@@ -198,3 +198,46 @@ training resumes. When that work picks up, install it inside the pixi env:
 ```bash
 pixi run pip install torch_geometric
 ```
+
+---
+
+## PIRA files
+
+Files relevant to PIRA (model code, dataset generation, and the deferred
+training inputs):
+
+```
+ece324-TANGO/
+├── PIRA.md                                  ← this document
+│
+├── ece324_tango/
+│   ├── pira/
+│   │   ├── pira.py             ← GNN model, dataset construction, training loop
+│   │   └── planner.py          ← PIRAPlanner: load checkpoint, run scenarios
+│   └── asce/schema.py          ← ASCE_DATASET_COLUMNS — the contract PIRA consumes
+│
+├── scripts/
+│   ├── generate_baseline_dataset.py  ← Roll out MP and FT baselines → data/pira/{ctrl}_{scenario}.parquet
+│   └── generate_asce_dataset.py      ← Roll out trained ASCE checkpoint  → data/pira/asce_{scenario}.parquet
+│
+├── notebooks/PIRA/
+│   └── PIRA.ipynb              ← Exploration notebook for PIRA development
+│
+├── data/pira/                  ← Generated rollout datasets (gitignored, recreate with the scripts above)
+│   ├── max_pressure_{am_peak,pm_peak,demand_surge,midday_multimodal}.parquet
+│   ├── fixed_time_{am_peak,pm_peak,demand_surge,midday_multimodal}.parquet
+│   ├── asce_{am_peak,pm_peak,demand_surge,midday_multimodal}.parquet
+│   └── baseline_dataset.parquet     ← Convenience merge of all baseline parquets
+│
+├── sumo/network/osm.net.xml.gz      ← Road network used as the GNN graph topology
+└── sumo/demand/curriculum/*.rou.xml ← Scenarios that drive the rollouts above
+```
+
+> **Reproduction.** PIRA training itself is deferred (final report Section 4.6),
+> but the dataset side runs end-to-end. To regenerate everything:
+> ```bash
+> pixi run generate-baseline-dataset            # MP + FT, ~5 min on RTX 4070 Laptop
+> pixi run generate-asce-dataset                # Trained ASCE policy
+> # Smoke-validate with a tiny config first if you only want to verify the pipeline:
+> pixi run generate-asce-dataset --seeds 1 --seconds 60 --scenario am_peak
+> ```

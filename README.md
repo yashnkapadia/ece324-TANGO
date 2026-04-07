@@ -30,6 +30,47 @@ See [`ASCE.md`](./ASCE.md) for the training pipeline (warm-start + curriculum) a
 ![alt text](pictures/image-1.png)
 ![alt text](pictures/pira_demo.gif)
 
+## Repository layout
+
+```
+ece324-TANGO/
+├── README.md             ← you are here
+├── ASCE.md               ← Adaptive Signal Control Engine: training, eval, results
+├── DATA.md               ← Data pipeline, TMC parsing, Demand Studio
+├── PIRA.md               ← Planning Infrastructure Response Analyzer (deferred)
+├── pixi.toml / pixi.lock ← single source of truth for the environment
+├── environment.yml       ← legacy conda fallback (kept for older instructions)
+├── requirements.txt      ← legacy pip fallback
+├── pyproject.toml / setup.cfg / Makefile
+│
+├── ece324_tango/         ← project Python package
+│   ├── asce/             ← MAPPO trainer, baselines, env, KPI, schema
+│   ├── pira/             ← PIRA GNN model + planner (deferred)
+│   ├── modeling/         ← train.py / predict.py CLI entry points
+│   ├── sumo_rl/          ← vendored sumo-rl with native TLS-program patches
+│   ├── plots.py / dataset.py / features.py / config.py
+│
+├── apps/demand_studio/   ← Dash web app for TMC → SUMO scenario generation
+├── scripts/              ← data pipeline, training driver, eval matrix, figures
+├── notebooks/            ← network/TMC inspection + PIRA exploration
+│
+├── sumo/                 ← network, TLS overrides, demand files (curriculum/)
+├── data/                 ← raw TMC, processed CSVs, PIRA parquets
+├── models/               ← canonical checkpoints (see models/README.md)
+│
+├── reports/
+│   ├── final/            ← NeurIPS-format final report .tex, .bib, figures, PDF
+│   ├── interim/          ← interim report
+│   ├── proposal/         ← original proposal
+│   ├── results/          ← training/eval CSVs
+│   └── results/eval_matrix/  ← 5-seed × 4-scenario × 4-controller eval CSVs
+│
+├── pictures/             ← README/presentation imagery
+└── tests/                ← unit and regression tests
+```
+
+Each top-level doc carries its own focused file tree: see [`DATA.md`](./DATA.md#data-pipeline-files), [`ASCE.md`](./ASCE.md#asce-files), and [`PIRA.md`](./PIRA.md#pira-files).
+
 ## Team
 
 Aryan Shrivastava &middot; Kotaro Murakami &middot; Yash Kapadia
